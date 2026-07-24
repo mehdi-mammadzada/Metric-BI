@@ -111,10 +111,11 @@ export const enqueueApproval = (input: {
   stepsChain?: string[][];
 }): ApprovalItem => {
   const list = load();
+  const inputCanonicalId = cardAliases(input.kpiCardId).canonicalId;
   // dedupe: one approval lifecycle per KPI card. Terminal approvals are kept forever
   // and must not be replaced by a fresh pending request after refresh/hydration.
   const existing = list
-    .filter(a => a.kpiCardId === input.kpiCardId)
+    .filter(a => cardAliases(a.kpiCardId).canonicalId === inputCanonicalId)
     .sort((a, b) => decisionTime(b) - decisionTime(a))[0];
   if (existing) return existing;
   const chain = input.stepsChain && input.stepsChain.length > 0 ? input.stepsChain : [input.approverIds];

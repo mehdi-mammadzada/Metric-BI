@@ -229,11 +229,7 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
     let rejectedBy: string | null = null;
     let rejectedAt: string | null = null;
 
-    if (!allSettersDone) {
-      nextStatus = "natamam";
-    } else if (!card.matrixId) {
-      nextStatus = "aktiv";
-    } else if (approval?.status === "approved") {
+    if (approval?.status === "approved" || (card.status === "aktiv" && (!card.matrixId || approval?.status !== "rejected"))) {
       nextStatus = "aktiv";
     } else if (approval?.status === "rejected") {
       nextStatus = "imtina";
@@ -241,6 +237,13 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
       rejectedBy = rejected?.[0] ?? null;
       rejectedAt = rejected?.[1]?.at ?? null;
       note = rejected?.[1]?.note || "İmtina edildi";
+    } else if (card.status === "imtina") {
+      nextStatus = "imtina";
+      note = card.rejectedReason || "İmtina edildi";
+    } else if (!allSettersDone) {
+      nextStatus = "natamam";
+    } else if (!card.matrixId) {
+      nextStatus = "aktiv";
     } else {
       nextStatus = "tesdiq_gozlenilir";
       if (!approval) triggerCardApprovalIfComplete(card.numericId);
