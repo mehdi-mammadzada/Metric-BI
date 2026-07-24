@@ -84,6 +84,9 @@ const cardAliases = (cardId: string) => {
   return { canonicalId: card.id, numericId: card.numericId ?? null };
 };
 
+const isDeletionApproval = (item: Pick<ApprovalItem, "matrixId">) =>
+  String(item.matrixId || "").startsWith("deletion:");
+
 const syncCardStatus = (item: ApprovalItem, status: SharedKpiStatus, actor: string, note?: string) => {
   const { canonicalId, numericId } = cardAliases(item.kpiCardId);
   setKpiStatus(canonicalId, status, actor, note);
@@ -112,10 +115,10 @@ export const enqueueApproval = (input: {
 }): ApprovalItem => {
   const list = load();
   const inputCanonicalId = cardAliases(input.kpiCardId).canonicalId;
-  // dedupe: one approval lifecycle per KPI card. Terminal approvals are kept forever
-  // and must not be replaced by a fresh pending request after refresh/hydration.
+  // dedupe pending requests by KPI + matrix. Terminal decisions remain forever,
+  // but creation approval and later deletion approval are separate lifecycles.
   const existing = list
-    .filter(a => cardAliases(a.kpiCardId).canonicalId === inputCanonicalId)
+    .filter(a => cardAliases(a.kpiCardId).canonicalId === inputCanonicalId && a.matrixId === input.matrixId && a.status === "pending")
     .sort((a, b) => decisionTime(b) - decisionTime(a))[0];
   if (existing) return existing;
   const chain = input.stepsChain && input.stepsChain.length > 0 ? input.stepsChain : [input.approverIds];
@@ -208,22 +211,24 @@ export const decideApproval = (
 
   // Mirror the decision onto the shared KPI card itself.
   if (item.status === "approved") {
-    syncCardStatus(item, "aktiv", approverId, "Matris vasitəsilə təsdiq edildi");
+    const deletion = isDeletionApproval(item);
+    syncCardStatus(item, deletion ? "legv_olundu" : "aktiv", approverId, deletion ? "Silinmə sorğusu təsdiqləndi" : "Matris vasitəsilə təsdiq edildi");
     flushCardsSoon();
     pushNotification({
       toEmployeeId: item.createdBy,
       type: "approval_result",
-      title: `KPI təsdiq olundu: ${item.kpiName}`,
-      body: "Kart aktiv statusa keçdi.",
+      title: `${deletion ? "KPI silinməsi təsdiq olundu" : "KPI təsdiq olundu"}: ${item.kpiName}`,
+      body: deletion ? "Kart ləğv olundu statusuna keçdi." : "Kart aktiv statusa keçdi.",
       link: "/kpi-kartlari",
     });
   } else if (item.status === "rejected") {
-    syncCardStatus(item, "imtina", approverId, note || "Rəhbər imtina etdi");
+    const deletion = isDeletionApproval(item);
+    if (!deletion) syncCardStatus(item, "imtina", approverId, note || "Rəhbər imtina etdi");
     flushCardsSoon();
     pushNotification({
       toEmployeeId: item.createdBy,
       type: "approval_result",
-      title: `KPI imtina olundu: ${item.kpiName}`,
+      title: `${deletion ? "KPI silinməsi imtina olundu" : "KPI imtina olundu"}: ${item.kpiName}`,
       body: note || "Səbəb göstərilməyib.",
       link: "/kpi-kartlari",
     });

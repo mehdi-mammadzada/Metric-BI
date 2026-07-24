@@ -44,7 +44,7 @@ export const hydrateLifecycleFromCloud = async (orgId: string): Promise<void> =>
   if (!lcRes.error && lcRes.data) {
     const localLifecycles = readLocal<any[]>(LIFECYCLE_KEY, []);
     const cloudLifecycles = lcRes.data.map(r => ({
-      cardId: r.card_local_id,
+      cardId: Number(r.card_local_id),
       cardName: r.card_name,
       assignment: r.assignment ?? undefined,
       evaluation: r.evaluation ?? undefined,
@@ -113,7 +113,7 @@ export const flushLifecycleToCloud = async () => {
     lifecycles.length ? supabase.from("kpi_lifecycles").upsert(
       lifecycles.map(l => ({
         organization_id: orgId,
-        card_local_id: l.cardId,
+        card_local_id: String(l.cardId),
         card_name: l.cardName ?? "",
         assignment: l.assignment ?? null,
         evaluation: l.evaluation ?? null,
