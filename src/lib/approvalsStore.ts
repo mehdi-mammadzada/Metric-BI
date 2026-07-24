@@ -39,6 +39,36 @@ const save = (list: ApprovalItem[]) => {
   window.dispatchEvent(new Event(EVT));
 };
 
+const decisionTime = (item: Pick<ApprovalItem, "decisions" | "updatedAt" | "createdAt">) => {
+  const decisionTimes = Object.values(item.decisions || {})
+    .map(d => Date.parse(d?.at || "") || 0);
+  return Math.max(
+    Date.parse(item.updatedAt || "") || 0,
+    Date.parse(item.createdAt || "") || 0,
+    ...decisionTimes,
+  );
+};
+
+const terminalRank = (status: ApprovalDecision) => status === "pending" ? 0 : 1;
+
+const betterApprovalItem = (a: ApprovalItem, b: ApprovalItem) => {
+  const ar = terminalRank(a.status);
+  const br = terminalRank(b.status);
+  if (ar !== br) return br > ar ? b : a;
+  const at = decisionTime(a);
+  const bt = decisionTime(b);
+  if (at !== bt) return bt > at ? b : a;
+  return Date.parse(b.updatedAt || b.createdAt || "") >= Date.parse(a.updatedAt || a.createdAt || "") ? b : a;
+};
+
+const upsertLocalApproval = (incoming: ApprovalItem) => {
+  const list = load();
+  const idx = list.findIndex(a => a.id === incoming.id);
+  if (idx >= 0) list[idx] = betterApprovalItem(list[idx], incoming);
+  else list.unshift(incoming);
+  save(list.sort((a, b) => (decisionTime(b) || Date.parse(b.createdAt || "") || 0) - (decisionTime(a) || Date.parse(a.createdAt || "") || 0)));
+};
+
 const flushSoon = () => {
   void import("./approvalsService").then(m => m.flushApprovalsToCloud()).catch(() => undefined);
 };
@@ -125,6 +155,9 @@ export const decideApproval = (
   const idx = list.findIndex(a => a.id === approvalId);
   if (idx < 0) return;
   const item = { ...list[idx] };
+  if (item.status !== "pending") return;
+  if (!item.approverIds.includes(approverId)) return;
+  if (item.decisions[approverId]?.decision && item.decisions[approverId].decision !== "pending") return;
   item.decisions = {
     ...item.decisions,
     [approverId]: { decision, note, at: new Date().toISOString() },
@@ -167,6 +200,7 @@ export const decideApproval = (
   list[idx] = item;
   save(list);
   flushSoon();
+  try { upsertLocalApproval(item); } catch {}
 
   // Mirror the decision onto the shared KPI card itself.
   if (item.status === "approved") {
