@@ -150,13 +150,12 @@ export interface CascadeSliceInput {
 }
 
 /** Bir node-u alt şəxslər arasında bölüşdürür.
- *  Qeyd: Alt bölgülərin cəmi rəhbərin cascade load-undan gəldiyi üçün
- *  ana hədəf dəyərindən böyük ola bilər — burada məhdudiyyət qoyulmur. */
+ *  Əvvəlki bölgülər saxlanılır; eyni şəxsə yenidən bölgü edilərsə dedupe
+ *  ən son yazını saxlayır. Beləliklə qalıq = limit - bütün child-ların cəmi olur. */
 export const distribute = (parentId: string, slices: CascadeSliceInput[]): { ok: boolean; error?: string } => {
   const parent = getNode(parentId);
   if (!parent) return { ok: false, error: "Ana hədəf tapılmadı" };
   const filtered = slices.filter(s => s.assigneeId && Number(s.limit) > 0);
-  const list = load().filter(n => n.parentId !== parentId); // köhnə bölgüləri sil
   const now = Date.now();
   const newKids: CascadeTreeNode[] = filtered.map(s => ({
     id: crypto.randomUUID(),
@@ -173,7 +172,7 @@ export const distribute = (parentId: string, slices: CascadeSliceInput[]): { ok:
     cascadable: s.cascadable ?? true,
     createdAt: now, updatedAt: now,
   }));
-  persist([...list, ...newKids]);
+  persist([...load(), ...newKids]);
   return { ok: true };
 };
 

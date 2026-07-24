@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { GitBranch, Crown, AlertTriangle, Users, ShieldCheck } from "lucide-react";
 import { getEmployees, getSubordinatesOfStarHolder, getStructures } from "@/lib/orgStore";
-import { distribute, createRoot, findRootByGoal, getNodes, type CascadeTreeNode } from "@/lib/cascadeTreeStore";
+import { distribute, createRoot, findRootByGoal, getNodes, remainingOf, type CascadeTreeNode } from "@/lib/cascadeTreeStore";
 
 interface Props {
   open: boolean;
@@ -114,12 +114,15 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
 
   const totalDist = Object.values(slices).reduce((s, v) => s + (parseFloat(v) || 0), 0);
   const selectedCount = Object.values(slices).filter(v => parseFloat(v) > 0).length;
-  const cascadeLoad = Number(node?.limit) || 0;
-  // Alt bölgülərin cəmi Cascade Load-dan böyük ola bilər (icazəlidir).
-  const overLimit = false;
+  const cascadeLoad = node ? remainingOf(node.id) : (Number(bootstrap?.limit) || 0);
+  const overLimit = totalDist - cascadeLoad > 0.0001;
 
   const handleSave = () => {
     if (!node) return;
+    if (overLimit) {
+      setError(`Paylanan cəm mövcud qalıq Cascade Load-dan böyük ola bilməz: ${fmt(cascadeLoad)} ${node.unit}`);
+      return;
+    }
     const rows = Object.entries(slices)
       .map(([id, v]) => {
         const emp = subordinates.find(e => e.id === Number(id));
@@ -148,12 +151,12 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
             Kaskadlama — {node?.goalName || bootstrap?.goalName}
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
-            {node?.cardName || bootstrap?.cardName} · Cascade Load: <b>{fmt(cascadeLoad)} {node?.unit || bootstrap?.unit}</b>
+            {node?.cardName || bootstrap?.cardName} · Mövcud Cascade Load: <b>{fmt(cascadeLoad)} {node?.unit || bootstrap?.unit}</b>
           </p>
         </DialogHeader>
 
         <div className="grid grid-cols-3 gap-3">
-          <BigStat label="Cascade Load" value={fmt(cascadeLoad)} unit={node?.unit || "AZN"} tone="neutral" />
+          <BigStat label="Mövcud Cascade Load" value={fmt(cascadeLoad)} unit={node?.unit || "AZN"} tone="neutral" />
           <BigStat label="Qalıq (paylanmamış)" value={fmt(Math.max(0, cascadeLoad - totalDist))} unit={node?.unit || "AZN"} tone="primary" />
           <BigStat label="Paylanan cəm" value={fmt(totalDist)} unit={`(${selectedCount} şəxs)`} tone={overLimit ? "danger" : "success"} />
         </div>
@@ -187,7 +190,7 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
             setSlice={setSlice}
             // Default = rəhbərin təyin etdiyi hədəf dəyəri (redaktə oluna bilər).
             // Bu, kaskadlanan dəyər DEYİL — sadəcə rahatlıq üçün ilkin təklifdir.
-            defaultValue={bootstrap?.defaultSliceValue != null ? bootstrap.defaultSliceValue : (cascadeLoad > 0 ? cascadeLoad : 0)}
+            defaultValue={Math.min(bootstrap?.defaultSliceValue != null ? bootstrap.defaultSliceValue : (cascadeLoad > 0 ? cascadeLoad : 0), cascadeLoad)}
           />
         )}
 
