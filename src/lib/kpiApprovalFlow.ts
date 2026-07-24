@@ -59,10 +59,25 @@ const idsForCard = (card: Pick<SharedKpiCard, "id" | "numericId">): string[] => 
 const sameCard = (approvalCardId: string, card: Pick<SharedKpiCard, "id" | "numericId">) =>
   idsForCard(card).includes(approvalCardId);
 
+const approvalRank = (status?: string) => status && status !== "pending" ? 1 : 0;
+
+const approvalDecisionTime = (approval: ReturnType<typeof getApprovals>[number]) => {
+  const decisionTimes = Object.values(approval.decisions || {}).map(d => Date.parse(d?.at || "") || 0);
+  return Math.max(
+    Date.parse(approval.updatedAt || "") || 0,
+    Date.parse(approval.createdAt || "") || 0,
+    ...decisionTimes,
+  );
+};
+
 const approvalForCard = (card: Pick<SharedKpiCard, "id" | "numericId">) =>
   getApprovals()
     .filter(a => sameCard(a.kpiCardId, card))
-    .sort((a, b) => (Date.parse(b.updatedAt || b.createdAt || "") || 0) - (Date.parse(a.updatedAt || a.createdAt || "") || 0))[0] || null;
+    .sort((a, b) => {
+      const rankDiff = approvalRank(b.status) - approvalRank(a.status);
+      if (rankDiff !== 0) return rankDiff;
+      return approvalDecisionTime(b) - approvalDecisionTime(a);
+    })[0] || null;
 
 const setterStateForCard = (numericId: number) => {
   const bySetter = new Map<string, { name: string; ok: boolean }>();
@@ -134,10 +149,18 @@ export const triggerCardApprovalIfComplete = (cardId: number): void => {
       return;
     }
 
-    // Eyni kart üçün pending approval varsa təkrar yaratma.
-    const existing = getApprovals().find(a => (a.kpiCardId === ctx.id || a.kpiCardId === `kpi-${cardId}`) && a.status === "pending");
+    // Eyni kart üçün approval varsa təkrar yaratma. Approved/rejected tarixçə
+    // bütün cihazlarda terminal qalmalıdır; refresh-dən sonra yeni pending açılmamalıdır.
+    const existing = approvalForCard({ id: ctx.id, numericId: cardId });
     if (existing) {
-      try { setKpiStatus(ctx.id, "tesdiq_gozlenilir", "system", "Set tamamlandı — təsdiq axını davam edir"); } catch {}
+      if (existing.status === "approved") {
+        try { setKpiStatus(ctx.id, "aktiv", "system", "Matris vasitəsilə təsdiq edildi"); } catch {}
+      } else if (existing.status === "rejected") {
+        const rejected = Object.entries(existing.decisions || {}).find(([, d]) => d?.decision === "rejected");
+        try { setKpiStatus(ctx.id, "imtina", rejected?.[0] || "system", rejected?.[1]?.note || "İmtina edildi"); } catch {}
+      } else {
+        try { setKpiStatus(ctx.id, "tesdiq_gozlenilir", "system", "Set tamamlandı — təsdiq axını davam edir"); } catch {}
+      }
       try { submitToMatrix(cardId); } catch {}
       void import("./kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
       return;
@@ -206,11 +229,7 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
     let rejectedBy: string | null = null;
     let rejectedAt: string | null = null;
 
-    if (!allSettersDone) {
-      nextStatus = "natamam";
-    } else if (!card.matrixId) {
-      nextStatus = "aktiv";
-    } else if (approval?.status === "approved") {
+    if (approval?.status === "approved" || (card.status === "aktiv" && (!card.matrixId || approval?.status !== "rejected"))) {
       nextStatus = "aktiv";
     } else if (approval?.status === "rejected") {
       nextStatus = "imtina";
@@ -218,6 +237,13 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
       rejectedBy = rejected?.[0] ?? null;
       rejectedAt = rejected?.[1]?.at ?? null;
       note = rejected?.[1]?.note || "İmtina edildi";
+    } else if (card.status === "imtina") {
+      nextStatus = "imtina";
+      note = card.rejectedReason || "İmtina edildi";
+    } else if (!allSettersDone) {
+      nextStatus = "natamam";
+    } else if (!card.matrixId) {
+      nextStatus = "aktiv";
     } else {
       nextStatus = "tesdiq_gozlenilir";
       if (!approval) triggerCardApprovalIfComplete(card.numericId);

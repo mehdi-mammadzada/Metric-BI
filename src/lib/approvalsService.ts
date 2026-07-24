@@ -24,7 +24,25 @@ const writeLocal = (key: string, value: unknown) => {
 
 const isSeedQueueRow = (row: any) => typeof row?.id === "string" && row.id.startsWith("ap-seed-");
 
+const statusRank = (status?: string) => status && status !== "pending" ? 1 : 0;
+
+const decisionTime = (row: any) => {
+  const decisionTimes = Object.values(row?.decisions || {})
+    .map((d: any) => Date.parse(d?.at || "") || 0);
+  return Math.max(
+    Date.parse(row?.updatedAt || row?.updated_at || "") || 0,
+    Date.parse(row?.createdAt || row?.created_at || "") || 0,
+    ...decisionTimes,
+  );
+};
+
 const newer = (a: any, b: any) => {
+  const ar = statusRank(a?.status);
+  const br = statusRank(b?.status);
+  if (ar !== br) return br > ar ? b : a;
+  const ad = decisionTime(a);
+  const bd = decisionTime(b);
+  if (ad !== bd) return bd > ad ? b : a;
   const at = Date.parse(a?.updatedAt || a?.updated_at || a?.createdAt || a?.created_at || "") || 0;
   const bt = Date.parse(b?.updatedAt || b?.updated_at || b?.createdAt || b?.created_at || "") || 0;
   return bt > at ? b : a;
@@ -95,7 +113,7 @@ export const hydrateApprovalsFromCloud = async (orgId: string): Promise<void> =>
       updatedAt: r.updated_at,
     }));
     const mergedQueue = mergeBy(localQueue, cloudQueue, row => row.id)
-      .sort((a, b) => (Date.parse(b.createdAt || "") || 0) - (Date.parse(a.createdAt || "") || 0));
+      .sort((a, b) => decisionTime(b) - decisionTime(a));
     writeLocal(QUEUE_KEY, mergedQueue);
   }
 
@@ -173,6 +191,8 @@ export const flushApprovalsToCloud = async () => {
         steps_chain: a.stepsChain ?? null,
         current_step: a.currentStep ?? null,
         created_by: a.createdBy ?? null,
+        created_at: a.createdAt ?? new Date().toISOString(),
+        updated_at: a.updatedAt ?? new Date().toISOString(),
       })),
       { onConflict: "organization_id,local_id" },
     ) : Promise.resolve(),

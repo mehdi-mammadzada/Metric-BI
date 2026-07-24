@@ -4,7 +4,7 @@
 // Limitlər təyin olunduqda status "completed" olur, əks halda "pending".
 
 import { useEffect, useState } from "react";
-import { getNodes as getCascadeNodes } from "@/lib/cascadeTreeStore";
+import { getNodes as getCascadeNodes, remainingOf } from "@/lib/cascadeTreeStore";
 import { getSharedKpiCards } from "@/lib/kpiCardStore";
 import { getEmployees } from "@/lib/orgStore";
 
@@ -59,6 +59,9 @@ export interface KpiSetEntry {
   weightMin?: number;
   weightMax?: number;
   cascadable?: boolean;
+  cascadeLimit?: number;
+  cascadeNodeId?: string;
+  defaultSliceValue?: number;
   updatedAt: number;
 }
 
@@ -375,7 +378,7 @@ export const getIncomingCascadeLoad = (
   try {
     const newestFirst = (a: any, b: any) => (Number(b.updatedAt || b.createdAt) || 0) - (Number(a.updatedAt || a.createdAt) || 0);
     const personNodes = getCascadeNodes()
-      .filter(n => n.assigneeName === assigneeName && (n.cascadable !== false) && (Number(n.limit) || 0) > 0)
+      .filter(n => n.assigneeName === assigneeName && (n.cascadable !== false) && remainingOf(n.id) > 0.0001)
       .sort(newestFirst);
     const exactNodes = personNodes.filter(n =>
       (!match?.cardName || n.cardName === match.cardName) &&
@@ -384,7 +387,7 @@ export const getIncomingCascadeLoad = (
     const pool = exactNodes.length > 0 ? exactNodes : personNodes;
     const treeNode = pool.find(n => n.parentId !== null) || pool.find(n => n.parentId === null);
     if (treeNode) {
-      return { value: Number(treeNode.limit) || 0, unit: treeNode.unit || "", cardName: treeNode.cardName, nodeId: treeNode.id };
+      return { value: remainingOf(treeNode.id), unit: treeNode.unit || "", cardName: treeNode.cardName, nodeId: treeNode.id };
     }
   } catch {}
 
