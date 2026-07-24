@@ -21,6 +21,8 @@ import {
   type OrgSlotFraction,
 } from "@/lib/orgStore";
 
+const ORG_LOGO_KEY = "kpi_org_logo_v1";
+
 type CreateEmployeeInput = Pick<OrgEmployee, "firstName" | "lastName" | "fin" | "phone" | "email"> & {
   fatherName?: string;
 };
@@ -76,12 +78,21 @@ const employeeFromRow = (row: any, map: IdMap): OrgEmployee => ({
 
 // ── HYDRATE ───────────────────────────────────────────────────────────────────
 export const hydrateOrgFromCloud = async (orgId: string): Promise<void> => {
-  const [empRes, structRes, posRes, slotRes] = await Promise.all([
+  const [empRes, structRes, posRes, slotRes, orgRes] = await Promise.all([
     supabase.from("org_employees").select("*").eq("organization_id", orgId),
     supabase.from("org_structures").select("*").eq("organization_id", orgId).order("sort_order"),
     supabase.from("org_positions").select("*").eq("organization_id", orgId).order("sort_order"),
     supabase.from("org_slots").select("*").eq("organization_id", orgId).order("sort_order"),
+    supabase.from("organizations").select("settings").eq("id", orgId).maybeSingle(),
   ]);
+
+  if (!orgRes.error) {
+    const settings = (orgRes.data?.settings || {}) as Record<string, unknown>;
+    const logo = typeof settings.logo === "string" ? settings.logo : null;
+    if (logo) localStorage.setItem(ORG_LOGO_KEY, logo);
+    else localStorage.removeItem(ORG_LOGO_KEY);
+    window.dispatchEvent(new Event("org-logo-updated"));
+  }
 
   // If cloud is empty for this org, seed it from the current local snapshot.
   const cloudEmpty =
@@ -861,6 +872,21 @@ export const createEmployeeInCloud = async (input: CreateEmployeeInput): Promise
   return employee;
 };
 
+export const updateOrganizationLogoInCloud = async (logo: string | null): Promise<void> => {
+  const orgId = currentOrgId;
+  if (!orgId) throw new Error("Aktiv təşkilat tapılmadı. Yenidən daxil olun.");
+  const { data } = await supabase.from("organizations").select("settings").eq("id", orgId).maybeSingle();
+  const settings = { ...((data?.settings || {}) as Record<string, unknown>) };
+  if (logo) settings.logo = logo;
+  else delete settings.logo;
+  const { error } = await supabase.from("organizations").update({ settings: settings as any }).eq("id", orgId);
+  if (error) throw new Error(error.message || "Logo database-ə yazılmadı.");
+  if (logo) localStorage.setItem(ORG_LOGO_KEY, logo);
+  else localStorage.removeItem(ORG_LOGO_KEY);
+  markLocalDbWrite();
+  window.dispatchEvent(new Event("org-logo-updated"));
+};
+
 const doFlush = async (orgId: string) => {
   const map = loadMap(orgId);
 
@@ -1029,6 +1055,7 @@ export const activateOrgSync = async (orgId: string, userId: string) => {
     .on("postgres_changes", { event: "*", schema: "public", table: "org_structures", filter: `organization_id=eq.${orgId}` }, scheduleRehydrate)
     .on("postgres_changes", { event: "*", schema: "public", table: "org_positions", filter: `organization_id=eq.${orgId}` }, scheduleRehydrate)
     .on("postgres_changes", { event: "*", schema: "public", table: "org_slots", filter: `organization_id=eq.${orgId}` }, scheduleRehydrate)
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "organizations", filter: `id=eq.${orgId}` }, scheduleRehydrate)
     .subscribe();
 
   // Fallback: refresh on window focus + every 15s so we recover from missed

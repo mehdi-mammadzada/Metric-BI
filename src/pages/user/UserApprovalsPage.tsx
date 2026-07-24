@@ -35,6 +35,7 @@ const findApprovalCard = (cards: ReturnType<typeof useSharedKpiCards>, kpiCardId
 
 const toApprovalRequest = (a: ApprovalItem, cards: ReturnType<typeof useSharedKpiCards>, meId: string | null): ApprovalRequest => {
   const card = findApprovalCard(cards, a.kpiCardId);
+  const isDeletion = String(a.matrixId || "").startsWith("deletion:");
   const chain = a.stepsChain && a.stepsChain.length > 0 ? a.stepsChain : [a.approverIds];
   const currentStep = a.currentStep ?? Math.max(0, chain.findIndex(step => step.some(id => a.approverIds.includes(id))));
   const myAliases = new Set(aliasesFor(meId));
@@ -61,7 +62,7 @@ const toApprovalRequest = (a: ApprovalItem, cards: ReturnType<typeof useSharedKp
     id: a.id,
     kpiCode: a.id.slice(0, 12).toUpperCase(),
     kpiName: card?.name || a.kpiName,
-    kpiType: "KPI təsdiq sorğusu",
+    kpiType: isDeletion ? "KPI silinmə sorğusu" : "KPI təsdiq sorğusu",
     createdDate: formatDate(a.createdAt),
     createdBy: empName(a.createdBy),
     kpiOwner: empName(card?.ownerId || a.createdBy),
@@ -70,7 +71,7 @@ const toApprovalRequest = (a: ApprovalItem, cards: ReturnType<typeof useSharedKp
     approvalChain,
     status: a.status,
     target: firstTarget ? `${firstTarget.name}${firstTarget.targetValue ? ` — ${firstTarget.targetValue}${firstTarget.unit ? ` ${firstTarget.unit}` : ""}` : ""}` : "—",
-    description: "KPI kartı təsdiqləmə matrisi üzrə yoxlanılır.",
+    description: isDeletion ? "KPI kartı silinmə matrisi üzrə yoxlanılır." : "KPI kartı təsdiqləmə matrisi üzrə yoxlanılır.",
     canAct: a.status === "pending" && currentDecision === "pending",
     actionApproverId,
   };

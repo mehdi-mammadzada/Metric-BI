@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import type { CreateKpiWizardDraft } from "@/components/kpi/CreateKpiWizard";
 
-export type SharedKpiStatus = "qaralama" | "natamam" | "tesdiq_gozlenilir" | "imtina" | "aktiv";
+export type SharedKpiStatus = "qaralama" | "natamam" | "tesdiq_gozlenilir" | "imtina" | "aktiv" | "legv_olundu";
 export type ExecutionStatus = "baslanmayib" | "icrada" | "tamamlandi" | "gecikme";
 
 export interface SharedKpiCard {
@@ -123,7 +123,7 @@ export const setKpiStatus = (id: string, status: SharedKpiStatus, actor: string,
   list[idx] = {
     ...list[idx],
     status,
-    rejectedReason: status === "imtina" ? note : undefined,
+    rejectedReason: status === "imtina" ? note : list[idx].rejectedReason,
     history: [...list[idx].history, { ts: new Date().toISOString(), actor, action: `status:${status}`, note }],
     updatedAt: new Date().toISOString(),
   };

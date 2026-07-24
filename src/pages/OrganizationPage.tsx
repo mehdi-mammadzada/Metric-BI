@@ -22,7 +22,7 @@ import {
   setStarPerson, findLeaderStructuresOf, isStructureTypeInUse, isPositionInUse,
   type OrgEmployee, type OrgStructure, type OrgPosition, type LeaderStructInfo,
 } from "@/lib/orgStore";
-import { addPositionInCloud, addSlotsInCloud, addStructuresInCloud, assignSlotInCloud, createEmployeeInCloud, persistOrgNow, removeSlotInCloud, renameStructureInCloud, setStarPersonInCloud } from "@/lib/orgService";
+import { addPositionInCloud, addSlotsInCloud, addStructuresInCloud, assignSlotInCloud, createEmployeeInCloud, persistOrgNow, removeSlotInCloud, renameStructureInCloud, setStarPersonInCloud, updateOrganizationLogoInCloud } from "@/lib/orgService";
 
 
 import {
@@ -87,11 +87,14 @@ const OrganizationPage = () => {
     const refresh = () => {
       setEmployeesState(getEmployees());
       setStructuresState(getStructures());
+      setOrgLogo(localStorage.getItem(ORG_LOGO_KEY));
     };
     window.addEventListener("org-updated", refresh);
+    window.addEventListener("org-logo-updated", refresh);
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener("org-updated", refresh);
+      window.removeEventListener("org-logo-updated", refresh);
       window.removeEventListener("storage", refresh);
     };
   }, []);
@@ -113,6 +116,7 @@ const OrganizationPage = () => {
       const url = reader.result as string;
       localStorage.setItem(ORG_LOGO_KEY, url);
       setOrgLogo(url);
+      void updateOrganizationLogoInCloud(url).catch(err => toast.error(err?.message || "Logo database-ə yazılmadı"));
       toast.success(orgLogo ? t("org.logo_toast_changed") : t("org.logo_toast_added"));
     };
     reader.readAsDataURL(file);

@@ -536,7 +536,7 @@ export type Database = {
         Row: {
           assignment: Json | null
           bonus: Json | null
-          card_local_id: number
+          card_local_id: string
           card_name: string
           created_at: string
           evaluation: Json | null
@@ -548,7 +548,7 @@ export type Database = {
         Insert: {
           assignment?: Json | null
           bonus?: Json | null
-          card_local_id: number
+          card_local_id: string
           card_name: string
           created_at?: string
           evaluation?: Json | null
@@ -560,7 +560,7 @@ export type Database = {
         Update: {
           assignment?: Json | null
           bonus?: Json | null
-          card_local_id?: number
+          card_local_id?: string
           card_name?: string
           created_at?: string
           evaluation?: Json | null
