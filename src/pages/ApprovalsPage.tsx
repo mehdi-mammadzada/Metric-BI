@@ -41,6 +41,7 @@ const ApprovalCard = ({
   const label = a.status === "pending" ? "Gözləyir" : a.status === "approved" ? "Təsdiqləndi" : "İmtina";
 
   const firstNote = Object.values(a.decisions).find(d => d?.note)?.note;
+  const requestType = String(a.matrixId || "").startsWith("deletion:") ? "Silinmə sorğusu" : "Təsdiq sorğusu";
 
   return (
     <div className={`rounded-xl border ${accent} p-4 shadow-sm hover:shadow-md transition-all`}>
@@ -48,7 +49,7 @@ const ApprovalCard = ({
         <div className="min-w-0">
           <h3 className="font-semibold text-foreground truncate">{a.kpiName}</h3>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
-            <User className="h-3 w-3" /> {empName(a.createdBy)}
+            <User className="h-3 w-3" /> {requestType} · {empName(a.createdBy)}
           </div>
         </div>
         <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full border ${badge} shrink-0`}>

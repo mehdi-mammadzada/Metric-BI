@@ -43,12 +43,12 @@ import { flushLifecycleToCloud } from "@/lib/lifecycleService";
 import CreateKpiWizard, { type CreateKpiWizardDraft } from "@/components/kpi/CreateKpiWizard";
 import EmployeesTreeView from "@/components/kpi/EmployeesTreeView";
 import { upsertStatus } from "@/lib/kpiCardStatusStore";
-import { buildSharedCardFromDraft, upsertSharedKpiCard, useSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
+import { buildSharedCardFromDraft, setKpiStatus, upsertSharedKpiCard, useSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
 import { withKartSuffix } from "@/lib/utils";
 import { WeightInput } from "@/components/kpi/WeightInput";
 import { findRootByGoal, createRoot } from "@/lib/cascadeTreeStore";
 import { getCurrentEmployeeId } from "@/lib/scope";
-import { getApprovals } from "@/lib/approvalsStore";
+import { enqueueApproval, getApprovals } from "@/lib/approvalsStore";
 
 const STATUS_LABELS = {
   qaralama: "Qaralama", natamam: "Natamam", tesdiq_gozlenilir: "Təsdiq gözlənilir",
@@ -1364,8 +1364,11 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     try {
       const mod = await import("@/lib/kpiCardStatusStore");
       await mod.upsertStatus({ card_id: card.id, status: "legv_olundu" });
+      const shared = sharedCards.find(s => s.numericId === card.id || s.id === `kpi-${card.id}` || s.id === String(card.id));
+      if (shared) setKpiStatus(shared.id, "legv_olundu", user?.name || "HR", deleteComment || "Birbaşa silindi");
       const next = await mod.fetchAllStatuses();
       setStatusMap(next);
+      void import("@/lib/kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
     } catch {}
     toast.success("KPI kartı ləğv olundu");
     setDeleteDialog(null);
@@ -1376,11 +1379,29 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       toast.error("Seçilmiş matrisdə təsdiqləyici təyin olunmayıb.");
       return;
     }
+    const normalize = (v: string) => String(v || "").split(" — ")[0].trim().toLowerCase().replace(/\s+/g, " ");
+    const approverIds = matrix.approver.type === "user"
+      ? getEmployees().filter(e => normalize(`${e.firstName} ${e.lastName}`) === normalize(matrix.approver?.name || "")).map(e => String(e.id))
+      : getEmployees().filter(e => normalize(e.positionName || "") === normalize(matrix.approver?.name || "")).map(e => String(e.id));
+    if (approverIds.length === 0) {
+      toast.error("Silinmə matrisindəki təsdiqləyici əməkdaş tapılmadı.");
+      return;
+    }
+    const shared = sharedCards.find(s => s.numericId === card.id || s.id === `kpi-${card.id}` || s.id === String(card.id));
+    enqueueApproval({
+      kpiCardId: shared?.id || `kpi-${card.id}`,
+      kpiName: card.name,
+      matrixId: `deletion:${matrix.id}`,
+      approverIds,
+      createdBy: getCurrentEmployeeId(user) || "HR",
+      stepsChain: [approverIds],
+    });
     addDeletionRequest({
       kpiId: card.id,
       kpiName: card.name,
       requestedBy: user?.name || "HR",
     });
+    void import("@/lib/approvalsService").then(m => m.flushApprovalsToCloud()).catch(() => undefined);
     toast.success(`Silinmə sorğusu göndərildi — "${matrix.name}" (${matrix.approver.name}).`);
     setDeleteDialog(null);
   };

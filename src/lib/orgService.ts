@@ -879,7 +879,7 @@ export const updateOrganizationLogoInCloud = async (logo: string | null): Promis
   const settings = { ...((data?.settings || {}) as Record<string, unknown>) };
   if (logo) settings.logo = logo;
   else delete settings.logo;
-  const { error } = await supabase.from("organizations").update({ settings }).eq("id", orgId);
+  const { error } = await supabase.from("organizations").update({ settings: settings as any }).eq("id", orgId);
   if (error) throw new Error(error.message || "Logo database-ə yazılmadı.");
   if (logo) localStorage.setItem(ORG_LOGO_KEY, logo);
   else localStorage.removeItem(ORG_LOGO_KEY);
