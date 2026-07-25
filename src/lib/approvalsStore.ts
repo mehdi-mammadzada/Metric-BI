@@ -212,13 +212,13 @@ export const decideApproval = (
   // Mirror the decision onto the shared KPI card itself.
   if (item.status === "approved") {
     const deletion = isDeletionApproval(item);
-    syncCardStatus(item, deletion ? "legv_olundu" : "aktiv", approverId, deletion ? "Silinmə sorğusu təsdiqləndi" : "Matris vasitəsilə təsdiq edildi");
+    syncCardStatus(item, deletion ? "silindi" : "aktiv", approverId, deletion ? "Silinmə sorğusu təsdiqləndi" : "Matris vasitəsilə təsdiq edildi");
     flushCardsSoon();
     pushNotification({
       toEmployeeId: item.createdBy,
       type: "approval_result",
       title: `${deletion ? "KPI silinməsi təsdiq olundu" : "KPI təsdiq olundu"}: ${item.kpiName}`,
-      body: deletion ? "Kart ləğv olundu statusuna keçdi." : "Kart aktiv statusa keçdi.",
+      body: deletion ? "Kart Silindi statusuna keçdi." : "Kart aktiv statusa keçdi.",
       link: "/kpi-kartlari",
     });
   } else if (item.status === "rejected") {

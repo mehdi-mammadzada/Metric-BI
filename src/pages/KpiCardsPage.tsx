@@ -53,7 +53,7 @@ import { enqueueApproval, getApprovals } from "@/lib/approvalsStore";
 const STATUS_LABELS = {
   qaralama: "Qaralama", natamam: "Natamam", tesdiq_gozlenilir: "Təsdiq gözlənilir",
   imtina: "İmtina", aktiv: "Aktiv", qiymetlendirme: "Qiymətləndirmə",
-  tamamlanib: "Tamamlanıb", legv_olundu: "Ləğv olundu",
+  tamamlanib: "Tamamlanıb", silindi: "Silindi", legv_olundu: "Silindi",
 } as const;
 const STATUS_STYLES: Record<string, string> = {
   qaralama: "bg-slate-200 text-slate-700 border-slate-300",
@@ -63,6 +63,7 @@ const STATUS_STYLES: Record<string, string> = {
   aktiv: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
   qiymetlendirme: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30",
   tamamlanib: "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30",
+  silindi: "bg-slate-800 text-slate-100 border-slate-900",
   legv_olundu: "bg-slate-800 text-slate-100 border-slate-900",
 };
 
@@ -1272,7 +1273,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     const STATUS_LBL: Record<string, string> = {
       qaralama: "Qaralama", natamam: "Natamam", tesdiq_gozlenilir: "Təsdiq gözlənilir",
       imtina: "İmtina", aktiv: "Aktiv", qiymetlendirme: "Qiymətləndirmə",
-      tamamlanib: "Tamamlanıb", legv_olundu: "Ləğv olundu",
+      tamamlanib: "Tamamlanıb", silindi: "Silindi", legv_olundu: "Silindi",
     };
     const matchesStatus = filterStatus === "Hamısı" || STATUS_LBL[st.status] === filterStatus;
     const kind = getAssignKindFor(c.id);
@@ -1363,17 +1364,17 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
 
   const performHardDelete = async (card: KpiCard) => {
-    // Kart tam silinmir — statusu "Ləğv olundu" olur və siyahıda qalır.
+    // Kart tam silinmir — statusu "Silindi" olur və siyahıda qalır.
     try {
       const mod = await import("@/lib/kpiCardStatusStore");
-      await mod.upsertStatus({ card_id: card.id, status: "legv_olundu" });
+      await mod.upsertStatus({ card_id: card.id, status: "silindi" });
       const shared = sharedCards.find(s => s.numericId === card.id || s.id === `kpi-${card.id}` || s.id === String(card.id));
-      if (shared) setKpiStatus(shared.id, "legv_olundu", user?.name || "HR", deleteComment || "Birbaşa silindi");
+      if (shared) setKpiStatus(shared.id, "silindi", user?.name || "HR", deleteComment || "Birbaşa silindi");
       const next = await mod.fetchAllStatuses();
       setStatusMap(next);
       void import("@/lib/kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
     } catch {}
-    toast.success("KPI kartı ləğv olundu");
+    toast.success("KPI kartı Silindi statusuna keçirildi");
     setDeleteDialog(null);
   };
 
@@ -1562,7 +1563,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 <option>Aktiv</option>
                 <option>Qiymətləndirmə</option>
                 <option>Tamamlanıb</option>
-                <option>Ləğv olundu</option>
+                <option>Silindi</option>
               </select>
             </div>
             <button onClick={() => { resetFilters(); setFilterAssignKind("Hamısı"); setFilterBulkKind("Hamısı"); }} className="px-4 py-2 text-sm rounded-lg border border-border bg-card hover:bg-secondary">Sıfırla</button>
@@ -1670,13 +1671,13 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                 <button
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    if (!confirm(`"${withKartSuffix(card.name)}" kartı tamamən ləğv olunsun? Bu əməliyyat "Ləğv olundu" statusuna keçirəcək.`)) return;
+                                    if (!confirm(`"${withKartSuffix(card.name)}" kartı tamamən silinsin? Bu əməliyyat "Silindi" statusuna keçirəcək.`)) return;
                                     setStatusMap(prev => ({
                                       ...prev,
                                       [card.id]: {
                                         ...(prev[card.id] || {}),
                                         card_id: card.id,
-                                        status: "legv_olundu",
+                                        status: "silindi",
                                         use_matrix: false,
                                         submitted_for_approval: false,
                                         rejected_by: null,
@@ -1686,12 +1687,12 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                       } as any,
                                     }));
                                     try {
-                                      await upsertStatus({ card_id: card.id, status: "legv_olundu" as any, use_matrix: false, submitted_for_approval: false, assignees: [] });
+                                      await upsertStatus({ card_id: card.id, status: "silindi" as any, use_matrix: false, submitted_for_approval: false, assignees: [] });
                                       const mod = await import("@/lib/kpiCardStatusStore");
                                       const next = await mod.fetchAllStatuses();
                                       setStatusMap(prev => ({ ...prev, ...next }));
                                     } catch {}
-                                    toast.success("Kart ləğv olundu");
+                                    toast.success("Kart Silindi statusuna keçirildi");
                                     try {
                                       const nmod = await import("@/lib/notificationsStore");
                                       const draft = cardDrafts[card.id];
@@ -2129,7 +2130,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               aktiv:           { title: card?.matrixId ? "Təsdiq tamamlandı" : "Təyin edənlər tamamlandı", empty: "Bu kart üçün tamamlanmış iştirakçı tapılmadı.", rows: completedSetterRows.length ? completedSetterRows : (st.assignees || []).map(a => ({ role: a.ok ? "Tamamladı" : "İcraçı", name: a.name, tone: "ok" })) },
               qiymetlendirme:  { title: "Qiymətləndirəcək şəxslər", empty: "Qiymətləndirici təyin edilməyib.", rows: evaluators.map(e => ({ ...e, tone: "wait" as const })) },
               tamamlanib:      { title: "Tamamlanıb — qiymətləndirənlər", empty: "—", rows: evaluators.map(e => ({ ...e, tone: "ok" as const })) },
-              legv_olundu:     { title: "Ləğv olunub", empty: "—", rows: [{ role: "Ləğv edən", name: card?.responsible || "—", tone: "err" }] },
+               silindi:         { title: "Silindi", empty: "—", rows: [{ role: "Silən", name: card?.responsible || "—", tone: "err" }] },
+               legv_olundu:     { title: "Silindi", empty: "—", rows: [{ role: "Silən", name: card?.responsible || "—", tone: "err" }] },
             };
 
             if (st.status === "tesdiq_gozlenilir" && cfg.tesdiq_gozlenilir.rows.length === 0) {

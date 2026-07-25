@@ -120,7 +120,7 @@ const SEED: DropdownCatalog[] = [
     "Günlük", "Həftəlik", "Aylıq", "Rüblük", "Yarımillik", "İllik",
   ]},
   { id: "kpi_statuses", name: "KPI Kartı Statusları", system: true, values: [
-    "Qaralama", "Natamam", "Təsdiq gözlənilir", "İmtina", "Aktiv", "Qiymətləndirmə", "Tamamlanıb", "Ləğv olundu",
+    "Qaralama", "Natamam", "Təsdiq gözlənilir", "İmtina", "Aktiv", "Qiymətləndirmə", "Tamamlanıb", "Silindi",
   ]},
   { id: "kpi_zones", name: "KPI Zonaları", system: true, values: [
     "Yaşıl Zona", "Sarı Zona", "Qırmızı Zona",
