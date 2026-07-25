@@ -24,11 +24,11 @@ import { getUploads, addUpload, type SalaryUpload } from "@/lib/salaryUploadsSto
 import { AdvancedFilter, evaluateAdvFilter, type AdvFilterState } from "@/components/common/AdvancedFilter";
 import type { DataTableColumn } from "@/components/common/DataTable";
 
-const YEARS = [2023, 2024, 2025, 2026];
+const YEARS = [2025, 2026];
 
 type ColKey =
   | "no" | "operator" | "firstName" | "lastName" | "fatherName"
-  | "monthPay" | "totalPaid" | "avgMonthly" | "pctCurrent" | "pct12m";
+  | "position" | "monthPay" | "totalPaid" | "avgMonthly" | "pctCurrent" | "pct12m";
 
 interface AggRow {
   employee: OrgEmployee;
