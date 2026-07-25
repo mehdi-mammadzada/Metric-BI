@@ -520,21 +520,26 @@ const SalaryPage = () => {
               </Popover>
               <AdvancedFilter columns={advCols} value={advFilter} onChange={setAdvFilter} />
             </div>
-            <ExportMenu
-              size="sm"
-              disabled={!filteredRows.length}
-              getData={() => {
-                const cols = visibleColumns;
-                return {
-                  title: `Əməkhaqqı ${appliedYear}-${appliedMonth}`,
-                  fileName: `emekhaqqi-${appliedYear}-${appliedMonth}`,
-                  headers: cols.map(c => c.label),
-                  rows: filteredRows.map((row, idx) =>
-                    cols.map(c => (c.key === "no" ? String(idx + 1) : getCellText(row, c.key)))
-                  ),
-                };
-              }}
-            />
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setYearExportOpen(true)} className="gap-2">
+                <Download className="w-4 h-4" /> İl üzrə export
+              </Button>
+              <ExportMenu
+                size="sm"
+                disabled={!filteredRows.length}
+                getData={() => {
+                  const cols = visibleColumns;
+                  return {
+                    title: `Əməkhaqqı ${appliedYear}-${appliedMonth}`,
+                    fileName: `emekhaqqi-${appliedYear}-${appliedMonth}`,
+                    headers: cols.map(c => c.label),
+                    rows: filteredRows.map((row, idx) =>
+                      cols.map(c => (c.key === "no" ? String(idx + 1) : getCellText(row, c.key)))
+                    ),
+                  };
+                }}
+              />
+            </div>
           </div>
 
           {/* Density controls */}
