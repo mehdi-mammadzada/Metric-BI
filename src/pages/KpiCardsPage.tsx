@@ -1354,7 +1354,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
   const handleDeleteCard = (card: KpiCard) => {
     const st = statusMap[card.id]?.status;
-    const isDraftLike = st === "qaralama" || st === "natamam" || card.approvalStatus === "pending";
+    const isDraftLike = st === "qaralama";
     setDeleteComment("");
     setDeleteDialog({ card, mode: isDraftLike ? "simple" : "choice" });
   };
