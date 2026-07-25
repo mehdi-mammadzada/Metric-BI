@@ -943,7 +943,7 @@ const AddSalaryDialog = ({ open, onClose, employees, onSaved }: AddSalaryDialogP
     if (!employeeId) { toast.error("Əməkdaş seçin"); return; }
     const emp = employees.find(e => e.id === Number(employeeId));
     if (!emp) return;
-    if (periods.some(p => !p.month || !p.year || p.salary < 0 || p.totalDays <= 0 || p.workedDays < 0)) {
+    if (periods.some(p => !p.month || !p.year || p.salary < 0)) {
       toast.error("Bütün dövr sahələrini düzgün doldurun");
       return;
     }
