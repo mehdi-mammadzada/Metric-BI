@@ -75,8 +75,8 @@ const SalaryPage = () => {
   const [defaultColWidth, setDefaultColWidth] = useState(150);
   const [colWidths, setColWidths] = useState<Record<string, number>>({});
   const [colOrder, setColOrder] = useState<ColKey[]>([
-    "no", "operator", "firstName", "lastName", "fatherName",
-    "monthPay", "totalPaid", "avgMonthly", "pctCurrent", "pct12m",
+    "no", "operator", "firstName", "lastName", "fatherName", "position",
+    "monthPay", "totalPaid",
   ]);
   const [page, setPage] = useState(1);
   const [dragCol, setDragCol] = useState<ColKey | null>(null);
