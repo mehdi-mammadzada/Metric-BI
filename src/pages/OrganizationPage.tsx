@@ -17,12 +17,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import {
   getEmployees, updateEmployee, toggleEmployeeActive,
-  getStructures, setStructures, addPosition, addSlot, assignSlot,
-  removePosition, removeSlot, removeStructure, canRemoveStructure, renameStructure, getAssignedEmployeeIds,
+  getStructures,
+  removePosition, removeStructure, canRemoveStructure, renameStructure, getAssignedEmployeeIds,
   setStarPerson, findLeaderStructuresOf, isStructureTypeInUse, isPositionInUse,
   type OrgEmployee, type OrgStructure, type OrgPosition, type LeaderStructInfo,
 } from "@/lib/orgStore";
-import { addStructuresInCloud, assignSlotInCloud, createEmployeeInCloud, renameStructureInCloud, saveOrgStructureSnapshotInCloud, setOrgStructureDraftSyncPaused, setStarPersonInCloud, updateOrganizationLogoInCloud } from "@/lib/orgService";
+import { addPositionInCloud, addSlotsInCloud, addStructuresInCloud, assignSlotInCloud, createEmployeeInCloud, persistOrgNow, removeSlotInCloud, renameStructureInCloud, setStarPersonInCloud, updateOrganizationLogoInCloud } from "@/lib/orgService";
 
 
 import {
@@ -728,7 +728,6 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
   const [isEditing, setIsEditing] = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const [editSnapshot, setEditSnapshot] = useState<OrgStructure[] | null>(null);
 
   // Modal hər dəfə açılanda default olaraq oxu rejimində açılır.
   useEffect(() => {
@@ -736,19 +735,18 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
       setIsEditing(false);
       setShowAddPos(false);
       setNewPosName("");
-      setEditSnapshot(null);
     }
   }, [node?.id]);
 
   const handleCreatePos = async () => {
     if (!node || !newPosName.trim()) return;
     try {
-      addPosition(node.id, newPosName.trim());
-      toast.success("Vəzifə əlavə edildi");
+      await addPositionInCloud(node.id, newPosName.trim());
+      toast.success("Vəzifə yaradıldı və database-də saxlandı");
       setNewPosName("");
       setShowAddPos(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Vəzifə əlavə edilmədi.");
+      toast.error(err instanceof Error ? err.message : "Vəzifə database-ə yazılmadı.");
     }
   };
 
@@ -759,28 +757,8 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
     return node.positions.filter(p => p.name.toLowerCase().includes(q));
   }, [node, search]);
 
-  const startEditMode = () => {
-    setEditSnapshot(JSON.parse(JSON.stringify(getStructures())));
-    setOrgStructureDraftSyncPaused(true);
-    setIsEditing(true);
-  };
-
-  const restoreDraftAndCloseEdit = () => {
-    if (editSnapshot) setStructures(editSnapshot);
-    setOrgStructureDraftSyncPaused(false);
-    setConfirmCancel(false);
-    setIsEditing(false);
-    setShowAddPos(false);
-    setEditSnapshot(null);
-  };
-
-  const closeModal = () => {
-    if (isEditing) restoreDraftAndCloseEdit();
-    onClose();
-  };
-
   return (
-    <Dialog open={!!node} onOpenChange={(o) => !o && closeModal()}>
+    <Dialog open={!!node} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -799,7 +777,7 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
           <div className="flex items-center gap-2">
             {!isEditing ? (
               <button
-                onClick={startEditMode}
+                onClick={() => setIsEditing(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground"
               >
                 <Pencil className="w-3.5 h-3.5" /> Redaktə et
@@ -876,15 +854,7 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
             <div className="flex gap-3 pt-2">
               <button onClick={() => setConfirmSave(false)} className="flex-1 py-2.5 text-sm rounded-lg border border-border bg-card">Xeyr</button>
               <button
-                onClick={async () => {
-                  try {
-                    await saveOrgStructureSnapshotInCloud();
-                    setOrgStructureDraftSyncPaused(false);
-                    setConfirmSave(false); setIsEditing(false); setEditSnapshot(null); toast.success("Dəyişikliklər yadda saxlandı");
-                  } catch (err) {
-                    toast.error(err instanceof Error ? err.message : "Dəyişikliklər database-ə yazılmadı.");
-                  }
-                }}
+                onClick={() => { setConfirmSave(false); setIsEditing(false); toast.success("Dəyişikliklər yadda saxlandı"); }}
                 className="flex-1 py-2.5 text-sm rounded-lg bg-primary text-primary-foreground font-medium"
               >Bəli</button>
             </div>
@@ -899,7 +869,7 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
             <div className="flex gap-3 pt-2">
               <button onClick={() => setConfirmCancel(false)} className="flex-1 py-2.5 text-sm rounded-lg border border-border bg-card">Xeyr</button>
               <button
-                onClick={restoreDraftAndCloseEdit}
+                onClick={() => { setConfirmCancel(false); setIsEditing(false); setShowAddPos(false); }}
                 className="flex-1 py-2.5 text-sm rounded-lg bg-destructive text-destructive-foreground font-medium"
               >Bəli</button>
             </div>
@@ -933,13 +903,13 @@ const PositionCard = ({ position, structureId, structureName }: { position: OrgP
   const handleAddSlots = async () => {
     const n = Math.max(1, Math.min(100, Number(slotCount) || 1));
     try {
-      addSlot(position.id, n, slotFraction);
+      await addSlotsInCloud(position.id, n, slotFraction);
       setShowAddSlot(false);
       setSlotCount(1);
       setSlotFraction(1);
       toast.success(n > 1 ? `${n} ştat əlavə edildi` : "Ştat əlavə edildi");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Ştat əlavə edilmədi.");
+      toast.error(err instanceof Error ? err.message : "Ştat database-ə yazılmadı.");
     }
   };
 
@@ -1090,8 +1060,7 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <button
-              disabled={readOnly}
-              className="w-full text-left px-3 py-2 text-sm border border-border rounded-lg bg-background hover:bg-secondary/30 flex items-center justify-between gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full text-left px-3 py-2 text-sm border border-border rounded-lg bg-background hover:bg-secondary/30 flex items-center justify-between gap-2"
             >
               <span className="truncate">
                 {current ? `${current.firstName} ${current.lastName}` : <span className="text-muted-foreground">Əməkdaş seç</span>}
@@ -1118,7 +1087,7 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
                   onClick={async () => {
                     setOpen(false);
                     try {
-                      assignSlot(slot.id, { employeeId: null });
+                      await assignSlotInCloud(slot.id, { employeeId: null });
                       toast.success("Təyinat ləğv edildi");
                     } catch (err) {
                       toast.error(err instanceof Error ? err.message : "Təyinat database-də ləğv edilmədi.");
@@ -1138,7 +1107,7 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
                   onClick={async () => {
                     setOpen(false);
                     try {
-                      assignSlot(slot.id, { employeeId: e.id });
+                      await assignSlotInCloud(slot.id, { employeeId: e.id });
                       toast.success("Əməkdaş təyin edildi");
                     } catch (err) {
                       toast.error(err instanceof Error ? err.message : "Əməkdaş təyinatı database-ə yazılmadı.");
@@ -1159,12 +1128,11 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
       </div>
       <Select
         value={String(slot.fraction ?? 1)}
-        disabled={readOnly}
         onValueChange={async (v) => {
           try {
-            assignSlot(slot.id, { fraction: Number(v) as 1 | 0.75 | 0.5 | 0.25 });
+            await assignSlotInCloud(slot.id, { fraction: Number(v) as 1 | 0.75 | 0.5 | 0.25 });
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Ştat vahidi dəyişmədi.");
+            toast.error(err instanceof Error ? err.message : "Ştat vahidi database-ə yazılmadı.");
           }
         }}
       >
@@ -1183,11 +1151,10 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
         disabled={readOnly}
         onChange={e => setSalaryDraft(e.target.value)}
         onBlur={async () => {
-          if (readOnly) return;
           try {
-            assignSlot(slot.id, { salary: salaryDraft ? Number(salaryDraft) : null });
+            await assignSlotInCloud(slot.id, { salary: salaryDraft ? Number(salaryDraft) : null });
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Maaş dəyişmədi.");
+            toast.error(err instanceof Error ? err.message : "Maaş database-ə yazılmadı.");
           }
         }}
         className="w-32 px-2 py-1.5 text-sm border border-border rounded-lg bg-background disabled:opacity-60 disabled:cursor-not-allowed"
@@ -1196,10 +1163,10 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
         <button
           onClick={async () => {
             try {
-              removeSlot(slot.id);
+              await removeSlotInCloud(slot.id);
               toast.success("Ştat silindi");
             } catch (err) {
-              toast.error(err instanceof Error ? err.message : "Ştat silinmədi.");
+              toast.error(err instanceof Error ? err.message : "Ştat database-dən silinmədi.");
             }
           }}
           className="p-1 rounded hover:bg-destructive/10"

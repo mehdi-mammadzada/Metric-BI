@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,8 +23,6 @@ interface Props {
   className?: string;
   /** Successdən sonra çağırılır */
   onExported?: (format: "excel" | "pdf") => void;
-  /** Əlavə export əməliyyatları */
-  extraItems?: Array<{ label: string; icon?: ReactNode; onClick: () => void; disabled?: boolean }>;
 }
 
 const ExportMenu = ({
@@ -36,7 +33,6 @@ const ExportMenu = ({
   iconOnly,
   className = "",
   onExported,
-  extraItems = [],
 }: Props) => {
   const handle = (format: "excel" | "pdf") => {
     try {
@@ -82,17 +78,6 @@ const ExportMenu = ({
           <FileText className="w-4 h-4 text-red-600" />
           <span>PDF (.pdf)</span>
         </DropdownMenuItem>
-        {extraItems.map((item) => (
-          <DropdownMenuItem
-            key={item.label}
-            disabled={item.disabled}
-            onClick={item.onClick}
-            className="gap-2 cursor-pointer"
-          >
-            {item.icon}
-            <span>{item.label}</span>
-          </DropdownMenuItem>
-        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
