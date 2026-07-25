@@ -22,7 +22,7 @@ import {
   setStarPerson, findLeaderStructuresOf, isStructureTypeInUse, isPositionInUse,
   type OrgEmployee, type OrgStructure, type OrgPosition, type LeaderStructInfo,
 } from "@/lib/orgStore";
-import { addStructuresInCloud, assignSlotInCloud, createEmployeeInCloud, renameStructureInCloud, saveOrgStructureSnapshotInCloud, setStarPersonInCloud, updateOrganizationLogoInCloud } from "@/lib/orgService";
+import { addStructuresInCloud, assignSlotInCloud, createEmployeeInCloud, renameStructureInCloud, saveOrgStructureSnapshotInCloud, setOrgStructureDraftSyncPaused, setStarPersonInCloud, updateOrganizationLogoInCloud } from "@/lib/orgService";
 
 
 import {
@@ -759,8 +759,28 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
     return node.positions.filter(p => p.name.toLowerCase().includes(q));
   }, [node, search]);
 
+  const startEditMode = () => {
+    setEditSnapshot(JSON.parse(JSON.stringify(getStructures())));
+    setOrgStructureDraftSyncPaused(true);
+    setIsEditing(true);
+  };
+
+  const restoreDraftAndCloseEdit = () => {
+    if (editSnapshot) setStructures(editSnapshot);
+    setOrgStructureDraftSyncPaused(false);
+    setConfirmCancel(false);
+    setIsEditing(false);
+    setShowAddPos(false);
+    setEditSnapshot(null);
+  };
+
+  const closeModal = () => {
+    if (isEditing) restoreDraftAndCloseEdit();
+    onClose();
+  };
+
   return (
-    <Dialog open={!!node} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={!!node} onOpenChange={(o) => !o && closeModal()}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -779,7 +799,7 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
           <div className="flex items-center gap-2">
             {!isEditing ? (
               <button
-                onClick={() => { setEditSnapshot(JSON.parse(JSON.stringify(getStructures()))); setIsEditing(true); }}
+                onClick={startEditMode}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground"
               >
                 <Pencil className="w-3.5 h-3.5" /> Redaktə et
@@ -859,6 +879,7 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
                 onClick={async () => {
                   try {
                     await saveOrgStructureSnapshotInCloud();
+                    setOrgStructureDraftSyncPaused(false);
                     setConfirmSave(false); setIsEditing(false); setEditSnapshot(null); toast.success("Dəyişikliklər yadda saxlandı");
                   } catch (err) {
                     toast.error(err instanceof Error ? err.message : "Dəyişikliklər database-ə yazılmadı.");
@@ -878,7 +899,7 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
             <div className="flex gap-3 pt-2">
               <button onClick={() => setConfirmCancel(false)} className="flex-1 py-2.5 text-sm rounded-lg border border-border bg-card">Xeyr</button>
               <button
-                onClick={() => { if (editSnapshot) setStructures(editSnapshot); setConfirmCancel(false); setIsEditing(false); setShowAddPos(false); setEditSnapshot(null); }}
+                onClick={restoreDraftAndCloseEdit}
                 className="flex-1 py-2.5 text-sm rounded-lg bg-destructive text-destructive-foreground font-medium"
               >Bəli</button>
             </div>
