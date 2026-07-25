@@ -887,6 +887,70 @@ export const updateOrganizationLogoInCloud = async (logo: string | null): Promis
   window.dispatchEvent(new Event("org-logo-updated"));
 };
 
+export const saveOrgStructureSnapshotInCloud = async (): Promise<void> => {
+  const orgId = requireActiveOrg();
+  const map = loadMap(orgId);
+  const structures = getStructures();
+
+  await supabase.from("org_slots").delete().eq("organization_id", orgId);
+  await supabase.from("org_positions").delete().eq("organization_id", orgId);
+  await supabase.from("org_structures").delete().eq("organization_id", orgId);
+
+  const insertStructRec = async (nodes: OrgStructure[], parentUuid: string | null) => {
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const { data: structRow, error: structError } = await supabase.from("org_structures").insert({
+        organization_id: orgId,
+        parent_id: parentUuid,
+        type: node.type,
+        name: node.name,
+        sort_order: i,
+      }).select("id").single();
+      if (structError || !structRow) throw new Error(structError?.message || "Struktur database-ə yazılmadı.");
+      map.toUuid[node.id] = structRow.id;
+      map.toNum[structRow.id] = node.id;
+
+      for (let pi = 0; pi < node.positions.length; pi++) {
+        const position = node.positions[pi];
+        const { data: posRow, error: posError } = await supabase.from("org_positions").insert({
+          organization_id: orgId,
+          structure_id: structRow.id,
+          name: position.name,
+          sort_order: pi,
+        }).select("id").single();
+        if (posError || !posRow) throw new Error(posError?.message || "Vəzifə database-ə yazılmadı.");
+        map.toUuid[position.id] = posRow.id;
+        map.toNum[posRow.id] = position.id;
+
+        if (position.slots.length) {
+          const { data: slotRows, error: slotError } = await supabase.from("org_slots").insert(position.slots.map((slot, si) => ({
+            organization_id: orgId,
+            position_id: posRow.id,
+            employee_id: slot.employeeId != null ? uuidFor(map, slot.employeeId) ?? null : null,
+            salary: slot.salary,
+            fraction: slot.fraction ?? 1,
+            sort_order: si,
+          }))).select("id");
+          if (slotError || !slotRows) throw new Error(slotError?.message || "Ştat database-ə yazılmadı.");
+          slotRows.forEach((row, si) => {
+            const slotId = position.slots[si]?.id;
+            if (slotId == null) return;
+            map.toUuid[slotId] = row.id;
+            map.toNum[row.id] = slotId;
+          });
+        }
+      }
+
+      await insertStructRec(node.children, structRow.id);
+    }
+  };
+
+  await insertStructRec(structures, null);
+  saveMap(orgId, map);
+  await syncEmployeeAssignmentRows(orgId, getEmployees().map(e => e.id));
+  markLocalDbWrite();
+};
+
 const doFlush = async (orgId: string) => {
   const map = loadMap(orgId);
 
