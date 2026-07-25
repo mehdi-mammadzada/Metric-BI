@@ -762,6 +762,68 @@ const SalaryPage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* İl üzrə export dialog */}
+      <Dialog open={yearExportOpen} onOpenChange={setYearExportOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Download className="w-5 h-5 text-primary" /> İl üzrə export
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-muted-foreground">İl</label>
+              <Select value={yearExportYear} onValueChange={setYearExportYear}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="İl seçin" /></SelectTrigger>
+                <SelectContent>
+                  {YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs text-muted-foreground">Aylar</label>
+                <div className="flex items-center gap-3 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setYearExportMonths(new Set(MONTHS))}
+                    className="text-primary hover:underline"
+                  >Hamısı</button>
+                  <button
+                    type="button"
+                    onClick={() => setYearExportMonths(new Set())}
+                    className="text-muted-foreground hover:underline"
+                  >Heç biri</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {MONTHS.map(m => (
+                  <label key={m} className="flex items-center gap-2 px-2 py-1.5 rounded border border-border hover:bg-secondary/40 cursor-pointer text-sm">
+                    <Checkbox
+                      checked={yearExportMonths.has(m)}
+                      onCheckedChange={(v) => {
+                        setYearExportMonths(prev => {
+                          const next = new Set(prev);
+                          if (v) next.add(m); else next.delete(m);
+                          return next;
+                        });
+                      }}
+                    />
+                    <span>{m}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setYearExportOpen(false)}>Ləğv et</Button>
+            <Button onClick={handleYearExport} disabled={yearExportMonths.size === 0}>Export</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+
 
 
       <AddSalaryDialog
