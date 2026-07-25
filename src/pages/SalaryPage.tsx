@@ -81,6 +81,9 @@ const SalaryPage = () => {
   const [page, setPage] = useState(1);
   const [dragCol, setDragCol] = useState<ColKey | null>(null);
   const [advFilter, setAdvFilter] = useState<AdvFilterState>({ logic: "AND", rows: [] });
+  const [yearExportOpen, setYearExportOpen] = useState(false);
+  const [yearExportYear, setYearExportYear] = useState<string>(String(new Date().getFullYear()));
+  const [yearExportMonths, setYearExportMonths] = useState<Set<Month>>(new Set(MONTHS));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
