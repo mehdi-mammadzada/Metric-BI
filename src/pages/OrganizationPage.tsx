@@ -984,6 +984,7 @@ const PositionCard = ({ position, structureId, structureName }: { position: OrgP
 interface SlotRowProps { slot: { id: number; employeeId: number | null; salary: number | null; fraction?: 1 | 0.75 | 0.5 | 0.25 }; index: number; }
 
 const SlotRow = ({ slot, index }: SlotRowProps) => {
+  const { readOnly } = useContext(StaffEditCtx);
   const [employees, setEmployees] = useState<OrgEmployee[]>(() => getEmployees());
   const [salaryDraft, setSalaryDraft] = useState(slot.salary != null ? String(slot.salary) : "");
   useEffect(() => {
