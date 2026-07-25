@@ -349,6 +349,46 @@ const SalaryPage = () => {
     setDragCol(null);
   };
 
+  // İl üzrə export — seçilmiş ilin seçilmiş ayları üçün əməkdaş × ay matris cədvəli
+  const handleYearExport = () => {
+    const yr = Number(yearExportYear);
+    const selectedMonths = MONTHS.filter(m => yearExportMonths.has(m));
+    if (!yr || selectedMonths.length === 0) {
+      toast.error("İl və ən az bir ay seçin");
+      return;
+    }
+    // Aggregate all periods per employee
+    const byEmp = new Map<number, SalaryPeriod[]>();
+    for (const r of records) {
+      const arr = byEmp.get(r.employeeId) ?? [];
+      arr.push(...r.periods);
+      byEmp.set(r.employeeId, arr);
+    }
+    const headers = ["№", "Ad", "Soyad", "Ata adı", "Vəzifə", ...selectedMonths, "Cəmi"];
+    const rowsOut: (string | number)[][] = [];
+    let idx = 1;
+    for (const emp of employees) {
+      const periods = byEmp.get(emp.id) ?? [];
+      const monthVals = selectedMonths.map(m => {
+        const p = periods.find(pp => pp.year === yr && pp.month === m);
+        return p ? computePay(p) : 0;
+      });
+      const total = monthVals.reduce((s, v) => s + v, 0);
+      if (total === 0) return; // skip employees with no data for the selection
+      rowsOut.push([idx++, emp.firstName ?? "", emp.lastName ?? "", emp.fatherName ?? "-", emp.positionName ?? "", ...monthVals, total]);
+    }
+    if (rowsOut.length === 0) {
+      toast.error("Seçilmiş dövr üzrə məlumat yoxdur");
+      return;
+    }
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rowsOut]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `${yr}`);
+    XLSX.writeFile(wb, `emekhaqqi-${yr}.xlsx`);
+    toast.success("Export tamamlandı");
+    setYearExportOpen(false);
+  };
+
 
   return (
     <div className="min-h-screen">
