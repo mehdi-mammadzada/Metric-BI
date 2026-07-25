@@ -1044,26 +1044,6 @@ const AddSalaryDialog = ({ open, onClose, employees, onSaved }: AddSalaryDialogP
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-muted-foreground">Ümumi gün sayı</label>
-                      <Input
-                        type="number"
-                        value={p.totalDays}
-                        onChange={(e) => updatePeriod(p._key, { totalDays: Number(e.target.value) || 0 })}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">Gün sayı</label>
-                      <Input
-                        type="number"
-                        value={p.workedDays}
-                        onChange={(e) => updatePeriod(p._key, { workedDays: Number(e.target.value) || 0 })}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
                 </>
               )}
             </div>
