@@ -1141,9 +1141,9 @@ const NAME_VALID_RE = new RegExp(`^[${NAME_LETTERS}\\-]+(?: [${NAME_LETTERS}\\-]
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const sanitizeName = (v: string) => v.replace(NAME_CHAR_RE, "").replace(/\s{2,}/g, " ").replace(/^\s+/, "");
-const validateName = (v: string, label: string): string | null => {
+const validateName = (v: string, label: string, required = true): string | null => {
   const t = v.trim();
-  if (!t) return `${label} daxil edin.`;
+  if (!t) return required ? `${label} daxil edin.` : null;
   if (t.length < 2) return `${label} minimum 2 simvol olmalıdır.`;
   if (t.length > 50) return `${label} maksimum 50 simvol olmalıdır.`;
   if (!NAME_VALID_RE.test(t)) return `${label} yalnız hərflərdən və defis (-) işarəsindən ibarət olmalıdır.`;
@@ -1156,6 +1156,14 @@ const validateFin = (v: string): string | null => {
   if (!v) return "FİN daxil edin.";
   if (v.length !== 7) return "FİN 7 simvoldan ibarət olmalıdır.";
   if (!/^[A-HJ-NP-Z0-9]{7}$/.test(v)) return "FİN yalnız rəqəmlər və hərflərdən (I, O istisna) ibarət olmalıdır.";
+  return null;
+};
+
+// Xarici vətəndaş üçün "Digər" identifikatoru — dəqiq 10 simvol
+const sanitizeOther = (v: string) => v.replace(/\s+/g, "").slice(0, 10);
+const validateOther = (v: string): string | null => {
+  if (!v) return "Digər sahəsi daxil edin.";
+  if (v.length !== 10) return "Digər sahəsi dəqiq 10 simvoldan ibarət olmalıdır.";
   return null;
 };
 
