@@ -24,11 +24,11 @@ import { getUploads, addUpload, type SalaryUpload } from "@/lib/salaryUploadsSto
 import { AdvancedFilter, evaluateAdvFilter, type AdvFilterState } from "@/components/common/AdvancedFilter";
 import type { DataTableColumn } from "@/components/common/DataTable";
 
-const YEARS = [2025, 2026];
+const YEARS = [2023, 2024, 2025, 2026];
 
 type ColKey =
   | "no" | "operator" | "firstName" | "lastName" | "fatherName"
-  | "position" | "monthPay" | "totalPaid" | "avgMonthly" | "pctCurrent" | "pct12m";
+  | "monthPay" | "totalPaid" | "avgMonthly" | "pctCurrent" | "pct12m";
 
 interface AggRow {
   employee: OrgEmployee;
@@ -75,15 +75,12 @@ const SalaryPage = () => {
   const [defaultColWidth, setDefaultColWidth] = useState(150);
   const [colWidths, setColWidths] = useState<Record<string, number>>({});
   const [colOrder, setColOrder] = useState<ColKey[]>([
-    "no", "operator", "firstName", "lastName", "fatherName", "position",
-    "monthPay", "totalPaid",
+    "no", "operator", "firstName", "lastName", "fatherName",
+    "monthPay", "totalPaid", "avgMonthly", "pctCurrent", "pct12m",
   ]);
   const [page, setPage] = useState(1);
   const [dragCol, setDragCol] = useState<ColKey | null>(null);
   const [advFilter, setAdvFilter] = useState<AdvFilterState>({ logic: "AND", rows: [] });
-  const [yearExportOpen, setYearExportOpen] = useState(false);
-  const [yearExportYear, setYearExportYear] = useState<string>(String(new Date().getFullYear()));
-  const [yearExportMonths, setYearExportMonths] = useState<Set<Month>>(new Set(MONTHS));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -106,16 +103,17 @@ const SalaryPage = () => {
     { key: "firstName", label: "Ad", searchable: true },
     { key: "lastName", label: "Soyad", searchable: true },
     { key: "fatherName", label: "Ata adı", searchable: true },
-    { key: "position", label: "Vəzifə", searchable: true },
     { key: "monthPay", label: appliedMonth ?? "Ay", searchable: true },
     { key: "totalPaid", label: "Cəmi ödənilmiş (AZN)", searchable: true },
+    { key: "avgMonthly", label: "Orta aylıq əmək haqqı", searchable: true },
+    { key: "pctCurrent", label: "Cari ay üçün orta (%)", searchable: true },
+    { key: "pct12m", label: "Cari ay üçün orta 12 ay (%)", searchable: true },
   ], [appliedMonth]);
 
   const [visibleCols, setVisibleCols] = useState<Record<ColKey, boolean>>(
     () => ({
       no: true, operator: true, firstName: true, lastName: true, fatherName: true,
-      position: true, monthPay: true, totalPaid: true,
-      avgMonthly: false, pctCurrent: false, pct12m: false,
+      monthPay: true, totalPaid: true, avgMonthly: true, pctCurrent: true, pct12m: true,
     })
   );
 
@@ -349,46 +347,6 @@ const SalaryPage = () => {
     setDragCol(null);
   };
 
-  // İl üzrə export — seçilmiş ilin seçilmiş ayları üçün əməkdaş × ay matris cədvəli
-  const handleYearExport = () => {
-    const yr = Number(yearExportYear);
-    const selectedMonths = MONTHS.filter(m => yearExportMonths.has(m));
-    if (!yr || selectedMonths.length === 0) {
-      toast.error("İl və ən az bir ay seçin");
-      return;
-    }
-    // Aggregate all periods per employee
-    const byEmp = new Map<number, SalaryPeriod[]>();
-    for (const r of records) {
-      const arr = byEmp.get(r.employeeId) ?? [];
-      arr.push(...r.periods);
-      byEmp.set(r.employeeId, arr);
-    }
-    const headers = ["№", "Ad", "Soyad", "Ata adı", "Vəzifə", ...selectedMonths, "Cəmi"];
-    const rowsOut: (string | number)[][] = [];
-    let idx = 1;
-    for (const emp of employees) {
-      const periods = byEmp.get(emp.id) ?? [];
-      const monthVals = selectedMonths.map(m => {
-        const p = periods.find(pp => pp.year === yr && pp.month === m);
-        return p ? computePay(p) : 0;
-      });
-      const total = monthVals.reduce((s, v) => s + v, 0);
-      if (total === 0) continue; // skip employees with no data for the selection
-      rowsOut.push([idx++, emp.firstName ?? "", emp.lastName ?? "", emp.fatherName ?? "-", emp.positionName ?? "", ...monthVals, total]);
-    }
-    if (rowsOut.length === 0) {
-      toast.error("Seçilmiş dövr üzrə məlumat yoxdur");
-      return;
-    }
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...rowsOut]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `${yr}`);
-    XLSX.writeFile(wb, `emekhaqqi-${yr}.xlsx`);
-    toast.success("Export tamamlandı");
-    setYearExportOpen(false);
-  };
-
 
   return (
     <div className="min-h-screen">
@@ -520,26 +478,21 @@ const SalaryPage = () => {
               </Popover>
               <AdvancedFilter columns={advCols} value={advFilter} onChange={setAdvFilter} />
             </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setYearExportOpen(true)} className="gap-2">
-                <Download className="w-4 h-4" /> İl üzrə export
-              </Button>
-              <ExportMenu
-                size="sm"
-                disabled={!filteredRows.length}
-                getData={() => {
-                  const cols = visibleColumns;
-                  return {
-                    title: `Əməkhaqqı ${appliedYear}-${appliedMonth}`,
-                    fileName: `emekhaqqi-${appliedYear}-${appliedMonth}`,
-                    headers: cols.map(c => c.label),
-                    rows: filteredRows.map((row, idx) =>
-                      cols.map(c => (c.key === "no" ? String(idx + 1) : getCellText(row, c.key)))
-                    ),
-                  };
-                }}
-              />
-            </div>
+            <ExportMenu
+              size="sm"
+              disabled={!filteredRows.length}
+              getData={() => {
+                const cols = visibleColumns;
+                return {
+                  title: `Əməkhaqqı ${appliedYear}-${appliedMonth}`,
+                  fileName: `emekhaqqi-${appliedYear}-${appliedMonth}`,
+                  headers: cols.map(c => c.label),
+                  rows: filteredRows.map((row, idx) =>
+                    cols.map(c => (c.key === "no" ? String(idx + 1) : getCellText(row, c.key)))
+                  ),
+                };
+              }}
+            />
           </div>
 
           {/* Density controls */}
@@ -762,68 +715,6 @@ const SalaryPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* İl üzrə export dialog */}
-      <Dialog open={yearExportOpen} onOpenChange={setYearExportOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Download className="w-5 h-5 text-primary" /> İl üzrə export
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-muted-foreground">İl</label>
-              <Select value={yearExportYear} onValueChange={setYearExportYear}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="İl seçin" /></SelectTrigger>
-                <SelectContent>
-                  {YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs text-muted-foreground">Aylar</label>
-                <div className="flex items-center gap-3 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setYearExportMonths(new Set(MONTHS))}
-                    className="text-primary hover:underline"
-                  >Hamısı</button>
-                  <button
-                    type="button"
-                    onClick={() => setYearExportMonths(new Set())}
-                    className="text-muted-foreground hover:underline"
-                  >Heç biri</button>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {MONTHS.map(m => (
-                  <label key={m} className="flex items-center gap-2 px-2 py-1.5 rounded border border-border hover:bg-secondary/40 cursor-pointer text-sm">
-                    <Checkbox
-                      checked={yearExportMonths.has(m)}
-                      onCheckedChange={(v) => {
-                        setYearExportMonths(prev => {
-                          const next = new Set(prev);
-                          if (v) next.add(m); else next.delete(m);
-                          return next;
-                        });
-                      }}
-                    />
-                    <span>{m}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setYearExportOpen(false)}>Ləğv et</Button>
-            <Button onClick={handleYearExport} disabled={yearExportMonths.size === 0}>Export</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-
-
 
 
       <AddSalaryDialog
@@ -959,7 +850,6 @@ const getCellText = (row: AggRow, key: ColKey): string => {
     case "firstName": return row.employee.firstName ?? "";
     case "lastName": return row.employee.lastName ?? "";
     case "fatherName": return row.employee.fatherName ?? "";
-    case "position": return row.employee.positionName ?? "";
     case "monthPay": return String(row.monthPay);
     case "totalPaid": return String(row.totalPaid);
     case "avgMonthly": return String(row.avgMonthly);
@@ -974,7 +864,6 @@ const getCellDisplay = (row: AggRow, key: ColKey) => {
     case "firstName": return row.employee.firstName ?? "—";
     case "lastName": return row.employee.lastName ?? "—";
     case "fatherName": return row.employee.fatherName ?? "—";
-    case "position": return row.employee.positionName ?? "—";
     case "monthPay": return row.monthPay.toLocaleString();
     case "totalPaid": return row.totalPaid.toLocaleString();
     case "avgMonthly": return row.avgMonthly.toLocaleString();
@@ -1016,8 +905,8 @@ const blankPeriod = (): Omit<SalaryPeriod, "id"> => ({
   month: "Yanvar",
   year: new Date().getFullYear(),
   salary: 0,
-  totalDays: 22,
-  workedDays: 22,
+  totalDays: 30,
+  workedDays: 0,
 });
 
 const AddSalaryDialog = ({ open, onClose, employees, onSaved }: AddSalaryDialogProps) => {
@@ -1053,7 +942,7 @@ const AddSalaryDialog = ({ open, onClose, employees, onSaved }: AddSalaryDialogP
     if (!employeeId) { toast.error("Əməkdaş seçin"); return; }
     const emp = employees.find(e => e.id === Number(employeeId));
     if (!emp) return;
-    if (periods.some(p => !p.month || !p.year || p.salary < 0)) {
+    if (periods.some(p => !p.month || !p.year || p.salary < 0 || p.totalDays <= 0 || p.workedDays < 0)) {
       toast.error("Bütün dövr sahələrini düzgün doldurun");
       return;
     }
@@ -1150,6 +1039,26 @@ const AddSalaryDialog = ({ open, onClose, employees, onSaved }: AddSalaryDialogP
                         type="number"
                         value={p.salary}
                         onChange={(e) => updatePeriod(p._key, { salary: Number(e.target.value) || 0 })}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Ümumi gün sayı</label>
+                      <Input
+                        type="number"
+                        value={p.totalDays}
+                        onChange={(e) => updatePeriod(p._key, { totalDays: Number(e.target.value) || 0 })}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Gün sayı</label>
+                      <Input
+                        type="number"
+                        value={p.workedDays}
+                        onChange={(e) => updatePeriod(p._key, { workedDays: Number(e.target.value) || 0 })}
                         className="mt-1"
                       />
                     </div>
