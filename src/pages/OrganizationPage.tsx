@@ -1252,9 +1252,11 @@ const EmployeesTab = () => {
   const [creatingEmployee, setCreatingEmployee] = useState(false);
   const [showChrImport, setShowChrImport] = useState(false);
   const [form, setForm] = useState({ firstName: "", lastName: "", fatherName: "", fin: "", phone: "", email: "" });
+  const [citizenship, setCitizenship] = useState<"az" | "foreign">("az");
 
   const [editing, setEditing] = useState<OrgEmployee | null>(null);
   const [editForm, setEditForm] = useState({ firstName: "", lastName: "", fatherName: "", fin: "", phone: "", email: "" });
+
 
   const [otpDialog, setOtpDialog] = useState<{ user: OrgEmployee; code: string } | null>(null);
   const [deactivateDialog, setDeactivateDialog] = useState<{ name: string; reasons: import("@/lib/employeeDeactivation").DeactivationReason[] } | null>(null);
