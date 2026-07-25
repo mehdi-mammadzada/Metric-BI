@@ -103,17 +103,16 @@ const SalaryPage = () => {
     { key: "firstName", label: "Ad", searchable: true },
     { key: "lastName", label: "Soyad", searchable: true },
     { key: "fatherName", label: "Ata adı", searchable: true },
+    { key: "position", label: "Vəzifə", searchable: true },
     { key: "monthPay", label: appliedMonth ?? "Ay", searchable: true },
     { key: "totalPaid", label: "Cəmi ödənilmiş (AZN)", searchable: true },
-    { key: "avgMonthly", label: "Orta aylıq əmək haqqı", searchable: true },
-    { key: "pctCurrent", label: "Cari ay üçün orta (%)", searchable: true },
-    { key: "pct12m", label: "Cari ay üçün orta 12 ay (%)", searchable: true },
   ], [appliedMonth]);
 
   const [visibleCols, setVisibleCols] = useState<Record<ColKey, boolean>>(
     () => ({
       no: true, operator: true, firstName: true, lastName: true, fatherName: true,
-      monthPay: true, totalPaid: true, avgMonthly: true, pctCurrent: true, pct12m: true,
+      position: true, monthPay: true, totalPaid: true,
+      avgMonthly: false, pctCurrent: false, pct12m: false,
     })
   );
 
