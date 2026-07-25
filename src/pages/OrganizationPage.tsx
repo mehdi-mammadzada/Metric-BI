@@ -889,6 +889,7 @@ const FRACTION_OPTIONS: { value: 1 | 0.75 | 0.5 | 0.25; label: string }[] = [
 ];
 
 const PositionCard = ({ position, structureId, structureName }: { position: OrgPosition; structureId: number; structureName: string }) => {
+  const { readOnly } = useContext(StaffEditCtx);
   const [showAddSlot, setShowAddSlot] = useState(false);
   const [slotCount, setSlotCount] = useState(1);
   const [slotFraction, setSlotFraction] = useState<1 | 0.75 | 0.5 | 0.25>(1);
@@ -918,15 +919,19 @@ const PositionCard = ({ position, structureId, structureName }: { position: OrgP
         <Briefcase className="w-4 h-4 text-amber-600" />
         <span className="font-medium text-foreground flex-1">{position.name}</span>
         <span className="text-xs text-muted-foreground">{position.slots.length} ştat</span>
-        <button
-          onClick={() => setShowAddSlot(true)}
-          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-        >
-          <Plus className="w-3 h-3" /> Ştat əlavə et
-        </button>
-        <button onClick={handleDelete} className="p-1 rounded hover:bg-destructive/10">
-          <Trash2 className="w-3.5 h-3.5 text-destructive" />
-        </button>
+        {!readOnly && (
+          <>
+            <button
+              onClick={() => setShowAddSlot(true)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            >
+              <Plus className="w-3 h-3" /> Ştat əlavə et
+            </button>
+            <button onClick={handleDelete} className="p-1 rounded hover:bg-destructive/10">
+              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+            </button>
+          </>
+        )}
       </div>
 
       <div className="divide-y divide-border">
