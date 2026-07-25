@@ -91,7 +91,15 @@ const ExportMenu = ({
           <FileText className="w-4 h-4 text-red-600" />
           <span>PDF (.pdf)</span>
         </DropdownMenuItem>
+        {extraItems && extraItems.length > 0 && <DropdownMenuSeparator />}
+        {extraItems?.map(item => (
+          <DropdownMenuItem key={item.label} onClick={item.onClick} className="gap-2 cursor-pointer">
+            {item.icon ?? <CalendarRange className="w-4 h-4 text-primary" />}
+            <span>{item.label}</span>
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
+
     </DropdownMenu>
   );
 };
