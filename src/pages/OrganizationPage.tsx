@@ -1602,7 +1602,7 @@ const EmployeesTab = () => {
               onChange={v => setEditForm(p => ({ ...p, firstName: sanitizeName(v).slice(0, 50) }))} />
             <ValidatedField label="Soyad" value={editForm.lastName} error={editErrors.lastName}
               onChange={v => setEditForm(p => ({ ...p, lastName: sanitizeName(v).slice(0, 50) }))} />
-            <ValidatedField label="Ata adı" value={editForm.fatherName} error={editErrors.fatherName}
+            <ValidatedField label="Ata adı" value={editForm.fatherName} error={editErrors.fatherName} required={false}
               onChange={v => setEditForm(p => ({ ...p, fatherName: sanitizeName(v).slice(0, 50) }))} />
             <div>
               <label className="text-sm font-medium text-foreground">FİN <span className="text-[10px] text-muted-foreground font-normal">(dəyişdirilə bilməz)</span></label>
