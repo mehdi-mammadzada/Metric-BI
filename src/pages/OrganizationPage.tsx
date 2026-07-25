@@ -725,6 +725,18 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
   const [showAddPos, setShowAddPos] = useState(false);
   const [newPosName, setNewPosName] = useState("");
   const [search, setSearch] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
+  // Modal hər dəfə açılanda default olaraq oxu rejimində açılır.
+  useEffect(() => {
+    if (node) {
+      setIsEditing(false);
+      setShowAddPos(false);
+      setNewPosName("");
+    }
+  }, [node?.id]);
 
   const handleCreatePos = async () => {
     if (!node || !newPosName.trim()) return;
@@ -755,14 +767,44 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
           </DialogTitle>
         </DialogHeader>
 
+        {/* Redaktə rejimi paneli */}
         <div className="flex items-center justify-between gap-2 pb-3 border-b border-border">
-          <p className="text-xs text-muted-foreground">{node && countAllPositions(node)} vəzifə · {node && countAllSlots(node)} ştat</p>
-          <button
-            onClick={() => setShowAddPos(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
-          >
-            <Plus className="w-3.5 h-3.5" /> Vəzifə əlavə et
-          </button>
+          <p className="text-xs text-muted-foreground">
+            {node && countAllPositions(node)} vəzifə · {node && countAllSlots(node)} ştat
+            {!isEditing && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-muted text-muted-foreground border border-border">Yalnız oxu</span>}
+            {isEditing && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-primary/10 text-primary border border-primary/30">Redaktə rejimi</span>}
+          </p>
+          <div className="flex items-center gap-2">
+            {!isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground"
+              >
+                <Pencil className="w-3.5 h-3.5" /> Redaktə et
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => setConfirmCancel(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border bg-card"
+                >
+                  Ləğv et
+                </button>
+                <button
+                  onClick={() => setConfirmSave(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
+                >
+                  <Check className="w-3.5 h-3.5" /> Dəyişiklikləri yadda saxla
+                </button>
+                <button
+                  onClick={() => setShowAddPos(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border border-border bg-card"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Vəzifə əlavə et
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="pt-3">
@@ -777,23 +819,24 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
           </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 -mx-6 px-6 py-3 space-y-3">
-          {node && node.positions.length === 0 && (
-            <div className="py-12 text-center">
-              <Briefcase className="w-10 h-10 mx-auto text-muted-foreground/40 mb-2" />
-              <p className="text-sm text-muted-foreground">Bu strukturda vəzifə yoxdur</p>
-            </div>
-          )}
-          {node && node.positions.length > 0 && filteredPositions.length === 0 && (
-            <p className="text-sm text-center text-muted-foreground py-6">Nəticə yoxdur</p>
-          )}
-          {filteredPositions.map(pos => (
-            <PositionCard key={pos.id} position={pos} structureId={node!.id} structureName={node!.name} />
-          ))}
+        <StaffEditCtx.Provider value={{ readOnly: !isEditing }}>
+          <div className="overflow-y-auto flex-1 -mx-6 px-6 py-3 space-y-3">
+            {node && node.positions.length === 0 && (
+              <div className="py-12 text-center">
+                <Briefcase className="w-10 h-10 mx-auto text-muted-foreground/40 mb-2" />
+                <p className="text-sm text-muted-foreground">Bu strukturda vəzifə yoxdur</p>
+              </div>
+            )}
+            {node && node.positions.length > 0 && filteredPositions.length === 0 && (
+              <p className="text-sm text-center text-muted-foreground py-6">Nəticə yoxdur</p>
+            )}
+            {filteredPositions.map(pos => (
+              <PositionCard key={pos.id} position={pos} structureId={node!.id} structureName={node!.name} />
+            ))}
+          </div>
+        </StaffEditCtx.Provider>
 
-        </div>
-
-        {showAddPos && (
+        {showAddPos && isEditing && (
           <div className="border-t border-border pt-3 flex items-center gap-2">
             <div className="flex-1">
               <PositionPicker value={newPosName} onChange={setNewPosName} />
@@ -802,6 +845,36 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
             <button onClick={() => { setShowAddPos(false); setNewPosName(""); }} className="px-3 py-2 text-sm rounded-lg border border-border">Ləğv et</button>
           </div>
         )}
+
+        {/* Yadda saxla təsdiqi */}
+        <Dialog open={confirmSave} onOpenChange={setConfirmSave}>
+          <DialogContent className="max-w-md">
+            <DialogHeader><DialogTitle>Təsdiq</DialogTitle></DialogHeader>
+            <p className="text-sm text-muted-foreground">Dəyişiklikləri yadda saxlamaq istədiyinizə əminsiniz?</p>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setConfirmSave(false)} className="flex-1 py-2.5 text-sm rounded-lg border border-border bg-card">Xeyr</button>
+              <button
+                onClick={() => { setConfirmSave(false); setIsEditing(false); toast.success("Dəyişikliklər yadda saxlandı"); }}
+                className="flex-1 py-2.5 text-sm rounded-lg bg-primary text-primary-foreground font-medium"
+              >Bəli</button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Ləğv et təsdiqi */}
+        <Dialog open={confirmCancel} onOpenChange={setConfirmCancel}>
+          <DialogContent className="max-w-md">
+            <DialogHeader><DialogTitle>Təsdiq</DialogTitle></DialogHeader>
+            <p className="text-sm text-muted-foreground">Redaktə rejimindən çıxmaq istədiyinizə əminsiniz? Redaktə rejimi bağlanacaq.</p>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setConfirmCancel(false)} className="flex-1 py-2.5 text-sm rounded-lg border border-border bg-card">Xeyr</button>
+              <button
+                onClick={() => { setConfirmCancel(false); setIsEditing(false); setShowAddPos(false); }}
+                className="flex-1 py-2.5 text-sm rounded-lg bg-destructive text-destructive-foreground font-medium"
+              >Bəli</button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
       </DialogContent>
     </Dialog>
