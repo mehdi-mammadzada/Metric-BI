@@ -1325,16 +1325,18 @@ const EmployeesTab = () => {
   const createErrors = useMemo(() => ({
     firstName: validateName(form.firstName, "Ad"),
     lastName: validateName(form.lastName, "Soyad"),
-    fatherName: validateName(form.fatherName, "Ata adı"),
-    fin: validateFin(form.fin) || (finsExcluding().includes(form.fin) ? "Bu FİN artıq sistemdə mövcuddur." : null),
+    fatherName: validateName(form.fatherName, "Ata adı", false),
+    fin: citizenship === "foreign"
+      ? (validateOther(form.fin) || (finsExcluding().includes(form.fin) ? "Bu identifikator artıq sistemdə mövcuddur." : null))
+      : (validateFin(form.fin) || (finsExcluding().includes(form.fin) ? "Bu FİN artıq sistemdə mövcuddur." : null)),
     email: validateEmail(form.email, emailsExcluding()),
-  }), [form, employees]);
+  }), [form, employees, citizenship]);
   const createValid = Object.values(createErrors).every(v => !v);
 
   const editErrors = useMemo(() => ({
     firstName: validateName(editForm.firstName, "Ad"),
     lastName: validateName(editForm.lastName, "Soyad"),
-    fatherName: validateName(editForm.fatherName, "Ata adı"),
+    fatherName: validateName(editForm.fatherName, "Ata adı", false),
     phone: validatePhone(editForm.phone),
     // email intentionally excluded — not editable in edit dialog
   }), [editForm, employees, editing]);
