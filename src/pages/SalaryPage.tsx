@@ -374,7 +374,7 @@ const SalaryPage = () => {
         return p ? computePay(p) : 0;
       });
       const total = monthVals.reduce((s, v) => s + v, 0);
-      if (total === 0) return; // skip employees with no data for the selection
+      if (total === 0) continue; // skip employees with no data for the selection
       rowsOut.push([idx++, emp.firstName ?? "", emp.lastName ?? "", emp.fatherName ?? "-", emp.positionName ?? "", ...monthVals, total]);
     }
     if (rowsOut.length === 0) {
