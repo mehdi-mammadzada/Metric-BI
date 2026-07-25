@@ -79,6 +79,9 @@ const approvalForCard = (card: Pick<SharedKpiCard, "id" | "numericId">) =>
       return approvalDecisionTime(b) - approvalDecisionTime(a);
     })[0] || null;
 
+const isDeletionApproval = (approval: Pick<ReturnType<typeof getApprovals>[number], "matrixId"> | null | undefined) =>
+  String(approval?.matrixId || "").startsWith("deletion:");
+
 const setterStateForCard = (numericId: number) => {
   const bySetter = new Map<string, { name: string; ok: boolean }>();
   getKpiSetEntries()
@@ -217,7 +220,7 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
 
   for (const card of cards) {
     if (card.numericId == null) continue;
-    if (card.status === "qaralama") continue;
+    if (card.status === "qaralama" || card.status === "silindi" || card.status === "legv_olundu") continue;
 
     const setters = setterStateForCard(card.numericId);
     const hasSetterFlow = setters.length > 0;
@@ -229,7 +232,9 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
     let rejectedBy: string | null = null;
     let rejectedAt: string | null = null;
 
-    if (approval?.status === "approved" || (card.status === "aktiv" && (!card.matrixId || approval?.status !== "rejected"))) {
+    if (approval?.status === "approved") {
+      nextStatus = isDeletionApproval(approval) ? "silindi" : "aktiv";
+    } else if (card.status === "aktiv" && (!card.matrixId || approval?.status !== "rejected")) {
       nextStatus = "aktiv";
     } else if (approval?.status === "rejected") {
       nextStatus = "imtina";

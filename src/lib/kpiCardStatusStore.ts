@@ -10,6 +10,7 @@ export type KpiCardStatus =
   | "tesdiq_gozlenilir"
   | "imtina"
   | "aktiv"
+  | "silindi"
   | "qiymetlendirme"
   | "tamamlanib"
   | "legv_olundu";
@@ -37,9 +38,10 @@ export const STATUS_LABELS: Record<KpiCardStatus, string> = {
   tesdiq_gozlenilir: "Təsdiq gözlənilir",
   imtina: "İmtina",
   aktiv: "Aktiv",
+  silindi: "Silindi",
   qiymetlendirme: "Qiymətləndirmə",
   tamamlanib: "Tamamlanıb",
-  legv_olundu: "Ləğv olundu",
+  legv_olundu: "Silindi",
 };
 
 export const STATUS_STYLES: Record<KpiCardStatus, string> = {
@@ -48,6 +50,7 @@ export const STATUS_STYLES: Record<KpiCardStatus, string> = {
   tesdiq_gozlenilir: "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30",
   imtina: "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30",
   aktiv: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+  silindi: "bg-slate-800 text-slate-100 border-slate-900 dark:bg-slate-900 dark:text-slate-200",
   qiymetlendirme: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30",
   tamamlanib: "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30",
   legv_olundu: "bg-slate-800 text-slate-100 border-slate-900 dark:bg-slate-900 dark:text-slate-200",
