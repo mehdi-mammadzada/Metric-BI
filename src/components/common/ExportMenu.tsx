@@ -44,6 +44,8 @@ const ExportMenu = ({
   iconOnly,
   className = "",
   onExported,
+  extraItems,
+
 }: Props) => {
   const handle = (format: "excel" | "pdf") => {
     try {
