@@ -1,12 +1,20 @@
-import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import type { ReactNode } from "react";
+import { Download, FileSpreadsheet, FileText, CalendarRange } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { exportToExcel, exportToPdf, type ExportData } from "@/lib/exportHelpers";
+
+export interface ExportMenuExtraItem {
+  label: string;
+  onClick: () => void;
+  icon?: ReactNode;
+}
 
 interface Props {
   /** Hər dəfə klik olunduqda yenidən hesablanan məlumat istehsalçısı */
@@ -23,7 +31,10 @@ interface Props {
   className?: string;
   /** Successdən sonra çağırılır */
   onExported?: (format: "excel" | "pdf") => void;
+  /** Menyuya əlavə olunan xüsusi seçimlər (məs. "İl üzrə export") */
+  extraItems?: ExportMenuExtraItem[];
 }
+
 
 const ExportMenu = ({
   getData,
