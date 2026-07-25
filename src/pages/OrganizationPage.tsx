@@ -1527,18 +1527,51 @@ const EmployeesTab = () => {
 
 
       {/* Create employee */}
-      <Dialog open={showCreate} onOpenChange={(o) => { setShowCreate(o); if (!o) setForm(emptyEmployeeForm); }}>
+      <Dialog open={showCreate} onOpenChange={(o) => { setShowCreate(o); if (!o) { setForm(emptyEmployeeForm); setCitizenship("az"); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Yeni əməkdaş yarat</DialogTitle></DialogHeader>
+
+          <div className="mb-1">
+            <label className="text-sm font-medium text-foreground">Vətəndaşlıq</label>
+            <div className="mt-2 flex flex-wrap items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="radio"
+                  name="citizenship"
+                  checked={citizenship === "az"}
+                  onChange={() => { setCitizenship("az"); setForm(p => ({ ...p, fin: "" })); }}
+                  className="w-4 h-4 accent-primary"
+                />
+                <span>Azərbaycan vətəndaşı</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="radio"
+                  name="citizenship"
+                  checked={citizenship === "foreign"}
+                  onChange={() => { setCitizenship("foreign"); setForm(p => ({ ...p, fin: "" })); }}
+                  className="w-4 h-4 accent-primary"
+                />
+                <span>Xarici vətəndaş</span>
+              </label>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <ValidatedField label="Ad" value={form.firstName} error={createErrors.firstName}
               onChange={v => setForm(p => ({ ...p, firstName: sanitizeName(v).slice(0, 50) }))} />
             <ValidatedField label="Soyad" value={form.lastName} error={createErrors.lastName}
               onChange={v => setForm(p => ({ ...p, lastName: sanitizeName(v).slice(0, 50) }))} />
-            <ValidatedField label="Ata adı" value={form.fatherName} error={createErrors.fatherName}
+            <ValidatedField label="Ata adı" value={form.fatherName} error={createErrors.fatherName} required={false}
               onChange={v => setForm(p => ({ ...p, fatherName: sanitizeName(v).slice(0, 50) }))} />
-            <ValidatedField label="FİN" value={form.fin} mono error={createErrors.fin}
-              onChange={v => setForm(p => ({ ...p, fin: sanitizeFin(v) }))} />
+            {citizenship === "foreign" ? (
+              <ValidatedField label="Digər" value={form.fin} mono error={createErrors.fin}
+                placeholder="Dəqiq 10 simvol"
+                onChange={v => setForm(p => ({ ...p, fin: sanitizeOther(v) }))} />
+            ) : (
+              <ValidatedField label="FİN" value={form.fin} mono error={createErrors.fin}
+                onChange={v => setForm(p => ({ ...p, fin: sanitizeFin(v) }))} />
+            )}
             <div className="col-span-2">
               <ValidatedField label="Email" value={form.email} error={createErrors.email}
                 onChange={v => setForm(p => ({ ...p, email: v.trim() }))} />
@@ -1555,7 +1588,7 @@ const EmployeesTab = () => {
             >
               {creatingEmployee ? "Yaradılır..." : "Yarat"}
             </button>
-            <button disabled={creatingEmployee} onClick={() => { setShowCreate(false); setForm(emptyEmployeeForm); }} className="flex-1 py-2.5 text-sm rounded-lg border border-border bg-card disabled:opacity-50 disabled:cursor-not-allowed">Ləğv Et</button>
+            <button disabled={creatingEmployee} onClick={() => { setShowCreate(false); setForm(emptyEmployeeForm); setCitizenship("az"); }} className="flex-1 py-2.5 text-sm rounded-lg border border-border bg-card disabled:opacity-50 disabled:cursor-not-allowed">Ləğv Et</button>
           </div>
         </DialogContent>
       </Dialog>
