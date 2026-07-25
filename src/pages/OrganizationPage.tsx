@@ -1377,7 +1377,7 @@ const EmployeesTab = () => {
     updateEmployee(editing.id, {
       firstName: rest.firstName.trim(),
       lastName: rest.lastName.trim(),
-      fatherName: rest.fatherName.trim() || undefined,
+      fatherName: rest.fatherName.trim() || "-",
       phone: formatPhone(rest.phone),
       // email intentionally not updated — not editable
     });
