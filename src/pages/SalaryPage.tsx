@@ -849,6 +849,7 @@ const getCellText = (row: AggRow, key: ColKey): string => {
     case "firstName": return row.employee.firstName ?? "";
     case "lastName": return row.employee.lastName ?? "";
     case "fatherName": return row.employee.fatherName ?? "";
+    case "position": return row.employee.positionName ?? "";
     case "monthPay": return String(row.monthPay);
     case "totalPaid": return String(row.totalPaid);
     case "avgMonthly": return String(row.avgMonthly);
@@ -863,6 +864,7 @@ const getCellDisplay = (row: AggRow, key: ColKey) => {
     case "firstName": return row.employee.firstName ?? "—";
     case "lastName": return row.employee.lastName ?? "—";
     case "fatherName": return row.employee.fatherName ?? "—";
+    case "position": return row.employee.positionName ?? "—";
     case "monthPay": return row.monthPay.toLocaleString();
     case "totalPaid": return row.totalPaid.toLocaleString();
     case "avgMonthly": return row.avgMonthly.toLocaleString();
