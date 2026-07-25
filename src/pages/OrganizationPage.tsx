@@ -1148,6 +1148,7 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
         type="number"
         placeholder="Maaş (AZN)"
         value={salaryDraft}
+        disabled={readOnly}
         onChange={e => setSalaryDraft(e.target.value)}
         onBlur={async () => {
           try {
@@ -1156,21 +1157,23 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
             toast.error(err instanceof Error ? err.message : "Maaş database-ə yazılmadı.");
           }
         }}
-        className="w-32 px-2 py-1.5 text-sm border border-border rounded-lg bg-background"
+        className="w-32 px-2 py-1.5 text-sm border border-border rounded-lg bg-background disabled:opacity-60 disabled:cursor-not-allowed"
       />
-      <button
-        onClick={async () => {
-          try {
-            await removeSlotInCloud(slot.id);
-            toast.success("Ştat silindi");
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Ştat database-dən silinmədi.");
-          }
-        }}
-        className="p-1 rounded hover:bg-destructive/10"
-      >
-        <Trash2 className="w-3.5 h-3.5 text-destructive" />
-      </button>
+      {!readOnly && (
+        <button
+          onClick={async () => {
+            try {
+              await removeSlotInCloud(slot.id);
+              toast.success("Ştat silindi");
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "Ştat database-dən silinmədi.");
+            }
+          }}
+          className="p-1 rounded hover:bg-destructive/10"
+        >
+          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+        </button>
+      )}
     </div>
   );
 };
