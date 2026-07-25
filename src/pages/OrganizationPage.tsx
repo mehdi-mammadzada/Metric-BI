@@ -37,6 +37,11 @@ import { collectDeactivationReasons } from "@/lib/employeeDeactivation";
 import DeactivateEmployeeDialog from "@/components/kpi/DeactivateEmployeeDialog";
 // Rəhbəri dəyiş axını daha modal açmır — birbaşa Ştat cədvəlində tac ikonu klik ilə həll olunur.
 
+// ── Ştat cədvəli — redaktə rejimi konteksti. Default olaraq oxu üçündür (readOnly=true).
+// "Redaktə et" düyməsinə basdıqda kontekstdə readOnly=false olur və Vəzifə/Ştat əlavə et,
+// silmə ikonları və sahə redaktəsi aktivləşir.
+const StaffEditCtx = createContext<{ readOnly: boolean }>({ readOnly: true });
+
 // ── Rəhbəri dəyiş konteksti: Ştat cədvəlində tac klikini müvəqqəti olaraq
 // leader-swap əməliyyatına yönləndirir. Yalnız `changeLeaderFor` aktiv olduqda tətbiq olunur.
 interface LeaderChangeCtxValue {
