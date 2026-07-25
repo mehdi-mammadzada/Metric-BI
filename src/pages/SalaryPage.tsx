@@ -521,12 +521,10 @@ const SalaryPage = () => {
               <AdvancedFilter columns={advCols} value={advFilter} onChange={setAdvFilter} />
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setYearExportOpen(true)} className="gap-2">
-                <Download className="w-4 h-4" /> İl üzrə export
-              </Button>
               <ExportMenu
                 size="sm"
                 disabled={!filteredRows.length}
+                extraItems={[{ label: "İl üzrə export", onClick: () => setYearExportOpen(true) }]}
                 getData={() => {
                   const cols = visibleColumns;
                   return {
@@ -540,6 +538,7 @@ const SalaryPage = () => {
                 }}
               />
             </div>
+
           </div>
 
           {/* Density controls */}

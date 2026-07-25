@@ -1354,10 +1354,13 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
   const handleDeleteCard = (card: KpiCard) => {
     const st = statusMap[card.id]?.status;
-    const isDraftLike = st === "qaralama" || st === "natamam" || card.approvalStatus === "pending";
+    // Yalnız "Qaralama" birbaşa silinir. Natamam / Təsdiq gözlənilir / Aktiv və digər
+    // statuslarda "Silinmə sorğusu göndər" seçimi olan pop-up açılır.
+    const isDraftOnly = st === "qaralama";
     setDeleteComment("");
-    setDeleteDialog({ card, mode: isDraftLike ? "simple" : "choice" });
+    setDeleteDialog({ card, mode: isDraftOnly ? "simple" : "choice" });
   };
+
 
   const performHardDelete = async (card: KpiCard) => {
     // Kart tam silinmir — statusu "Ləğv olundu" olur və siyahıda qalır.

@@ -1,12 +1,20 @@
-import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import type { ReactNode } from "react";
+import { Download, FileSpreadsheet, FileText, CalendarRange } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { exportToExcel, exportToPdf, type ExportData } from "@/lib/exportHelpers";
+
+export interface ExportMenuExtraItem {
+  label: string;
+  onClick: () => void;
+  icon?: ReactNode;
+}
 
 interface Props {
   /** Hər dəfə klik olunduqda yenidən hesablanan məlumat istehsalçısı */
@@ -23,7 +31,10 @@ interface Props {
   className?: string;
   /** Successdən sonra çağırılır */
   onExported?: (format: "excel" | "pdf") => void;
+  /** Menyuya əlavə olunan xüsusi seçimlər (məs. "İl üzrə export") */
+  extraItems?: ExportMenuExtraItem[];
 }
+
 
 const ExportMenu = ({
   getData,
@@ -33,6 +44,8 @@ const ExportMenu = ({
   iconOnly,
   className = "",
   onExported,
+  extraItems,
+
 }: Props) => {
   const handle = (format: "excel" | "pdf") => {
     try {
@@ -78,7 +91,15 @@ const ExportMenu = ({
           <FileText className="w-4 h-4 text-red-600" />
           <span>PDF (.pdf)</span>
         </DropdownMenuItem>
+        {extraItems && extraItems.length > 0 && <DropdownMenuSeparator />}
+        {extraItems?.map(item => (
+          <DropdownMenuItem key={item.label} onClick={item.onClick} className="gap-2 cursor-pointer">
+            {item.icon ?? <CalendarRange className="w-4 h-4 text-primary" />}
+            <span>{item.label}</span>
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
+
     </DropdownMenu>
   );
 };
