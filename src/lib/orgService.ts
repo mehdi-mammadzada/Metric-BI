@@ -291,6 +291,7 @@ let currentOrgId: string | null = null;
 let activeUserId: string | null = null;
 let flushInFlight: Promise<void> | null = null;
 let pendingFlush = false;
+let structureDraftPaused = false;
 // When we perform a direct DB write ourselves, ignore the realtime echo for a
 // short window so it doesn't trigger a full rehydrate (which feels slow to the
 // user because it re-reads the entire org tree).
@@ -299,7 +300,7 @@ const markLocalDbWrite = () => { skipRehydrateUntil = Date.now() + 2000; };
 
 
 const scheduleFlush = () => {
-  if (suppressFlush || !currentOrgId) return;
+  if (suppressFlush || structureDraftPaused || !currentOrgId) return;
   pendingFlush = true;
   if (flushTimer) window.clearTimeout(flushTimer);
   // Fire immediately so DB writes hit Postgres before the user can refresh.
@@ -307,6 +308,15 @@ const scheduleFlush = () => {
     flushTimer = null;
     void flushLocalOrgToCloud();
   }, 0);
+};
+
+export const setOrgStructureDraftSyncPaused = (paused: boolean) => {
+  structureDraftPaused = paused;
+  if (paused && flushTimer) {
+    window.clearTimeout(flushTimer);
+    flushTimer = null;
+    pendingFlush = false;
+  }
 };
 
 export const flushLocalOrgToCloud = async () => {
@@ -1072,6 +1082,7 @@ let refreshInterval: number | null = null;
 let onFocusHandler: (() => void) | null = null;
 
 const beforeUnloadFlush = () => {
+  if (structureDraftPaused) return;
   if (pendingFlush || flushTimer) {
     if (flushTimer) { window.clearTimeout(flushTimer); flushTimer = null; }
     // Fire and forget — some browsers will keep the request alive briefly.
@@ -1081,6 +1092,7 @@ const beforeUnloadFlush = () => {
 
 const scheduleRehydrate = () => {
   if (!currentOrgId) return;
+  if (structureDraftPaused) return;
   if (Date.now() < skipRehydrateUntil) return;
   if (rehydrateTimer) window.clearTimeout(rehydrateTimer);
   rehydrateTimer = window.setTimeout(async () => {
