@@ -906,8 +906,8 @@ const blankPeriod = (): Omit<SalaryPeriod, "id"> => ({
   month: "Yanvar",
   year: new Date().getFullYear(),
   salary: 0,
-  totalDays: 30,
-  workedDays: 0,
+  totalDays: 22,
+  workedDays: 22,
 });
 
 const AddSalaryDialog = ({ open, onClose, employees, onSaved }: AddSalaryDialogProps) => {
