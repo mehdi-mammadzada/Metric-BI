@@ -1349,7 +1349,7 @@ const EmployeesTab = () => {
       await createEmployeeInCloud({
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
-        fatherName: form.fatherName.trim() || undefined,
+        fatherName: form.fatherName.trim() || "-",
         fin: form.fin.trim(),
         phone: "",
         email: form.email.trim(),
@@ -1357,6 +1357,7 @@ const EmployeesTab = () => {
       toast.success("Əməkdaş database-də yaradıldı");
       setShowCreate(false);
       setForm(emptyEmployeeForm);
+      setCitizenship("az");
     } catch (error: any) {
       toast.error(error?.message || "Əməkdaş yaradılmadı. Database yazısını yoxlayın.");
     } finally {
