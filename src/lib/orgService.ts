@@ -16,7 +16,7 @@ import { logAudit } from "@/lib/auditService";
 import {
   getEmployees, setEmployees, getStructures, setStructures,
   assignSlot, addSlot, removeSlot, addRootStructure, addSubStructure, addPosition,
-  renameStructure, setStarPerson,
+  renameStructure, setStarPerson, replaceStructurePositions,
   type OrgEmployee, type OrgStructure, type OrgPosition, type OrgSlot,
   type OrgSlotFraction,
 } from "@/lib/orgStore";
@@ -552,6 +552,164 @@ export const addPositionInCloud = async (structureId: number, name: string) => {
   if (newPosition.id >= map.next) map.next = newPosition.id + 1;
   saveMap(orgId, map);
   markLocalDbWrite();
+};
+
+export const saveStructurePositionsInCloud = async (structureId: number, positions: OrgPosition[]) => {
+  const orgId = requireActiveOrg();
+  await waitForIdleFlush();
+
+  let map = loadMap(orgId);
+  const before = findStructureContext(structureId);
+  if (!before) throw new Error("Struktur tapılmadı. Səhifəni yeniləyib yenidən cəhd edin.");
+
+  let structureUuid = uuidFor(map, structureId);
+  if (!structureUuid) {
+    await doFlush(orgId);
+    map = loadMap(orgId);
+    structureUuid = uuidFor(map, structureId);
+  }
+  if (!structureUuid) throw new Error("Struktur database-də tapılmadı. Yenidən cəhd edin.");
+
+  const touchedEmployees = new Set<number>();
+  before.structure.positions.forEach((position) => {
+    position.slots.forEach((slot) => {
+      if (slot.employeeId != null) touchedEmployees.add(slot.employeeId);
+    });
+  });
+  positions.forEach((position) => {
+    position.slots.forEach((slot) => {
+      if (slot.employeeId != null) touchedEmployees.add(slot.employeeId);
+    });
+  });
+
+  const existingPositionsRes = await supabase
+    .from("org_positions")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("structure_id", structureUuid);
+  if (existingPositionsRes.error) throw new Error(existingPositionsRes.error.message || "Vəzifələr database-dən oxunmadı.");
+  const existingPositionUuids = new Set((existingPositionsRes.data ?? []).map((row) => row.id));
+  const keptPositionUuids = new Set<string>();
+
+  for (let positionIndex = 0; positionIndex < positions.length; positionIndex++) {
+    const position = positions[positionIndex];
+    let positionUuid = uuidFor(map, position.id);
+    const positionPayload = {
+      organization_id: orgId,
+      structure_id: structureUuid,
+      name: position.name,
+      sort_order: positionIndex,
+    };
+
+    if (positionUuid) {
+      const { error } = await supabase
+        .from("org_positions")
+        .update(positionPayload)
+        .eq("id", positionUuid)
+        .eq("organization_id", orgId);
+      if (error) throw new Error(error.message || "Vəzifə database-də yenilənmədi.");
+    } else {
+      const { data, error } = await supabase
+        .from("org_positions")
+        .insert(positionPayload)
+        .select("id")
+        .single();
+      if (error || !data) throw new Error(error?.message || "Vəzifə database-ə yazılmadı.");
+      positionUuid = data.id;
+      map.toUuid[position.id] = positionUuid;
+      map.toNum[positionUuid] = position.id;
+      if (position.id >= map.next) map.next = position.id + 1;
+    }
+
+    keptPositionUuids.add(positionUuid);
+
+    const existingSlotsRes = await supabase
+      .from("org_slots")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("position_id", positionUuid);
+    if (existingSlotsRes.error) throw new Error(existingSlotsRes.error.message || "Ştatlar database-dən oxunmadı.");
+    const keptSlotUuids = new Set<string>();
+
+    for (let slotIndex = 0; slotIndex < position.slots.length; slotIndex++) {
+      const slot = position.slots[slotIndex];
+      let slotUuid = uuidFor(map, slot.id);
+      const employeeUuid = slot.employeeId != null ? uuidFor(map, slot.employeeId) : null;
+      if (slot.employeeId != null && !employeeUuid) throw new Error("Əməkdaş database-də tapılmadı. Yenidən cəhd edin.");
+
+      const slotPayload = {
+        organization_id: orgId,
+        position_id: positionUuid,
+        employee_id: employeeUuid ?? null,
+        salary: slot.salary ?? null,
+        fraction: slot.fraction ?? 1,
+        sort_order: slotIndex,
+      };
+
+      if (slotUuid) {
+        const { error } = await supabase
+          .from("org_slots")
+          .update(slotPayload)
+          .eq("id", slotUuid)
+          .eq("organization_id", orgId);
+        if (error) throw new Error(error.message || "Ştat database-də yenilənmədi.");
+      } else {
+        const { data, error } = await supabase
+          .from("org_slots")
+          .insert(slotPayload)
+          .select("id")
+          .single();
+        if (error || !data) throw new Error(error?.message || "Ştat database-ə yazılmadı.");
+        slotUuid = data.id;
+        map.toUuid[slot.id] = slotUuid;
+        map.toNum[slotUuid] = slot.id;
+        if (slot.id >= map.next) map.next = slot.id + 1;
+      }
+
+      keptSlotUuids.add(slotUuid);
+    }
+
+    const slotUuidsToDelete = (existingSlotsRes.data ?? [])
+      .map((row) => row.id)
+      .filter((id) => !keptSlotUuids.has(id));
+    if (slotUuidsToDelete.length > 0) {
+      const { error } = await supabase
+        .from("org_slots")
+        .delete()
+        .eq("organization_id", orgId)
+        .in("id", slotUuidsToDelete);
+      if (error) throw new Error(error.message || "Silinmiş ştatlar database-dən silinmədi.");
+    }
+  }
+
+  const positionUuidsToDelete = Array.from(existingPositionUuids).filter((id) => !keptPositionUuids.has(id));
+  if (positionUuidsToDelete.length > 0) {
+    const { error } = await supabase
+      .from("org_positions")
+      .delete()
+      .eq("organization_id", orgId)
+      .in("id", positionUuidsToDelete);
+    if (error) throw new Error(error.message || "Silinmiş vəzifələr database-dən silinmədi.");
+  }
+
+  saveMap(orgId, map);
+  suppressFlush = true;
+  try {
+    replaceStructurePositions(structureId, positions);
+  } finally {
+    suppressFlush = false;
+  }
+  await syncEmployeeAssignmentRows(orgId, Array.from(touchedEmployees));
+  markLocalDbWrite();
+
+  void logAudit({
+    organizationId: orgId,
+    action: "update",
+    module: "org_structure",
+    entityType: "org_structure_staff",
+    entityId: structureUuid,
+    newValues: { positionsCount: positions.length },
+  });
 };
 
 export const assignSlotInCloud = async (
