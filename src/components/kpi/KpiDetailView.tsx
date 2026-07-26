@@ -321,17 +321,81 @@ const KpiDetailView = ({
 
         {detailTab === "general" && (
           <>
-            <div className={compact ? "space-y-4" : "grid grid-cols-2 gap-4"}>
-              <div className="bg-card rounded-lg border border-border p-4">
-                <h4 className="font-semibold text-foreground mb-3">Əsas Məlumatlar</h4>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Məsul Şəxs:</span><span className="font-medium">{selectedKpi.responsible}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Təyinat:</span><span className="font-medium">{getAssignKindFor(selectedKpi.id)}{(() => { const d = cardDrafts[selectedKpi.id]; if (!d || d.mode !== "bulk") return ""; const bs = d.bulkSelections; const parts: string[] = []; if (bs.teams?.length) parts.push(`Komandalar: ${bs.teams.join(", ")}`); if (bs.positions?.length) parts.push(`Vəzifələr: ${bs.positions.join(", ")}`); if (bs.structures?.length) parts.push(`Strukturlar: ${bs.structures.length}`); if (bs.persons?.length) parts.push(`Şəxslər: ${bs.persons.join(", ")}`); return parts.length ? ` — ${parts.join(" · ")}` : ""; })()}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Başlama:</span><span className="font-medium">{selectedKpi.startDate}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Bitmə:</span><span className="font-medium">{selectedKpi.endDate}</span></div>
+            <div className={compact || isPersonalCard ? "space-y-4" : "grid grid-cols-2 gap-4"}>
+              <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                <div className="flex items-center gap-2.5 px-5 py-4">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <h4 className="font-semibold text-foreground text-base">Əsas Məlumatlar</h4>
+                </div>
+                <div className="divide-y divide-border">
+                  {(() => {
+                    const assignKind = getAssignKindFor(selectedKpi.id);
+                    const bulkDetail = (() => {
+                      const d = cardDrafts[selectedKpi.id];
+                      if (!d || d.mode !== "bulk") return "";
+                      const bs = d.bulkSelections || {};
+                      const parts: string[] = [];
+                      if (bs.teams?.length) parts.push(`Komandalar: ${bs.teams.join(", ")}`);
+                      if (bs.positions?.length) parts.push(`Vəzifələr: ${bs.positions.join(", ")}`);
+                      if (bs.structures?.length) parts.push(`Strukturlar: ${bs.structures.length}`);
+                      if (bs.persons?.length) parts.push(`Şəxslər: ${bs.persons.join(", ")}`);
+                      return parts.join(" · ");
+                    })();
+                    const upd = st.updated_at ? new Date(st.updated_at) : null;
+                    const pad = (n: number) => String(n).padStart(2, "0");
+                    const updDate = upd && !isNaN(upd.getTime())
+                      ? `${pad(upd.getDate())}.${pad(upd.getMonth() + 1)}.${upd.getFullYear()}`
+                      : "—";
+                    const updTime = upd && !isNaN(upd.getTime()) ? `${pad(upd.getHours())}:${pad(upd.getMinutes())}` : "";
+                    const rows: { icon: any; label: string; value: React.ReactNode }[] = [
+                      { icon: User, label: "Məsul Şəxs", value: selectedKpi.responsible || "—" },
+                      {
+                        icon: Crosshair, label: "Təyinat",
+                        value: (
+                          <span className="text-right">
+                            {assignKind}
+                            {bulkDetail && <span className="block text-[11px] font-normal text-muted-foreground mt-0.5">{bulkDetail}</span>}
+                          </span>
+                        ),
+                      },
+                      {
+                        icon: Activity, label: "Status",
+                        value: (
+                          <span className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${STATUS_STYLES[st.status]}`}>
+                            {STATUS_LABELS[st.status]}
+                          </span>
+                        ),
+                      },
+                      { icon: Calendar, label: "Başlama", value: selectedKpi.startDate || "—" },
+                      { icon: Calendar, label: "Bitmə", value: selectedKpi.endDate || "—" },
+                      {
+                        icon: Clock, label: "Son yenilənmə",
+                        value: (
+                          <span>
+                            {updDate}
+                            {updTime && <span className="ml-1.5 text-muted-foreground font-normal">{updTime}</span>}
+                          </span>
+                        ),
+                      },
+                    ];
+                    return rows.map((r, i) => (
+                      <div key={i} className="flex items-center justify-between gap-3 px-5 py-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                            <r.icon className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm text-muted-foreground truncate">{r.label}</span>
+                        </div>
+                        <div className="text-sm font-semibold text-foreground text-right">{r.value}</div>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </div>
-              {(() => {
+              {!isPersonalCard && (() => {
+
                 const own = selectedKpi.subKpis || [];
                 const entries = selectedKpi.id ? getEntriesForCard(selectedKpi.id) : [];
                 const ownIds = new Set(own.map(s => s.id));
