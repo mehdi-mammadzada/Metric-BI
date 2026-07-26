@@ -18,11 +18,11 @@ import { toast } from "sonner";
 import {
   getEmployees, updateEmployee, toggleEmployeeActive,
   getStructures,
-  removePosition, removeStructure, canRemoveStructure, renameStructure, getAssignedEmployeeIds,
+  removeStructure, canRemoveStructure, renameStructure, getAssignedEmployeeIds,
   setStarPerson, findLeaderStructuresOf, isStructureTypeInUse, isPositionInUse,
   type OrgEmployee, type OrgStructure, type OrgPosition, type LeaderStructInfo,
 } from "@/lib/orgStore";
-import { addStructuresInCloud, createEmployeeInCloud, persistOrgNow, renameStructureInCloud, saveStructurePositionsInCloud, setStarPersonInCloud, updateOrganizationLogoInCloud } from "@/lib/orgService";
+import { addStructuresInCloud, assignSlotInCloud, createEmployeeInCloud, persistOrgNow, renameStructureInCloud, saveStructurePositionsInCloud, setStarPersonInCloud, updateOrganizationLogoInCloud } from "@/lib/orgService";
 
 
 import {
