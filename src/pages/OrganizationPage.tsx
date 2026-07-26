@@ -22,7 +22,7 @@ import {
   setStarPerson, findLeaderStructuresOf, isStructureTypeInUse, isPositionInUse,
   type OrgEmployee, type OrgStructure, type OrgPosition, type LeaderStructInfo,
 } from "@/lib/orgStore";
-import { addPositionInCloud, addSlotsInCloud, addStructuresInCloud, assignSlotInCloud, createEmployeeInCloud, persistOrgNow, removeSlotInCloud, renameStructureInCloud, setStarPersonInCloud, updateOrganizationLogoInCloud } from "@/lib/orgService";
+import { addPositionInCloud, addSlotsInCloud, addStructuresInCloud, assignSlotInCloud, createEmployeeInCloud, persistOrgNow, removeSlotInCloud, renameStructureInCloud, saveStructurePositionsInCloud, setStarPersonInCloud, updateOrganizationLogoInCloud } from "@/lib/orgService";
 
 
 import {
@@ -40,7 +40,22 @@ import DeactivateEmployeeDialog from "@/components/kpi/DeactivateEmployeeDialog"
 // ── Ştat cədvəli — redaktə rejimi konteksti. Default olaraq oxu üçündür (readOnly=true).
 // "Redaktə et" düyməsinə basdıqda kontekstdə readOnly=false olur və Vəzifə/Ştat əlavə et,
 // silmə ikonları və sahə redaktəsi aktivləşir.
-const StaffEditCtx = createContext<{ readOnly: boolean }>({ readOnly: true });
+interface StaffEditCtxValue {
+  readOnly: boolean;
+  assignedIds: Set<number>;
+  deletePosition: (positionId: number) => void;
+  addSlots: (positionId: number, count: number, fraction: 1 | 0.75 | 0.5 | 0.25) => void;
+  updateSlot: (slotId: number, patch: { employeeId?: number | null; salary?: number | null; fraction?: 1 | 0.75 | 0.5 | 0.25 }) => void;
+  removeSlot: (slotId: number) => void;
+}
+const StaffEditCtx = createContext<StaffEditCtxValue>({
+  readOnly: true,
+  assignedIds: new Set<number>(),
+  deletePosition: () => undefined,
+  addSlots: () => undefined,
+  updateSlot: () => undefined,
+  removeSlot: () => undefined,
+});
 
 // ── Rəhbəri dəyiş konteksti: Ştat cədvəlində tac klikini müvəqqəti olaraq
 // leader-swap əməliyyatına yönləndirir. Yalnız `changeLeaderFor` aktiv olduqda tətbiq olunur.
