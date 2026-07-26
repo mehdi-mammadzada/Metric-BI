@@ -484,6 +484,7 @@ const KpiDetailView = ({
                   </div>
                 );
               })()}
+
             </div>
           </>
         )}
