@@ -311,6 +311,9 @@ const countAllSlots = (node: OrgStructure): number =>
   node.positions.reduce((s, p) => s + p.slots.length, 0) +
   node.children.reduce((s, c) => s + countAllSlots(c), 0);
 
+const clonePositions = (positions: OrgPosition[]): OrgPosition[] => JSON.parse(JSON.stringify(positions));
+const draftId = () => Date.now() + Math.floor(Math.random() * 1000);
+
 // ====================================================
 // Structure tab — card-based tree
 // ====================================================
