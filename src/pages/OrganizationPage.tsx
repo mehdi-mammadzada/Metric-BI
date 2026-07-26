@@ -20,7 +20,7 @@ import {
   getStructures,
   removeStructure, canRemoveStructure, renameStructure, getAssignedEmployeeIds,
   setStarPerson, findLeaderStructuresOf, isStructureTypeInUse, isPositionInUse,
-  type OrgEmployee, type OrgStructure, type OrgPosition, type LeaderStructInfo,
+  type OrgEmployee, type OrgStructure, type OrgPosition, type OrgSlotFraction, type LeaderStructInfo,
 } from "@/lib/orgStore";
 import { addStructuresInCloud, assignSlotInCloud, createEmployeeInCloud, persistOrgNow, renameStructureInCloud, saveStructurePositionsInCloud, setStarPersonInCloud, updateOrganizationLogoInCloud } from "@/lib/orgService";
 
