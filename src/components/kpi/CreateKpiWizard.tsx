@@ -1987,22 +1987,58 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
   const [rows, setRows] = useState<WizardScoreDesc[]>(seedRows);
   useEffect(() => { setRows(seedRows); }, [seedRows]);
 
-  // Bütün tiplərdə tələb olunan ballar: max və orta-aşağı
-  const required = max === 10 ? [10, 4] : [max, 2];
+  const ordered = useMemo(() => [...rows].sort((a, b) => Number(a.score) - Number(b.score)), [rows]);
+  const minBonusScore = ordered.find(r => r.isMinBonus)?.score ?? null;
+
+  const parts = (r: WizardScoreDesc) => {
+    const [mn = "", mx = ""] = (r.description || "").split("-");
+    return { mn, mx };
+  };
+
+  // Interval validasiyası — Min ≤ Max, ardıcıllıq, boşluq/üst-üstə düşmə yoxdur.
+  const errors = useMemo(() => {
+    const e: Record<number, string> = {};
+    if (!needsMinMax) return e;
+    let prevMax: number | null = null;
+    ordered.forEach(r => {
+      const { mn, mx } = parts(r);
+      if (mn === "" && mx === "") { prevMax = null; return; }
+      const nMin = Number(mn);
+      const nMax = Number(mx);
+      if (mn === "" || mx === "" || isNaN(nMin) || isNaN(nMax)) {
+        e[r.score] = "Min və Max daxil edilməlidir";
+      } else if (nMin > nMax) {
+        e[r.score] = "Min dəyər Max dəyərdən böyük ola bilməz";
+      } else if (prevMax !== null && nMin !== prevMax + 1) {
+        e[r.score] = nMin <= prevMax
+          ? `İntervallar üst-üstə düşür — Min ${prevMax + 1} olmalıdır`
+          : `Boşluq var — Min ${prevMax + 1} olmalıdır`;
+      }
+      if (!e[r.score]) prevMax = nMax;
+    });
+    return e;
+  }, [ordered, needsMinMax]);
 
   const save = () => {
-    for (const r of required) {
-      const row = rows.find(x => Number(x.score) === r);
-      if (!row) { toast.error(`${r} balı tələb olunur`); return; }
-      if (isTime) {
-        if (!row.timeStart || !row.timeEnd) { toast.error(`Zaman: ${r} balı üçün zaman aralığı tələb olunur`); return; }
-      } else if (needsMinMax) {
-        if (!row.description || !row.description.includes("-")) { toast.error(`${r} balı üçün Min/Max daxil edin`); return; }
-      } else {
-        if (!row.description.trim()) { toast.error(`${r} balı üçün izah məcburidir`); return; }
+    if (needsMinMax) {
+      const firstErr = ordered.find(r => errors[r.score]);
+      if (firstErr) { toast.error(`Bal ${firstErr.score}: ${errors[firstErr.score]}`); return; }
+      const filled = ordered.filter(r => { const { mn, mx } = parts(r); return mn !== "" && mx !== ""; });
+      if (filled.length !== ordered.length) { toast.error("Bütün ballar üçün Min və Max dəyər daxil edin"); return; }
+      if (!minBonusScore) { toast.error("Minimum Bonus Bal seçilməlidir"); return; }
+    } else {
+      const required = max === 10 ? [10, 4] : [max, 2];
+      for (const r of required) {
+        const row = ordered.find(x => Number(x.score) === r);
+        if (!row) { toast.error(`${r} balı tələb olunur`); return; }
+        if (isTime) {
+          if (!row.timeStart || !row.timeEnd) { toast.error(`Zaman: ${r} balı üçün zaman aralığı tələb olunur`); return; }
+        } else if (!row.description?.trim()) {
+          toast.error(`${r} balı üçün izah məcburidir`); return;
+        }
       }
     }
-    onSave(rows);
+    onSave(ordered);
   };
 
   const updMinMax = (id: string, side: "min" | "max", val: string) => {
@@ -2014,79 +2050,122 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
     }));
   };
 
+  const inputCls = "w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30";
+
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             <Star className="w-5 h-5 text-amber-500" />
-            "{target.name || "Hədəf"}" üçün qiymətlər (1-{max})
+            "{target.name || "Hədəf"}" üçün bal intervalları (1–{max})
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">
-            <strong>{required.join(" və ")}</strong> ballarının {isTime ? "zaman aralığı" : needsMinMax ? "Min/Max" : "izahı"} məcburidir; digərləri opsionaldır.
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1">
+            <Info className="w-3.5 h-3.5 text-primary shrink-0" />
+            {needsMinMax
+              ? "Minimum bal yalnız bir qiymət üçün seçilə bilər."
+              : `${max === 10 ? "10 və 4" : `${max} və 2`} ballarının ${isTime ? "zaman aralığı" : "izahı"} məcburidir.`}
           </p>
         </DialogHeader>
 
-        <div className="space-y-2">
-          {rows.map((r) => {
-            const isReq = required.includes(Number(r.score));
-            const [mn = "", mx = ""] = (r.description || "").split("-");
-            return (
-              <div key={r.id} className={`p-2 rounded border ${isReq ? "border-amber-500/60 bg-amber-500/5" : "border-border"}`}>
-                <div className="grid grid-cols-12 gap-2 items-start">
-                  <div className="col-span-2">
-                    <label className="text-[11px] text-muted-foreground">Bal</label>
-                    <div className="mt-0.5 px-2 py-1.5 text-sm font-bold text-center border border-border rounded bg-background">
-                      {r.score}{isReq && <span className="text-destructive ml-0.5">*</span>}
+        <div className="rounded-lg border border-border overflow-hidden">
+          <div className="grid grid-cols-12 gap-3 px-4 py-2.5 bg-secondary/50 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {needsMinMax && <div className="col-span-2">Minimum</div>}
+            <div className={needsMinMax ? "col-span-1" : "col-span-2"}>Bal</div>
+            {needsMinMax ? (
+              <>
+                <div className="col-span-4">Min dəyər</div>
+                <div className="col-span-5">Max dəyər</div>
+              </>
+            ) : isTime ? (
+              <>
+                <div className="col-span-5">Başlama</div>
+                <div className="col-span-5">Bitmə</div>
+              </>
+            ) : (
+              <div className="col-span-10">İzah</div>
+            )}
+          </div>
+          <div className="divide-y divide-border">
+            {ordered.map((r) => {
+              const { mn, mx } = parts(r);
+              const selected = !!r.isMinBonus;
+              const err = errors[r.score];
+              return (
+                <div
+                  key={r.id}
+                  className={`grid grid-cols-12 gap-3 px-4 py-3 items-center transition-colors ${
+                    selected ? "bg-amber-500/10" : "hover:bg-secondary/20"
+                  }`}
+                >
+                  {needsMinMax && (
+                    <div className="col-span-2">
+                      <input
+                        type="radio"
+                        name="min-bonus-score"
+                        checked={selected}
+                        onChange={() => setRows(rows.map(x => ({ ...x, isMinBonus: x.id === r.id })))}
+                        className="w-4 h-4 accent-amber-500 cursor-pointer"
+                        aria-label={`Bal ${r.score} minimum bonus balı`}
+                      />
                     </div>
+                  )}
+                  <div className={`${needsMinMax ? "col-span-1" : "col-span-2"} text-base font-bold text-foreground tabular-nums`}>
+                    {r.score}
                   </div>
-
-                  {isTime ? (
+                  {needsMinMax ? (
+                    <>
+                      <div className="col-span-4">
+                        <input type="number" value={mn} onChange={e => updMinMax(r.id, "min", e.target.value)}
+                          placeholder="0" className={inputCls} />
+                      </div>
+                      <div className="col-span-5 flex items-center gap-2">
+                        <input type="number" value={mx} onChange={e => updMinMax(r.id, "max", e.target.value)}
+                          placeholder="100" className={inputCls} />
+                        {selected && (
+                          <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md border border-amber-500/40 bg-amber-500/10 text-[11px] font-medium text-amber-700 dark:text-amber-400 whitespace-nowrap">
+                            <Star className="w-3 h-3 fill-current" /> Minimum Bonus Balı
+                          </span>
+                        )}
+                      </div>
+                      {err && <div className="col-span-12 text-[11px] text-destructive">{err}</div>}
+                    </>
+                  ) : isTime ? (
                     <>
                       <div className="col-span-5">
-                        <label className="text-[11px] text-muted-foreground">Başlama {isReq && "*"}</label>
                         <input type="date" value={r.timeStart || ""}
                           onChange={e => setRows(rows.map(x => x.id === r.id ? { ...x, timeStart: e.target.value } : x))}
-                          className="w-full mt-0.5 px-2 py-1.5 text-xs border border-border rounded bg-background" />
+                          className={inputCls} />
                       </div>
                       <div className="col-span-5">
-                        <label className="text-[11px] text-muted-foreground">Bitmə {isReq && "*"}</label>
                         <input type="date" value={r.timeEnd || ""}
                           onChange={e => setRows(rows.map(x => x.id === r.id ? { ...x, timeEnd: e.target.value } : x))}
-                          className="w-full mt-0.5 px-2 py-1.5 text-xs border border-border rounded bg-background" />
-                      </div>
-                    </>
-                  ) : needsMinMax ? (
-                    <>
-                      <div className="col-span-5">
-                        <label className="text-[11px] text-muted-foreground">Min {isReq && "*"}</label>
-                        <input type="number" value={mn} onChange={e => updMinMax(r.id, "min", e.target.value)}
-                          placeholder="6" className="w-full mt-0.5 px-2.5 py-1.5 text-sm border border-border rounded bg-background" />
-                      </div>
-                      <div className="col-span-5">
-                        <label className="text-[11px] text-muted-foreground">Max {isReq && "*"}</label>
-                        <input type="number" value={mx} onChange={e => updMinMax(r.id, "max", e.target.value)}
-                          placeholder="10" className="w-full mt-0.5 px-2.5 py-1.5 text-sm border border-border rounded bg-background" />
+                          className={inputCls} />
                       </div>
                     </>
                   ) : (
                     <div className="col-span-10">
-                      <label className="text-[11px] text-muted-foreground">İzah {isReq && "*"}</label>
-                      <input value={r.description}
+                      <input value={r.description || ""}
                         onChange={e => setRows(rows.map(x => x.id === r.id ? { ...x, description: e.target.value } : x))}
-                        placeholder="Bu balı qazanmaq üçün şərt..."
-                        className="w-full mt-0.5 px-2.5 py-1.5 text-sm border border-border rounded bg-background" />
+                        placeholder="Bu balı qazanmaq üçün şərt..." className={inputCls} />
                     </div>
                   )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
+        {needsMinMax && (
+          <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5">
+            <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <p className="text-xs text-foreground">Bonus yalnız seçilmiş minimum baldan etibarən hesablanacaq.</p>
+          </div>
+        )}
+
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-          <button type="button" onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg border border-border bg-card">Ləğv et</button>
-          <button type="button" onClick={save} className="px-4 py-1.5 text-sm rounded-lg bg-primary text-primary-foreground flex items-center gap-1">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-border bg-card">Ləğv et</button>
+          <button type="button" onClick={save} className="px-5 py-2 text-sm rounded-lg bg-primary text-primary-foreground flex items-center gap-1">
             <Save className="w-4 h-4" /> Yadda saxla
           </button>
         </div>
@@ -2094,6 +2173,7 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
     </Dialog>
   );
 }
+
 
 // =========================================================
 // Summary helpers
