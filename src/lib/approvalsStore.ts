@@ -140,6 +140,11 @@ export const enqueueApproval = (input: {
   list.unshift(item);
   save(list);
   flushSoon();
+  // Sorğu dərhal backend-ə yazılsın ki, bütün cihazlarda görünsün.
+  void import("./approvalsService")
+    .then(m => m.persistApprovalRowToCloud(item))
+    .catch(() => undefined);
+
   firstStep.forEach(approverId => {
     pushNotification({
       toEmployeeId: approverId,
