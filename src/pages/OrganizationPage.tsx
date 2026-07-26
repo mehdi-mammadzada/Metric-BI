@@ -746,34 +746,152 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
   const [isEditing, setIsEditing] = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [sourceNode, setSourceNode] = useState<OrgStructure | null>(node);
+  const [draftPositions, setDraftPositions] = useState<OrgPosition[]>(() => clonePositions(node?.positions ?? []));
+
+  const resolveNode = (id?: number | null): OrgStructure | null => {
+    if (!id) return null;
+    const walk = (items: OrgStructure[]): OrgStructure | null => {
+      for (const item of items) {
+        if (item.id === id) return item;
+        const child = walk(item.children);
+        if (child) return child;
+      }
+      return null;
+    };
+    return walk(getStructures());
+  };
 
   // Modal hər dəfə açılanda default olaraq oxu rejimində açılır.
   useEffect(() => {
     if (node) {
+      const fresh = resolveNode(node.id) ?? node;
+      setSourceNode(fresh);
+      setDraftPositions(clonePositions(fresh.positions));
       setIsEditing(false);
       setShowAddPos(false);
       setNewPosName("");
     }
   }, [node?.id]);
 
-  const handleCreatePos = async () => {
-    if (!node || !newPosName.trim()) return;
+  useEffect(() => {
+    if (!node) return;
+    const refresh = () => {
+      const fresh = resolveNode(node.id);
+      if (!fresh) return;
+      setSourceNode(fresh);
+      if (!isEditing) setDraftPositions(clonePositions(fresh.positions));
+    };
+    window.addEventListener("org-updated", refresh);
+    return () => window.removeEventListener("org-updated", refresh);
+  }, [node?.id, isEditing]);
+
+  const visiblePositions = isEditing ? draftPositions : clonePositions(sourceNode?.positions ?? []);
+
+  const savedCurrentAssignedIds = useMemo(() => {
+    const ids = new Set<number>();
+    (sourceNode?.positions ?? []).forEach(position => position.slots.forEach(slot => {
+      if (slot.employeeId != null) ids.add(slot.employeeId);
+    }));
+    return ids;
+  }, [sourceNode]);
+
+  const draftAssignedIds = useMemo(() => {
+    const ids = new Set<number>();
+    visiblePositions.forEach(position => position.slots.forEach(slot => {
+      if (slot.employeeId != null) ids.add(slot.employeeId);
+    }));
+    return ids;
+  }, [visiblePositions]);
+
+  const assignedIds = useMemo(() => {
+    const ids = getAssignedEmployeeIds();
+    savedCurrentAssignedIds.forEach(id => ids.delete(id));
+    draftAssignedIds.forEach(id => ids.add(id));
+    return ids;
+  }, [savedCurrentAssignedIds, draftAssignedIds]);
+
+  const handleCreatePos = () => {
+    if (!newPosName.trim()) return;
+    setDraftPositions(prev => [...prev, { id: draftId(), name: newPosName.trim(), slots: [] }]);
+    setNewPosName("");
+    setShowAddPos(false);
+    toast.success("Vəzifə redaktə layihəsinə əlavə edildi");
+  };
+
+  const handleSave = async () => {
+    if (!sourceNode) return;
+    setSaving(true);
     try {
-      await addPositionInCloud(node.id, newPosName.trim());
-      toast.success("Vəzifə yaradıldı və database-də saxlandı");
-      setNewPosName("");
+      await saveStructurePositionsInCloud(sourceNode.id, draftPositions);
+      setConfirmSave(false);
+      setIsEditing(false);
       setShowAddPos(false);
+      const fresh = resolveNode(sourceNode.id) ?? sourceNode;
+      setSourceNode(fresh);
+      setDraftPositions(clonePositions(fresh.positions));
+      toast.success("Dəyişikliklər database-də yadda saxlandı");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Vəzifə database-ə yazılmadı.");
+      toast.error(err instanceof Error ? err.message : "Dəyişikliklər database-ə yazılmadı.");
+    } finally {
+      setSaving(false);
     }
   };
 
+  const handleCancel = () => {
+    setConfirmCancel(false);
+    setIsEditing(false);
+    setShowAddPos(false);
+    setNewPosName("");
+    setDraftPositions(clonePositions(sourceNode?.positions ?? []));
+  };
+
+  const editCtx = useMemo<StaffEditCtxValue>(() => ({
+    readOnly: !isEditing,
+    assignedIds,
+    deletePosition: (positionId) => {
+      setDraftPositions(prev => prev.filter(position => position.id !== positionId));
+      toast.success("Vəzifə redaktə layihəsindən silindi");
+    },
+    addSlots: (positionId, count, fraction) => {
+      const n = Math.max(1, Math.min(100, Math.floor(count) || 1));
+      setDraftPositions(prev => prev.map(position => position.id === positionId
+        ? {
+          ...position,
+          slots: [
+            ...position.slots,
+            ...Array.from({ length: n }, (_, i) => ({ id: draftId() + i, employeeId: null, salary: null, fraction })),
+          ],
+        }
+        : position));
+      toast.success(n > 1 ? `${n} ştat redaktə layihəsinə əlavə edildi` : "Ştat redaktə layihəsinə əlavə edildi");
+    },
+    updateSlot: (slotId, patch) => {
+      setDraftPositions(prev => prev.map(position => ({
+        ...position,
+        slots: position.slots.map(slot => slot.id === slotId ? { ...slot, ...patch } : slot),
+      })));
+    },
+    removeSlot: (slotId) => {
+      setDraftPositions(prev => prev.map(position => ({
+        ...position,
+        slots: position.slots.filter(slot => slot.id !== slotId),
+      })));
+      toast.success("Ştat redaktə layihəsindən silindi");
+    },
+  }), [assignedIds, isEditing]);
+
+  const startEditing = () => {
+    setDraftPositions(clonePositions(sourceNode?.positions ?? []));
+    setIsEditing(true);
+  };
+
   const filteredPositions = useMemo(() => {
-    if (!node) return [];
     const q = search.trim().toLowerCase();
-    if (!q) return node.positions;
-    return node.positions.filter(p => p.name.toLowerCase().includes(q));
-  }, [node, search]);
+    if (!q) return visiblePositions;
+    return visiblePositions.filter(p => p.name.toLowerCase().includes(q));
+  }, [visiblePositions, search]);
 
   return (
     <Dialog open={!!node} onOpenChange={(o) => !o && onClose()}>
@@ -788,14 +906,14 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
         {/* Redaktə rejimi paneli */}
         <div className="flex items-center justify-between gap-2 pb-3 border-b border-border">
           <p className="text-xs text-muted-foreground">
-            {node && countAllPositions(node)} vəzifə · {node && countAllSlots(node)} ştat
+            {visiblePositions.length} vəzifə · {visiblePositions.reduce((sum, position) => sum + position.slots.length, 0)} ştat
             {!isEditing && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-muted text-muted-foreground border border-border">Yalnız oxu</span>}
             {isEditing && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-primary/10 text-primary border border-primary/30">Redaktə rejimi</span>}
           </p>
           <div className="flex items-center gap-2">
             {!isEditing ? (
               <button
-                onClick={() => setIsEditing(true)}
+                onClick={startEditing}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground"
               >
                 <Pencil className="w-3.5 h-3.5" /> Redaktə et
@@ -810,9 +928,10 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
                 </button>
                 <button
                   onClick={() => setConfirmSave(true)}
+                  disabled={saving}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-primary to-primary/80 text-primary-foreground"
                 >
-                  <Check className="w-3.5 h-3.5" /> Dəyişiklikləri yadda saxla
+                  <Check className="w-3.5 h-3.5" /> {saving ? "Yadda saxlanır..." : "Dəyişiklikləri yadda saxla"}
                 </button>
                 <button
                   onClick={() => setShowAddPos(true)}
@@ -837,19 +956,19 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
           </div>
         </div>
 
-        <StaffEditCtx.Provider value={{ readOnly: !isEditing }}>
+        <StaffEditCtx.Provider value={editCtx}>
           <div className="overflow-y-auto flex-1 -mx-6 px-6 py-3 space-y-3">
-            {node && node.positions.length === 0 && (
+            {visiblePositions.length === 0 && (
               <div className="py-12 text-center">
                 <Briefcase className="w-10 h-10 mx-auto text-muted-foreground/40 mb-2" />
                 <p className="text-sm text-muted-foreground">Bu strukturda vəzifə yoxdur</p>
               </div>
             )}
-            {node && node.positions.length > 0 && filteredPositions.length === 0 && (
+            {visiblePositions.length > 0 && filteredPositions.length === 0 && (
               <p className="text-sm text-center text-muted-foreground py-6">Nəticə yoxdur</p>
             )}
             {filteredPositions.map(pos => (
-              <PositionCard key={pos.id} position={pos} structureId={node!.id} structureName={node!.name} />
+              <PositionCard key={pos.id} position={pos} />
             ))}
           </div>
         </StaffEditCtx.Provider>
@@ -872,9 +991,10 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
             <div className="flex gap-3 pt-2">
               <button onClick={() => setConfirmSave(false)} className="flex-1 py-2.5 text-sm rounded-lg border border-border bg-card">Xeyr</button>
               <button
-                onClick={() => { setConfirmSave(false); setIsEditing(false); toast.success("Dəyişikliklər yadda saxlandı"); }}
+                onClick={handleSave}
+                disabled={saving}
                 className="flex-1 py-2.5 text-sm rounded-lg bg-primary text-primary-foreground font-medium"
-              >Bəli</button>
+              >{saving ? "Yadda saxlanır..." : "Bəli"}</button>
             </div>
           </DialogContent>
         </Dialog>
@@ -883,11 +1003,11 @@ const StaffModal = ({ node, onClose }: { node: OrgStructure | null; onClose: () 
         <Dialog open={confirmCancel} onOpenChange={setConfirmCancel}>
           <DialogContent className="max-w-md">
             <DialogHeader><DialogTitle>Təsdiq</DialogTitle></DialogHeader>
-            <p className="text-sm text-muted-foreground">Redaktə rejimindən çıxmaq istədiyinizə əminsiniz? Redaktə rejimi bağlanacaq.</p>
+            <p className="text-sm text-muted-foreground">Redaktə zamanı edilən dəyişikliklər ləğv ediləcək və cədvəl son yadda saxlanılmış vəziyyətə qayıdacaq.</p>
             <div className="flex gap-3 pt-2">
               <button onClick={() => setConfirmCancel(false)} className="flex-1 py-2.5 text-sm rounded-lg border border-border bg-card">Xeyr</button>
               <button
-                onClick={() => { setConfirmCancel(false); setIsEditing(false); setShowAddPos(false); }}
+                onClick={handleCancel}
                 className="flex-1 py-2.5 text-sm rounded-lg bg-destructive text-destructive-foreground font-medium"
               >Bəli</button>
             </div>
