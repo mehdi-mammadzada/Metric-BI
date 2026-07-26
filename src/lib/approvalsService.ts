@@ -245,3 +245,44 @@ export const deactivateApprovalsSync = () => {
   if (realtimeChannel) { supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
   if (onFocusHandler) { window.removeEventListener("focus", onFocusHandler); onFocusHandler = null; }
 };
+
+/** Aktiv təşkilat id-si (approval yazıları üçün). */
+export const getApprovalsOrgId = (): string | null => currentOrgId;
+
+/** Bir approval sətrini DƏRHAL backend-ə yazır. true = uğurlu. */
+export const persistApprovalRowToCloud = async (a: {
+  id: string;
+  kpiCardId: string;
+  kpiName: string;
+  matrixId?: string;
+  approverIds?: string[];
+  decisions?: Record<string, unknown>;
+  status?: string;
+  stepsChain?: string[][];
+  currentStep?: number;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}): Promise<boolean> => {
+  if (!currentOrgId) return false;
+  const { error } = await supabase.from("approval_queue").upsert({
+    organization_id: currentOrgId,
+    local_id: a.id,
+    kpi_card_local_id: a.kpiCardId,
+    kpi_name: a.kpiName,
+    matrix_local_id: a.matrixId || null,
+    approver_ids: a.approverIds ?? [],
+    decisions: a.decisions ?? {},
+    status: a.status ?? "pending",
+    steps_chain: (a.stepsChain as unknown as any) ?? null,
+    current_step: a.currentStep ?? null,
+    created_by: a.createdBy ?? null,
+    created_at: a.createdAt ?? new Date().toISOString(),
+    updated_at: a.updatedAt ?? new Date().toISOString(),
+  } as any, { onConflict: "organization_id,local_id" });
+  if (error) {
+    console.error("[approvals] persist failed", error);
+    return false;
+  }
+  return true;
+};
