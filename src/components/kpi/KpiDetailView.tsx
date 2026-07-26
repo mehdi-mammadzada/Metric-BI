@@ -89,7 +89,11 @@ const KpiDetailView = ({
 
 
   const hasMatrix = !!selectedKpi.matrixId;
-  const tabs = KPI_DETAIL_TABS.filter(([k]) => k !== "status" || hasMatrix);
+  const isPersonalCard = getAssignKindFor(selectedKpi.id) === "Fərdi";
+  const tabs = KPI_DETAIL_TABS
+    .filter(([k]) => k !== "status" || hasMatrix)
+    .filter(([k]) => !isPersonalCard || (k !== "reviewTrack" && k !== "history"));
+
 
   const st = getStatusFor(selectedKpi.id);
   const rejectBanner = st.status === "imtina" ? (
