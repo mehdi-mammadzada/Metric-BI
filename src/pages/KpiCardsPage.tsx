@@ -4151,8 +4151,44 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* HR üçün Cascade Load bölgüsü — rəhbər modulundakı axının eynisi */}
+      {hrCascade && (
+        <CascadeLoadConfirmDialog
+          open={!!hrCascade}
+          onOpenChange={(o) => !o && setHrCascade(null)}
+          value={hrCascade.value}
+          unit={hrCascade.unit}
+          onDecline={() => { hrCascade.makeRoots(); setHrCascade(null); }}
+          onConfirm={() => { setHrCascadeDistribute(hrCascade); setHrCascade(null); }}
+        />
+      )}
+
+      {hrCascadeDistribute && (
+        <CascadeDistributeDialog
+          open={!!hrCascadeDistribute}
+          onOpenChange={(o) => !o && setHrCascadeDistribute(null)}
+          bootstrap={{
+            cardName: hrCascadeDistribute.cardName,
+            goalName: hrCascadeDistribute.goalName,
+            unit: hrCascadeDistribute.unit,
+            assigneeName: hrCascadeDistribute.assigneeName,
+            assigneeId: hrCascadeDistribute.assigneeId,
+            limit: hrCascadeDistribute.value,
+            defaultSliceValue: hrCascadeDistribute.defaultSliceValue,
+            cascadable: true,
+            nodeId: hrCascadeDistribute.nodeId,
+            restrictToEmployeeIds: getCascadeCandidateIds({
+              setterEmployeeId: hrCascadeDistribute.assigneeId,
+              cardId: hrCascadeDistribute.cardId,
+              cardName: hrCascadeDistribute.cardName,
+            }),
+          }}
+        />
+      )}
     </div>
   );
 };
+
 
 export default KpiCardsPage;
