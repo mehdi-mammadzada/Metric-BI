@@ -1026,29 +1026,23 @@ const FRACTION_OPTIONS: { value: 1 | 0.75 | 0.5 | 0.25; label: string }[] = [
   { value: 0.25, label: "0.25 ştat" },
 ];
 
-const PositionCard = ({ position, structureId, structureName }: { position: OrgPosition; structureId: number; structureName: string }) => {
-  const { readOnly } = useContext(StaffEditCtx);
+const PositionCard = ({ position }: { position: OrgPosition }) => {
+  const { readOnly, deletePosition, addSlots } = useContext(StaffEditCtx);
   const [showAddSlot, setShowAddSlot] = useState(false);
   const [slotCount, setSlotCount] = useState(1);
   const [slotFraction, setSlotFraction] = useState<1 | 0.75 | 0.5 | 0.25>(1);
 
   const handleDelete = () => {
     if (!confirm(`"${position.name}" vəzifəsini silmək istəyirsiniz?`)) return;
-    removePosition(position.id);
-    toast.success("Vəzifə silindi");
+    deletePosition(position.id);
   };
 
-  const handleAddSlots = async () => {
+  const handleAddSlots = () => {
     const n = Math.max(1, Math.min(100, Number(slotCount) || 1));
-    try {
-      await addSlotsInCloud(position.id, n, slotFraction);
-      setShowAddSlot(false);
-      setSlotCount(1);
-      setSlotFraction(1);
-      toast.success(n > 1 ? `${n} ştat əlavə edildi` : "Ştat əlavə edildi");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Ştat database-ə yazılmadı.");
-    }
+    addSlots(position.id, n, slotFraction);
+    setShowAddSlot(false);
+    setSlotCount(1);
+    setSlotFraction(1);
   };
 
   return (
@@ -1122,7 +1116,7 @@ const PositionCard = ({ position, structureId, structureName }: { position: OrgP
 interface SlotRowProps { slot: { id: number; employeeId: number | null; salary: number | null; fraction?: 1 | 0.75 | 0.5 | 0.25 }; index: number; }
 
 const SlotRow = ({ slot, index }: SlotRowProps) => {
-  const { readOnly } = useContext(StaffEditCtx);
+  const { readOnly, assignedIds, updateSlot, removeSlot } = useContext(StaffEditCtx);
   const [employees, setEmployees] = useState<OrgEmployee[]>(() => getEmployees());
   const [salaryDraft, setSalaryDraft] = useState(slot.salary != null ? String(slot.salary) : "");
   useEffect(() => {
@@ -1134,7 +1128,6 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
     setSalaryDraft(slot.salary != null ? String(slot.salary) : "");
   }, [slot.id, slot.salary]);
 
-  const assignedIds = useMemo(() => getAssignedEmployeeIds(), [employees]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
 
@@ -1198,6 +1191,7 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <button
+              disabled={readOnly}
               className="w-full text-left px-3 py-2 text-sm border border-border rounded-lg bg-background hover:bg-secondary/30 flex items-center justify-between gap-2"
             >
               <span className="truncate">
@@ -1224,12 +1218,8 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
                 <button
                   onClick={async () => {
                     setOpen(false);
-                    try {
-                      await assignSlotInCloud(slot.id, { employeeId: null });
-                      toast.success("Təyinat ləğv edildi");
-                    } catch (err) {
-                      toast.error(err instanceof Error ? err.message : "Təyinat database-də ləğv edilmədi.");
-                    }
+                    updateSlot(slot.id, { employeeId: null });
+                    toast.success("Təyinat redaktə layihəsində ləğv edildi");
                   }}
                   className="w-full text-left px-3 py-2 text-xs text-destructive hover:bg-destructive/5 border-b border-border flex items-center gap-1.5"
                 >
@@ -1244,12 +1234,8 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
                   key={e.id}
                   onClick={async () => {
                     setOpen(false);
-                    try {
-                      await assignSlotInCloud(slot.id, { employeeId: e.id });
-                      toast.success("Əməkdaş təyin edildi");
-                    } catch (err) {
-                      toast.error(err instanceof Error ? err.message : "Əməkdaş təyinatı database-ə yazılmadı.");
-                    }
+                    updateSlot(slot.id, { employeeId: e.id });
+                    toast.success("Əməkdaş redaktə layihəsində təyin edildi");
                   }}
                   className={`w-full text-left px-3 py-2.5 text-sm hover:bg-secondary/40 flex items-center justify-between gap-3 ${e.id === slot.employeeId ? 'bg-primary/5' : ''}`}
                 >
@@ -1266,13 +1252,8 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
       </div>
       <Select
         value={String(slot.fraction ?? 1)}
-        onValueChange={async (v) => {
-          try {
-            await assignSlotInCloud(slot.id, { fraction: Number(v) as 1 | 0.75 | 0.5 | 0.25 });
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Ştat vahidi database-ə yazılmadı.");
-          }
-        }}
+        onValueChange={(v) => updateSlot(slot.id, { fraction: Number(v) as OrgSlotFraction })}
+        disabled={readOnly}
       >
         <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
         <SelectContent>
@@ -1288,24 +1269,13 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
         value={salaryDraft}
         disabled={readOnly}
         onChange={e => setSalaryDraft(e.target.value)}
-        onBlur={async () => {
-          try {
-            await assignSlotInCloud(slot.id, { salary: salaryDraft ? Number(salaryDraft) : null });
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Maaş database-ə yazılmadı.");
-          }
-        }}
+        onBlur={() => updateSlot(slot.id, { salary: salaryDraft ? Number(salaryDraft) : null })}
         className="w-32 px-2 py-1.5 text-sm border border-border rounded-lg bg-background disabled:opacity-60 disabled:cursor-not-allowed"
       />
       {!readOnly && (
         <button
           onClick={async () => {
-            try {
-              await removeSlotInCloud(slot.id);
-              toast.success("Ştat silindi");
-            } catch (err) {
-              toast.error(err instanceof Error ? err.message : "Ştat database-dən silinmədi.");
-            }
+            removeSlot(slot.id);
           }}
           className="p-1 rounded hover:bg-destructive/10"
         >
