@@ -194,52 +194,25 @@ export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
                     <Sliders className="w-3 h-3 text-primary" />
                     Qiymət Limitləri
                   </div>
-                  {limits ? (() => {
-                    const subTarget = parseNum(sk.target || "0");
-                    const currentValue = subTarget * (gsrClamped / 100);
-                    // Cari vəziyyət hansı limitə düşürsə – onu seç
-                    let currentTier: string | null = null;
-                    for (const { tier } of TIER_LABELS) {
-                      const r = limits[tier];
-                      if (currentValue >= r.min && currentValue <= r.max) { currentTier = tier; break; }
-                    }
-                    if (!currentTier) {
-                      // ən yaxın tier
-                      let best: string | null = null; let bestD = Infinity;
-                      TIER_LABELS.forEach(({ tier }) => {
+                  {limits ? (
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {TIER_LABELS.map(({ tier, label }) => {
                         const r = limits[tier];
-                        const d = Math.min(Math.abs(currentValue - r.min), Math.abs(currentValue - r.max));
-                        if (d < bestD) { bestD = d; best = tier; }
-                      });
-                      currentTier = best;
-                    }
-                    return (
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {TIER_LABELS.map(({ tier, score: sc, label }) => {
-                          const r = limits[tier];
-                          const active = tier === currentTier;
-                          return (
-                            <div
-                              key={tier}
-                              className={`rounded-md border px-2 py-1.5 text-center transition-all ${
-                                active
-                                  ? "border-primary bg-primary/10 ring-2 ring-primary/40 shadow-sm"
-                                  : "border-border bg-background opacity-70"
-                              }`}
-                            >
-                              <p className={`text-[10px] ${active ? "text-primary font-semibold" : "text-muted-foreground"}`}>{label}</p>
-                              <p className={`text-[11px] font-semibold tabular-nums mt-0.5 ${active ? "text-primary" : "text-foreground"}`}>
-                                {fmtUnit(r.min, sk.unit || "")} – {fmtUnit(r.max, sk.unit || "")}
-                              </p>
-                              {active && (
-                                <p className="text-[9px] text-primary mt-0.5">Cari: {fmtUnit(currentValue, sk.unit || "")}</p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })() : (sk.scoreDescriptions && sk.scoreDescriptions.length > 0) ? (
+                        return (
+                          <div
+                            key={tier}
+                            className="rounded-md border border-border bg-background px-2 py-1.5 text-center"
+                          >
+                            <p className="text-[10px] text-muted-foreground">{label}</p>
+                            <p className="text-[11px] font-semibold tabular-nums mt-0.5 text-foreground">
+                              {fmtUnit(r.min, sk.unit || "")} – {fmtUnit(r.max, sk.unit || "")}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (sk.scoreDescriptions && sk.scoreDescriptions.length > 0) ? (
+
                     <div className="grid grid-cols-5 gap-1.5">
                       {[1,2,3,4,5].map(s => {
                         const row = sk.scoreDescriptions!.find((d: any) => Number(d.score) === s);
