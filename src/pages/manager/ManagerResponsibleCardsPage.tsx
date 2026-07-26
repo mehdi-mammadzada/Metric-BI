@@ -16,6 +16,7 @@ import { useKpiSet, getIncomingCascadeLoad, dedupeKpiSetEntries, type KpiSetEntr
 import { addPendingEntry } from "@/lib/kpiSetStore";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
 import { createRoot, findRootByGoal, useCascadeTree } from "@/lib/cascadeTreeStore";
+import { createRootsForCardAssignees, getCascadeCandidateIds } from "@/lib/cascadeAssignment";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCurrentEmployeeId } from "@/lib/scope";
 import { getEmployees } from "@/lib/orgStore";
@@ -267,22 +268,22 @@ const AssignView = () => {
     };
   }, [groups]);
 
+  // Cascade Load bölüşdürülmədən yaradılan kaskadlana bilən hədəf:
+  // ROOT təyinedici rəhbərin yox, kartın tətbiq olunduğu əməkdaşların adına yaranır.
   const createIndependentCascadeRoot = (entry: KpiSetEntry) => {
     if (!entry.cascadable) return;
-    const emp = entry.assigneeId
+    const setter = entry.assigneeId
       ? getEmployees().find(e => e.id === entry.assigneeId)
       : getEmployees().find(e => `${e.firstName} ${e.lastName}` === stripPos(entry.assigneeName));
-    if (!emp) return;
     const goalName = entry.subKpiName || entry.cardName;
-    if (findRootByGoal(entry.cardName, goalName, emp.id)) return;
-    createRoot({
+    createRootsForCardAssignees({
+      cardId: entry.cardId,
       cardName: entry.cardName,
       goalName,
       unit: entry.unit,
-      assigneeId: emp.id,
-      assigneeName: `${emp.firstName} ${emp.lastName}`,
-      positionName: emp.positionName,
       limit: (entry as any).defaultSliceValue ?? parseNum(entry.target),
+      setterEmployeeId: setter?.id,
+      fallbackEmployeeId: setter?.id,
     });
   };
 
@@ -430,6 +431,11 @@ const AssignView = () => {
             defaultSliceValue: (distribute as any).defaultSliceValue ?? parseNum(distribute.target),
             cascadable: !!distribute.cascadable,
             nodeId: (distribute as any).cascadeNodeId,
+            restrictToEmployeeIds: getCascadeCandidateIds({
+              setterEmployeeId: distribute.assigneeId,
+              cardId: distribute.cardId,
+              cardName: distribute.cardName,
+            }),
           }}
         />
       )}
