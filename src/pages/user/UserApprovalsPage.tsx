@@ -102,19 +102,28 @@ const UserApprovalsPage = () => {
   const approvedRequests = requests.filter(r => r.status === "approved");
   const rejectedRequests = requests.filter(r => r.status === "rejected");
 
-  const handleApprove = (req: ApprovalRequest) => {
+  const handleApprove = async (req: ApprovalRequest) => {
     if (!req.actionApproverId) return;
-    decideApproval(req.id, req.actionApproverId, "approved", approveComment || undefined);
-    setApproveComment(""); setShowApproveInput(false); setSelectedRequest(null);
-    toast.success("Sorğu təsdiqləndi");
+    try {
+      await decideApproval(req.id, req.actionApproverId, "approved", approveComment || undefined);
+      setApproveComment(""); setShowApproveInput(false); setSelectedRequest(null);
+      toast.success("Sorğu təsdiqləndi");
+    } catch (e) {
+      toast.error((e as Error).message || "Qərar saxlanmadı");
+    }
   };
 
-  const handleReject = (req: ApprovalRequest) => {
+  const handleReject = async (req: ApprovalRequest) => {
     if (!rejectReason.trim() || !req.actionApproverId) return;
-    decideApproval(req.id, req.actionApproverId, "rejected", rejectReason);
-    setRejectReason(""); setShowRejectInput(false); setSelectedRequest(null);
-    toast.error("Sorğu imtina edildi");
+    try {
+      await decideApproval(req.id, req.actionApproverId, "rejected", rejectReason);
+      setRejectReason(""); setShowRejectInput(false); setSelectedRequest(null);
+      toast.error("Sorğu imtina edildi");
+    } catch (e) {
+      toast.error((e as Error).message || "Qərar saxlanmadı");
+    }
   };
+
 
   const getStatusBadge = (status: string) => {
     switch (status) {
