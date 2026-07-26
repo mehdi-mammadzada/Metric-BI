@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useKpiSet, getIncomingCascadeLoad, dedupeKpiSetEntries, type KpiSetEntry } from "@/lib/kpiSetStore";
 import { addPendingEntry } from "@/lib/kpiSetStore";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
-import { createRoot, findRootByGoal, useCascadeTree } from "@/lib/cascadeTreeStore";
+import { useCascadeTree } from "@/lib/cascadeTreeStore";
 import { createRootsForCardAssignees, getCascadeCandidateIds } from "@/lib/cascadeAssignment";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCurrentEmployeeId } from "@/lib/scope";
