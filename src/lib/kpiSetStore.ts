@@ -32,6 +32,7 @@ export interface ScoreDescRow {
   description?: string;
   timeStart?: string;
   timeEnd?: string;
+  isMinBonus?: boolean;
 }
 
 export type KpiEntryType =

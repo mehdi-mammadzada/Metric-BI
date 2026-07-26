@@ -42,6 +42,8 @@ export interface WizardScoreDesc {
   description: string;
   timeStart?: string;
   timeEnd?: string;
+  /** Bonus hesablanmasının başladığı minimum bal (yalnız bir sətir üçün) */
+  isMinBonus?: boolean;
 }
 
 export interface WizardEvaluatorRef { id: string; name: string; weight: number }
