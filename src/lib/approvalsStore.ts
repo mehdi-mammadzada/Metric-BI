@@ -152,19 +152,20 @@ export const enqueueApproval = (input: {
   return item;
 };
 
-export const decideApproval = (
+export const decideApproval = async (
   approvalId: string,
   approverId: string,
   decision: Exclude<ApprovalDecision, "pending">,
   note?: string,
-) => {
+): Promise<void> => {
   const list = load();
   const idx = list.findIndex(a => a.id === approvalId);
-  if (idx < 0) return;
+  if (idx < 0) throw new Error("Sorğu tapılmadı");
   const item = { ...list[idx] };
-  if (item.status !== "pending") return;
-  if (!item.approverIds.includes(approverId)) return;
-  if (item.decisions[approverId]?.decision && item.decisions[approverId].decision !== "pending") return;
+  if (item.status !== "pending") throw new Error("Bu sorğu artıq qərarlandırılıb");
+  if (!item.approverIds.includes(approverId)) throw new Error("Bu sorğu üzrə təsdiq səlahiyyətiniz yoxdur");
+  if (item.decisions[approverId]?.decision && item.decisions[approverId].decision !== "pending") throw new Error("Qərarınız artıq qeydə alınıb");
+
   item.decisions = {
     ...item.decisions,
     [approverId]: { decision, note, at: new Date().toISOString() },
