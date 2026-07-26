@@ -9,9 +9,12 @@ import { useState } from "react";
 import {
   Target, Clock, ArrowUp, ArrowDown, CheckCircle, AlertTriangle, Calendar,
   ChevronDown, ChevronUp, Info, ShoppingCart, Store, Monitor, BarChart3,
+  FileText, User, Crosshair, Activity,
 } from "lucide-react";
 import type { KpiCard } from "@/lib/kpiCardTypes";
 import type { KpiCardStatusRow, KpiCardStatus } from "@/lib/kpiCardStatusStore";
+import { STATUS_LABELS, STATUS_STYLES } from "@/lib/kpiCardStatusStore";
+
 import KpiExtraTabContent, { isExtraTab } from "./KpiExtraTabs";
 import BscScorecardTab from "./BscScorecardTab";
 import LifecycleView, { REVIEW_STATUS_STYLES } from "./LifecycleView";
