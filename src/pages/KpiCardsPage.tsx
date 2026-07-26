@@ -47,6 +47,9 @@ import { buildSharedCardFromDraft, setKpiStatus, upsertSharedKpiCard, useSharedK
 import { withKartSuffix } from "@/lib/utils";
 import { WeightInput } from "@/components/kpi/WeightInput";
 import { findRootByGoal, createRoot } from "@/lib/cascadeTreeStore";
+import { createRootsForCardAssignees, getCascadeCandidateIds } from "@/lib/cascadeAssignment";
+import CascadeDistributeDialog from "@/components/kpi/CascadeDistributeDialog";
+import CascadeLoadConfirmDialog from "@/components/kpi/CascadeLoadConfirmDialog";
 import { getCurrentEmployeeId } from "@/lib/scope";
 import { enqueueApproval, getApprovals } from "@/lib/approvalsStore";
 
@@ -923,36 +926,54 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
 
 
-    // === Cascade root: yalnız Cascade Load İSTİFADƏ OLUNMAYAN cascadable hədəf root yaradır ===
-    // Vacib qayda: şəxsin artıq başqa ağacdan Cascade Load-u olsa belə, əgər bu
-    // yeni hədəf həmin load bölüşdürülmədən yaradılıbsa və "Kaskadlana bilər"dirsə,
-    // bu ayrıca müstəqil root-dur. Load istifadə ediləndə child node-u bölgü dialoqu yaradır.
+    // === Cascade: HR kartı yaradarkən hədəf təyin edir ===
+    // a) HR-ın üzərində Cascade Load varsa → "Məsul olduğum kartlar"dakı kimi
+    //    pop-up çıxır və HR həmin load-u bölüşdürə bilər.
+    // b) Load bölüşdürülmürsə → ROOT kartın tətbiq olunduğu əməkdaşların adına yaranır.
     try {
-      const employeesAll = getEmployees();
-      const findEmp = (name: string) => employeesAll.find(e => `${e.firstName} ${e.lastName}` === name);
-      (d.targets || []).forEach((t: any) => {
-        if (t.createdBy !== "self" || !t.cascading) return;
+      const meEmpId = Number(String(getCurrentEmployeeId(user) || "").replace(/^e/i, "")) || undefined;
+      const meEmp = getEmployees().find(e => e.id === meEmpId);
+      const meName = meEmp ? `${meEmp.firstName} ${meEmp.lastName}` : "";
+      const cascadableTargets = (d.targets || []).filter((t: any) => t.createdBy === "self" && t.cascading);
+      const pendingRoots: Array<{ goalName: string; unit: string; limit: number }> = [];
+      cascadableTargets.forEach((t: any) => {
         const limit = parseNumLoose(t.targetValue);
         if (limit <= 0) return;
         const unit = t.type === "Məbləğ" ? (t.currency || "AZN") : t.type === "Faiz" ? "%" : (t.unit || "");
-        const goalName = t.name || d.name || "Ana hədəf";
-        ownerAssigneeNames.forEach(ownerName => {
-          const emp = findEmp(ownerName);
-          if (!emp) return;
-          // Eyni goal/card üçün mövcud root varsa yenidən yaratma.
-          const existing = findRootByGoal(d.name || "Kart", goalName, emp.id);
-          if (existing) return;
-          createRoot({
-            cardName: d.name || "Kart",
-            goalName,
-            unit,
-            assigneeId: emp.id,
-            assigneeName: `${emp.firstName} ${emp.lastName}`,
-            positionName: emp.positionName,
-            limit,
-          });
-        });
+        pendingRoots.push({ goalName: t.name || d.name || "Ana hədəf", unit, limit });
       });
+
+      const kpiSetMod = await import("@/lib/kpiSetStore");
+      const first = pendingRoots[0];
+      const incoming = meName && first
+        ? kpiSetMod.getIncomingCascadeLoad(meName, id, { cardName: d.name, goalName: first.goalName })
+        : null;
+
+      const makeRoots = () => pendingRoots.forEach(r => createRootsForCardAssignees({
+        cardId: id,
+        cardName: d.name || "Kart",
+        goalName: r.goalName,
+        unit: r.unit,
+        limit: r.limit,
+        setterEmployeeId: meEmpId,
+      }));
+
+      if (incoming?.nodeId && incoming.value > 0 && first) {
+        setHrCascade({
+          value: incoming.value,
+          unit: incoming.unit || first.unit,
+          cardId: id,
+          cardName: d.name || "Kart",
+          goalName: first.goalName,
+          nodeId: incoming.nodeId,
+          assigneeId: meEmpId,
+          assigneeName: meName,
+          defaultSliceValue: first.limit,
+          makeRoots,
+        });
+      } else {
+        makeRoots();
+      }
     } catch (err) {
       console.warn("cascade root seed failed", err);
     }
@@ -980,6 +1001,13 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   // === KPI card status (Natamam / Təsdiq gözlənilir / İmtina / Aktiv) ===
   const [statusMap, setStatusMap] = useState<Record<number, import("@/lib/kpiCardStatusStore").KpiCardStatusRow>>({});
   const [statusDialogCardId, setStatusDialogCardId] = useState<number | null>(null);
+  // HR üçün Cascade Load bölgüsü (rəhbər modulundakı ilə eyni axın)
+  const [hrCascade, setHrCascade] = useState<null | {
+    value: number; unit: string; cardId: number; cardName: string; goalName: string;
+    nodeId?: string; assigneeId?: number; assigneeName: string; defaultSliceValue: number;
+    makeRoots: () => void;
+  }>(null);
+  const [hrCascadeDistribute, setHrCascadeDistribute] = useState<typeof hrCascade>(null);
   const [employeeDrilldown, setEmployeeDrilldown] = useState<string | null>(null);
   useEffect(() => {
     let timer: number | null = null;
