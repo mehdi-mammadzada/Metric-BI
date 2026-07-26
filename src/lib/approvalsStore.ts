@@ -205,10 +205,18 @@ export const decideApproval = async (
   }
 
   item.updatedAt = new Date().toISOString();
+
+  // SERVER-AUTHORITATIVE: qərar əvvəlcə backend-ə yazılır. Yazı alınmasa,
+  // lokal vəziyyət dəyişmir — beləliklə bütün brauzer/cihazlarda eyni olur.
+  const { getApprovalsOrgId, persistApprovalRowToCloud } = await import("./approvalsService");
+  if (!getApprovalsOrgId()) throw new Error("Təşkilat konteksti yüklənməyib. Səhifəni yeniləyin.");
+  const ok = await persistApprovalRowToCloud(item);
+  if (!ok) throw new Error("Qərar serverdə saxlanmadı. Yenidən cəhd edin.");
+
   list[idx] = item;
   save(list);
-  flushSoon();
   try { upsertLocalApproval(item); } catch {}
+
 
   // Mirror the decision onto the shared KPI card itself.
   if (item.status === "approved") {
