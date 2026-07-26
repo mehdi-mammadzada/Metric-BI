@@ -418,6 +418,15 @@ export const removePosition = (positionId: number) => {
   return list;
 };
 
+export const replaceStructurePositions = (structureId: number, positions: OrgPosition[]) => {
+  const list = cloneStructures(getStructures());
+  findAndMutate(list, structureId, (node) => {
+    node.positions = JSON.parse(JSON.stringify(positions)) as OrgPosition[];
+  });
+  setStructures(list);
+  return list;
+};
+
 /** Struktur boş deyilsə (alt struktur və ya təyin olunmuş əməkdaş varsa) səbəbi qaytarır. */
 export const canRemoveStructure = (structureId: number): { ok: true } | { ok: false; hasChildren: boolean; hasEmployees: boolean; reason: string } => {
   const findNode = (nodes: OrgStructure[]): OrgStructure | null => {
