@@ -46,7 +46,7 @@ import { upsertStatus } from "@/lib/kpiCardStatusStore";
 import { buildSharedCardFromDraft, setKpiStatus, upsertSharedKpiCard, useSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
 import { withKartSuffix } from "@/lib/utils";
 import { WeightInput } from "@/components/kpi/WeightInput";
-import { findRootByGoal, createRoot } from "@/lib/cascadeTreeStore";
+// cascade root yaradılması `cascadeAssignment` üzərindən aparılır
 import { createRootsForCardAssignees, getCascadeCandidateIds } from "@/lib/cascadeAssignment";
 import CascadeDistributeDialog from "@/components/kpi/CascadeDistributeDialog";
 import CascadeLoadConfirmDialog from "@/components/kpi/CascadeLoadConfirmDialog";
