@@ -119,24 +119,33 @@ const ApprovalsPage = () => {
 
   const closeDetail = () => { setDetailId(null); setDetailNote(""); };
 
-  const handleApproveInDetail = () => {
+  const handleApproveInDetail = async () => {
     if (!detail || !meId) return;
     const approverId = detail.approverIds.find(id => aliasesFor(meId).includes(id)) || meId;
-    decideApproval(detail.id, approverId, "approved", detailNote || undefined);
-    toast.success("KPI təsdiqləndi");
-    closeDetail();
+    try {
+      await decideApproval(detail.id, approverId, "approved", detailNote || undefined);
+      toast.success("KPI təsdiqləndi");
+      closeDetail();
+    } catch (e) {
+      toast.error((e as Error).message || "Qərar saxlanmadı");
+    }
   };
-  const handleRejectInDetail = () => {
+  const handleRejectInDetail = async () => {
     if (!detail || !meId) return;
     if (!detailNote.trim()) {
       toast.error("İmtina üçün rəy yazın");
       return;
     }
     const approverId = detail.approverIds.find(id => aliasesFor(meId).includes(id)) || meId;
-    decideApproval(detail.id, approverId, "rejected", detailNote);
-    toast.success("İmtina qeyd olundu");
-    closeDetail();
+    try {
+      await decideApproval(detail.id, approverId, "rejected", detailNote);
+      toast.success("İmtina qeyd olundu");
+      closeDetail();
+    } catch (e) {
+      toast.error((e as Error).message || "Qərar saxlanmadı");
+    }
   };
+
 
   const columns = [
     { key: "pending" as const, label: "Gözləyir", icon: Clock, color: "amber" },
