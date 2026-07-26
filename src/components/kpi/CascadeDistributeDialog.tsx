@@ -28,6 +28,8 @@ interface Props {
      *  Verildikdə dialoq heç bir başqa node axtarmır və yeni root yaratmır —
      *  paylanma məhz bu node-un altında baş verir. */
     nodeId?: string;
+    /** Yalnız bu əməkdaşlara bölgü mümkündür (kartın tətbiq olunduğu tabelik). */
+    restrictToEmployeeIds?: number[] | null;
   };
   onDistributed?: () => void;
 }
@@ -104,8 +106,16 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
     return getSubordinatesOfStarHolder(node.assigneeId, unitId);
   }, [node?.id]);
 
-  const leaders = useMemo(() => subordinates.filter(e => e.isStarPerson), [subordinates]);
-  const currentList = audience === "all" ? subordinates : audience === "leaders" ? leaders : [];
+  // Qayda: yalnız HƏM tabelikdə olan, HƏM DƏ kartın tətbiq olunduğu əməkdaşlar.
+  const allowed = useMemo(() => {
+    const restrict = bootstrap?.restrictToEmployeeIds;
+    if (!restrict) return subordinates;
+    const set = new Set(restrict);
+    return subordinates.filter(e => set.has(e.id));
+  }, [subordinates, bootstrap?.restrictToEmployeeIds]);
+
+  const leaders = useMemo(() => allowed.filter(e => e.isStarPerson), [allowed]);
+  const currentList = audience === "all" ? allowed : audience === "leaders" ? leaders : [];
 
   const setSlice = (id: number, val: string) => {
     const clean = val.replace(/[^\d.]/g, "");
@@ -125,7 +135,7 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
     }
     const rows = Object.entries(slices)
       .map(([id, v]) => {
-        const emp = subordinates.find(e => e.id === Number(id));
+        const emp = allowed.find(e => e.id === Number(id));
         return emp && parseFloat(v) > 0 ? {
           assigneeId: emp.id,
           assigneeName: `${emp.firstName} ${emp.lastName}`,
@@ -169,7 +179,7 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
               active={audience === "all"}
               icon={Users}
               title="Tabeliyimdə olan bütün əməkdaşlar"
-              subtitle={`${subordinates.length} şəxs`}
+              subtitle={`${allowed.length} şəxs`}
               onClick={() => { setAudience("all"); setSlices({}); }}
             />
             <AudienceRadio
