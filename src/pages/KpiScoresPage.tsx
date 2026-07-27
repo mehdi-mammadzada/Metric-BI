@@ -13,51 +13,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import ExportMenu from "@/components/common/ExportMenu";
 import { DataTable } from "@/components/common/DataTable";
 import { getEmployees } from "@/lib/orgStore";
-import { MONTHS, type Month } from "@/lib/salaryStore";
+import { MONTHS } from "@/lib/salaryStore";
 import { cn, withKartSuffix } from "@/lib/utils";
+import { useSharedKpiCards } from "@/lib/kpiCardStore";
+import { calcCompletion, getSubKpis, isEvaluated } from "@/lib/kpiEvaluationStore";
 
-const YEARS = [2024, 2025, 2026];
+const YEARS = [2025, 2026];
 
-const KPI_CARDS = [
-  "Satış Həcmi",
-  "Müştəri Məmnuniyyəti",
-  "Komanda İşi",
-  "Vaxtında Tapşırıq Yerinə Yetirmə",
-  "Peşəkar İnkişaf",
-  "Yeni Müştəri Cəlbi",
-];
-
-const EVALUATORS = [];
-
-const monthIdx = (m: string) => MONTHS.indexOf(m as Month);
 const pad = (n: number) => String(n).padStart(2, "0");
 const lastDayOfMonth = (year: number, mIdx: number) => new Date(year, mIdx + 1, 0).getDate();
-
-// Deterministic pseudo-score so the page is stable across renders
-const scoreFor = (empId: number, cardIdx: number, year: number, mIdx: number) => {
-  const seed = (empId * 31 + cardIdx * 7 + year + mIdx * 3) % 100;
-  const base = 3.4 + (seed / 100) * 1.6; // 3.4..5.0
-  return Math.round(base * 10) / 10;
-};
-
-// Hər hədəf üçün 1–3 qiymətləndirici (çəki + bal) — bəzilərində 2+ qiymətləndirici olur.
-const evaluatorsFor = (empId: number, cardIdx: number): { name: string; role: string; weight: number; score: number }[] => {
-  const count = ((empId + cardIdx) % 3) + 1; // 1, 2 və ya 3
-  const picks: { name: string; role: string; weight: number; score: number }[] = [];
-  for (let i = 0; i < count; i++) {
-    const ev = EVALUATORS[(empId + cardIdx + i * 2) % EVALUATORS.length];
-    const seed = (empId * 17 + cardIdx * 5 + i * 11) % 100;
-    const s = Math.round((2 + (seed / 100) * 3) * 10) / 10; // 2..5
-    picks.push({ name: ev.name, role: ev.role, weight: 0, score: s });
-  }
-  // Çəkiləri 100%-ə normallaşdır (ilk fərqli paylar: 80/20, 60/30/10 və s.)
-  const weights = count === 1 ? [100] : count === 2 ? [70, 30] : [50, 30, 20];
-  picks.forEach((p, i) => (p.weight = weights[i]));
-  return picks;
-};
-
-const evaluatorFor = (empId: number, cardIdx: number) =>
-  EVALUATORS[(empId + cardIdx) % EVALUATORS.length];
 
 const scoreColor = (s: number) =>
   s >= 4.5
@@ -68,16 +32,28 @@ const scoreColor = (s: number) =>
     ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
     : "bg-destructive/15 text-destructive border-destructive/30";
 
+interface GoalRow {
+  name: string;
+  target: number;
+  actual: number;
+  unit: string;
+  weight: number;
+  score: number;
+  progress: number;
+  note?: string;
+}
+
 interface ScoreRow {
   empId: number;
   fullName: string;
   fatherName: string;
-  cardIdx: number;
+  cardId: string;
   cardName: string;
   periodLabel: string;
   startDate: string;
   endDate: string;
   score: number;
+  goals: GoalRow[];
 }
 
 export interface KpiScoresPageProps {
@@ -91,11 +67,20 @@ type Periodicity = "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly" | 
 
 const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle }: KpiScoresPageProps = {}) => {
   const employees = useMemo(() => employeesOverride || getEmployees().filter(e => e.active), [employeesOverride]);
+  const cards = useSharedKpiCards();
+  const employeeById = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof getEmployees>[number]>();
+    employees.forEach(e => {
+      map.set(String(e.id), e);
+      map.set(`e${e.id}`, e);
+    });
+    return map;
+  }, [employees]);
+  const cardOptions = useMemo(() => Array.from(new Set(cards.map(c => c.name).filter(Boolean))), [cards]);
 
-  // ==== Period selection (Bonus-style) ====
   const [periodicity, setPeriodicity] = useState<Periodicity>("monthly");
   const [year, setYear] = useState<string>(String(new Date().getFullYear()));
-  const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1)); // 1..12
+  const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1));
   const [quarter, setQuarter] = useState<string>("");
   const [half, setHalf] = useState<string>("");
   const [weekDate, setWeekDate] = useState<Date | undefined>();
@@ -106,78 +91,92 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
     setWeekDate(undefined); setRange({});
   };
 
-  const [selectedCards, setSelectedCards] = useState<string[]>([...KPI_CARDS]);
+  const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [cardSearch, setCardSearch] = useState("");
   const [cardOpen, setCardOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
-  const [viewEmp, setViewEmp] = useState<{ id: number; fullName: string; cardIdx: number; cardName: string } | null>(null);
+  const [viewEmp, setViewEmp] = useState<ScoreRow | null>(null);
 
-  const filteredCardOpts = KPI_CARDS.filter(c => c.toLowerCase().includes(cardSearch.trim().toLowerCase()));
-  const allSelected = selectedCards.length === KPI_CARDS.length;
+  const filteredCardOpts = cardOptions.filter(c => c.toLowerCase().includes(cardSearch.trim().toLowerCase()));
+  const allSelected = cardOptions.length > 0 && selectedCards.length === cardOptions.length;
 
   const toggleCard = (c: string) =>
     setSelectedCards(s => (s.includes(c) ? s.filter(x => x !== c) : [...s, c]));
-  const toggleAll = () => setSelectedCards(allSelected ? [] : [...KPI_CARDS]);
+  const toggleAll = () => setSelectedCards(allSelected ? [] : [...cardOptions]);
 
-  // Resolve currently selected period → { label, start, end, yr, mIdx }
   const resolvedPeriod = useMemo(() => {
     const fmtDate = (d: Date) => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
     if (periodicity === "weekly" && weekDate) {
       const s = startOfWeek(weekDate, { weekStartsOn: 1 });
       const e = endOfWeek(weekDate, { weekStartsOn: 1 });
-      return { label: `${format(s, "d MMM", { locale: az })} – ${format(e, "d MMM yyyy", { locale: az })}`, start: fmtDate(s), end: fmtDate(e), yr: s.getFullYear(), mIdx: s.getMonth() };
+      return { label: `${format(s, "d MMM", { locale: az })} – ${format(e, "d MMM yyyy", { locale: az })}`, start: fmtDate(s), end: fmtDate(e) };
     }
     if (periodicity === "monthly" && year && month) {
       const yr = Number(year); const mIdx = Number(month) - 1;
       const s = new Date(yr, mIdx, 1); const e = new Date(yr, mIdx, lastDayOfMonth(yr, mIdx));
-      return { label: `${MONTHS[mIdx]} ${yr}`, start: fmtDate(s), end: fmtDate(e), yr, mIdx };
+      return { label: `${MONTHS[mIdx]} ${yr}`, start: fmtDate(s), end: fmtDate(e) };
     }
     if (periodicity === "quarterly" && year && quarter) {
       const yr = Number(year); const q = Number(quarter);
       const sMonth = (q - 1) * 3; const s = new Date(yr, sMonth, 1); const e = new Date(yr, sMonth + 3, 0);
-      return { label: `${yr} Rüb ${q}`, start: fmtDate(s), end: fmtDate(e), yr, mIdx: sMonth };
+      return { label: `${yr} Rüb ${q}`, start: fmtDate(s), end: fmtDate(e) };
     }
     if (periodicity === "halfyear" && year && half) {
       const yr = Number(year); const first = half === "I";
       const s = new Date(yr, first ? 0 : 6, 1); const e = new Date(yr, first ? 6 : 12, 0);
-      return { label: `${yr} ${half} yarımil`, start: fmtDate(s), end: fmtDate(e), yr, mIdx: first ? 0 : 6 };
+      return { label: `${yr} ${half} yarımil`, start: fmtDate(s), end: fmtDate(e) };
     }
     if (periodicity === "yearly" && year) {
       const yr = Number(year); const s = new Date(yr, 0, 1); const e = new Date(yr, 11, 31);
-      return { label: `${yr}`, start: fmtDate(s), end: fmtDate(e), yr, mIdx: 0 };
+      return { label: `${yr}`, start: fmtDate(s), end: fmtDate(e) };
     }
     if (periodicity === "other" && range.from && range.to) {
-      return { label: `${format(range.from, "d MMM yyyy", { locale: az })} – ${format(range.to, "d MMM yyyy", { locale: az })}`, start: fmtDate(range.from), end: fmtDate(range.to), yr: range.from.getFullYear(), mIdx: range.from.getMonth() };
+      return { label: `${format(range.from, "d MMM yyyy", { locale: az })} – ${format(range.to, "d MMM yyyy", { locale: az })}`, start: fmtDate(range.from), end: fmtDate(range.to) };
     }
     return null;
   }, [periodicity, year, month, quarter, half, weekDate, range]);
 
   const rows: ScoreRow[] = useMemo(() => {
-    if (selectedCards.length === 0 || !resolvedPeriod) return [];
-    const { label: periodLabel, start: startDate, end: endDate, yr, mIdx } = resolvedPeriod;
-
+    if (!resolvedPeriod) return [];
+    const activeCards = selectedCards.length > 0 ? selectedCards : cardOptions;
+    if (activeCards.length === 0) return [];
     const out: ScoreRow[] = [];
-    employees.forEach(emp => {
-      selectedCards.forEach(card => {
-        const cardIdx = KPI_CARDS.indexOf(card);
+    cards.filter(card => activeCards.includes(card.name)).forEach(card => {
+      card.assigneeIds.forEach(assigneeId => {
+        const emp = employeeById.get(String(assigneeId));
+        if (!emp) return;
+        const evaluated = getSubKpis(String(assigneeId)).filter(k => (k.cardId === card.id || k.cardId === card.name) && isEvaluated(k));
+        if (evaluated.length === 0) return;
+        const totalWeight = evaluated.reduce((sum, item) => sum + item.weight, 0) || 100;
+        const goals: GoalRow[] = evaluated.map(item => ({
+          name: item.name,
+          target: item.target,
+          actual: item.actual ?? 0,
+          unit: item.unit,
+          weight: item.weight,
+          score: item.evaluatedScore ?? 0,
+          progress: calcCompletion(item),
+          note: item.selfComment,
+        }));
+        const score = evaluated.reduce((sum, item) => sum + ((item.evaluatedScore ?? 0) * item.weight), 0) / totalWeight;
         out.push({
           empId: emp.id,
           fullName: `${emp.firstName} ${emp.lastName}`,
           fatherName: emp.fatherName ?? "",
-          cardIdx,
-          cardName: card,
-          periodLabel,
-          startDate,
-          endDate,
-          score: scoreFor(emp.id, cardIdx, yr, mIdx),
+          cardId: card.id,
+          cardName: card.name,
+          periodLabel: resolvedPeriod.label,
+          startDate: card.startDate || "—",
+          endDate: card.endDate || "—",
+          score: Math.round(score * 100) / 100,
+          goals,
         });
       });
     });
-
     const q = globalSearch.trim().toLowerCase();
     if (!q) return out;
     return out.filter(r => r.fullName.toLowerCase().includes(q) || r.cardName.toLowerCase().includes(q));
-  }, [employees, selectedCards, resolvedPeriod, globalSearch]);
+  }, [cards, selectedCards, cardOptions, resolvedPeriod, globalSearch, employeeById]);
 
   const clearAll = () => {
     setSelectedCards([]);
