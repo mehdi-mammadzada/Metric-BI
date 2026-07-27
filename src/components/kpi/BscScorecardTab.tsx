@@ -152,8 +152,41 @@ export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
 
   return (
     <div className="space-y-3">
-      {mergedSubKpis.length > 0 && (
-        <div className="rounded-lg border border-border bg-card">
+      {/* Üfüqi kompakt göstərici kartları */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        {[
+          { label: "Perspektiv", value: perspective, sub: kpi.department || "—" },
+          { label: "Hədəf", value: fmtUnit(target, unit), sub: "Plan" },
+          { label: "Faktiki", value: fmtUnit(actual, unit), sub: "Cari nəticə" },
+          { label: "GSR", value: `${Math.round(gsrClamped)}%`, sub: tone.label },
+          { label: "Bal", value: `${score}/5`, sub: scoreLabels[score] || "—" },
+        ].map(item => (
+          <div key={item.label} className="rounded-lg border border-border bg-card px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{item.label}</p>
+            <p className="text-sm font-semibold text-foreground truncate">{item.value}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{item.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-lg border border-border bg-card px-3 py-2">
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <span className="text-[11px] text-muted-foreground">{formulaText}</span>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full ${tone.bg} ${tone.text}`}>{sampleText}</span>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+          <div className={`h-full ${tone.barColor}`} style={{ width: `${Math.min(100, gsrClamped)}%` }} />
+        </div>
+        <div className="mt-2 grid grid-cols-5 gap-1.5">
+          {ranges.map(r => (
+            <div key={r.score} className={`rounded-md px-2 py-1 text-center ${r.tone}`}>
+              <p className="text-[10px]">{r.label}</p>
+              <p className="text-[10px] font-semibold tabular-nums">{r.rangeText}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
           <div className="px-3 py-2 border-b border-border flex items-center justify-between">
             <p className="text-xs font-medium text-foreground">Hədəflər ({mergedSubKpis.length})</p>
             <span className="text-[10px] text-muted-foreground">Hər hədəfin çəkisi, dəyəri və qiymət limitləri</span>
