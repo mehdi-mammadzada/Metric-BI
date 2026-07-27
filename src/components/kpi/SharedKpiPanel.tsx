@@ -9,18 +9,18 @@ import { useSharedKpiCards, updateExecution, type ExecutionStatus } from "@/lib/
 import { getCurrentEmployeeId, getVisibleKpiCards } from "@/lib/scope";
 import { getEnrichedEmployee } from "@/data/mockExtras";
 import { Target } from "lucide-react";
+import { TARGET_STATUS_BADGE, TARGET_STATUS_LABEL } from "@/lib/targetStatus";
 
+// Hədəf statusları sistem üzrə yalnız 3-dür: İcrada / Hədəfə çatıb / Hədəfə çatmayıb
 const STATUS_LABEL: Record<ExecutionStatus, string> = {
-  baslanmayib: "Başlanmayıb",
-  icrada: "İcrada",
-  tamamlandi: "Tamamlandı",
-  gecikme: "Gecikmə",
+  icrada: TARGET_STATUS_LABEL.in_progress,
+  tamamlandi: TARGET_STATUS_LABEL.achieved,
+  gecikme: TARGET_STATUS_LABEL.not_achieved,
 };
 const STATUS_STYLE: Record<ExecutionStatus, string> = {
-  baslanmayib: "bg-muted text-foreground/70",
-  icrada: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
-  tamamlandi: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
-  gecikme: "bg-rose-500/15 text-rose-700 dark:text-rose-400",
+  icrada: TARGET_STATUS_BADGE.in_progress,
+  tamamlandi: TARGET_STATUS_BADGE.achieved,
+  gecikme: TARGET_STATUS_BADGE.not_achieved,
 };
 
 interface Props {
@@ -59,7 +59,7 @@ export default function SharedKpiPanel({ title = "Sizə aid KPI kartları", empt
           {visible.map(card => {
             const owner = getEnrichedEmployee(card.ownerId);
             const myExecution: ExecutionStatus =
-              meId && card.execution[meId] ? card.execution[meId] : "baslanmayib";
+              meId && card.execution[meId] ? card.execution[meId] : "icrada";
             const canExecute = !readOnlyStatus && meId && card.assigneeIds.includes(meId) && card.status === "aktiv";
             return (
               <li key={card.id} className="px-4 py-3 flex items-center gap-3">

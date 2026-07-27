@@ -22,11 +22,12 @@ import { useCascadeTree } from "@/lib/cascadeTreeStore";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
 import { getEmployees } from "@/lib/orgStore";
 import { getCurrentEmployeeId } from "@/lib/scope";
+import { TARGET_STATUS_BADGE, TARGET_STATUS_LABEL, type TargetStatus } from "@/lib/targetStatus";
 
 // ============================================================
 // Demo data model
 // ============================================================
-type ItemStatus = "in_progress" | "at_risk" | "completed" | "delayed";
+type ItemStatus = TargetStatus;
 type Scope = "own" | "team" | "structure";
 
 interface DemoTarget {
@@ -71,10 +72,9 @@ interface DemoKpi {
 const pct = (plan: number, fakt: number) => (plan ? Math.round((fakt / plan) * 100) : 0);
 
 const STATUS_META: Record<ItemStatus, { label: string; cls: string }> = {
-  in_progress: { label: "İcradadır", cls: "bg-zone-yellow-bg text-zone-yellow-text hover:bg-zone-yellow-bg" },
-  at_risk:     { label: "Riskdə",    cls: "bg-zone-red-bg text-zone-red-text hover:bg-zone-red-bg" },
-  completed:   { label: "Tamamlandı", cls: "bg-zone-green-bg text-zone-green-text hover:bg-zone-green-bg" },
-  delayed:     { label: "Gecikir",   cls: "bg-zone-red-bg text-zone-red-text hover:bg-zone-red-bg" },
+  in_progress:  { label: TARGET_STATUS_LABEL.in_progress,  cls: TARGET_STATUS_BADGE.in_progress },
+  achieved:     { label: TARGET_STATUS_LABEL.achieved,     cls: TARGET_STATUS_BADGE.achieved },
+  not_achieved: { label: TARGET_STATUS_LABEL.not_achieved, cls: TARGET_STATUS_BADGE.not_achieved },
 };
 
 const fmt = (n: number) => new Intl.NumberFormat("az-AZ").format(n);
@@ -292,8 +292,8 @@ const KpiListView = ({
   const stats = useMemo(() => {
     const total = data.length;
     const avg = total ? Math.round(data.reduce((a, k) => a + pct(k.plan, k.fakt), 0) / total) : 0;
-    const done = data.filter(k => k.status === "completed" || pct(k.plan, k.fakt) >= 100).length;
-    const late = data.filter(k => k.status === "delayed" || k.status === "at_risk").length;
+    const done = data.filter(k => k.status === "achieved" || pct(k.plan, k.fakt) >= 100).length;
+    const late = data.filter(k => k.status === "not_achieved").length;
     return { total, avg, done, late };
   }, [data]);
 
@@ -317,8 +317,8 @@ const KpiListView = ({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
           <StatCard icon={Users} label="Ümumi KPI sayı" value={String(stats.total)} tone="indigo" />
           <StatCard icon={LineChart} label="Ortalama icra faizi" value={`${stats.avg}%`} tone="violet" />
-          <StatCard icon={Check} label="Tamamlananlar" value={String(stats.done)} tone="green" />
-          <StatCard icon={Clock} label="Gecikdirilənlər" value={String(stats.late)} tone="red" />
+          <StatCard icon={Check} label="Hədəfə çatanlar" value={String(stats.done)} tone="green" />
+          <StatCard icon={Clock} label="Hədəfə çatmayanlar" value={String(stats.late)} tone="red" />
         </div>
       </div>
 
@@ -331,8 +331,8 @@ const KpiListView = ({
               <SelectContent>
                 <SelectItem value="all">Bütün statuslar</SelectItem>
                 <SelectItem value="in_progress">İcrada</SelectItem>
-                <SelectItem value="completed">Tamamlandı</SelectItem>
-                <SelectItem value="not_achieved">Tamamlanmadı</SelectItem>
+                <SelectItem value="achieved">Hədəfə çatıb</SelectItem>
+                <SelectItem value="not_achieved">Hədəfə çatmayıb</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -419,12 +419,11 @@ const KpiDrawer = ({ kpi, tab, setTab, scope, onClose }: {
   }, [tab, comments, kpi]);
 
   const memberStatsData = useMemo(() => {
-    if (!kpi) return { total: 0, done: 0, risk: 0, late: 0, active: 0 };
+    if (!kpi) return { total: 0, done: 0, late: 0, active: 0 };
     const total = kpi.members.length;
-    const done = kpi.members.filter(m => m.status === "completed").length;
-    const risk = kpi.members.filter(m => m.status === "at_risk").length;
-    const late = kpi.members.filter(m => m.status === "delayed").length;
-    return { total, done, risk, late, active: total - done - risk - late };
+    const done = kpi.members.filter(m => m.status === "achieved").length;
+    const late = kpi.members.filter(m => m.status === "not_achieved").length;
+    return { total, done, late, active: total - done - late };
   }, [kpi]);
 
   if (!kpi) return null;
@@ -622,15 +621,15 @@ const KpiDrawer = ({ kpi, tab, setTab, scope, onClose }: {
                     <div className="text-2xl font-semibold text-foreground tabular-nums">{memberStats.total} nəfər</div>
                   </div>
                   <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-                    <div className="text-[11px] text-emerald-700 dark:text-emerald-400">Tamamlayıb</div>
+                    <div className="text-[11px] text-emerald-700 dark:text-emerald-400">Hədəfə çatıb</div>
                     <div className="text-2xl font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">{memberStats.done} nəfər</div>
                   </div>
                   <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-                    <div className="text-[11px] text-amber-700 dark:text-amber-400">Riskdədir</div>
-                    <div className="text-2xl font-semibold text-amber-700 dark:text-amber-400 tabular-nums">{memberStats.risk} nəfər</div>
+                    <div className="text-[11px] text-amber-700 dark:text-amber-400">İcrada</div>
+                    <div className="text-2xl font-semibold text-amber-700 dark:text-amber-400 tabular-nums">{memberStats.active} nəfər</div>
                   </div>
                   <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4">
-                    <div className="text-[11px] text-rose-700 dark:text-rose-400">Gecikir</div>
+                    <div className="text-[11px] text-rose-700 dark:text-rose-400">Hədəfə çatmayıb</div>
                     <div className="text-2xl font-semibold text-rose-700 dark:text-rose-400 tabular-nums">{memberStats.late} nəfər</div>
                   </div>
                 </div>
