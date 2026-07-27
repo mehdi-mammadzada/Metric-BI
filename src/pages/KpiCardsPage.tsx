@@ -1204,6 +1204,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   const handleDragEnd = () => setDragIndex(null);
 
   const openDetail = (card: KpiCard) => { setSelectedKpi(card); setDetailTab("general"); };
+  // Əməkdaşlar üzrə görünüşdən açıldıqda — kartın hansı əməkdaş kontekstində göstərildiyi
+  const [detailEmployee, setDetailEmployee] = useState<string | null>(null);
   const resetFilters = () => { setFilterDepartment("Hamısı"); setFilterSubdivision("Hamısı"); setFilterGroup("Hamısı"); setFilterTeamId(null); setFilterStatus("Hamısı"); setSearchText(""); };
 
   const handleDeleteCard = (card: KpiCard) => {
