@@ -7,6 +7,7 @@ import { PageHero, FancyStatCard, FancyCard } from "@/components/ui/page-hero";
 import { AIChatSection } from "@/components/ai/AIChatSection";
 import PeriodPicker, { buildDemoSeries, currentPeriod, periodLabel, type PeriodValue } from "@/components/common/PeriodPicker";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSharedKpiCards } from "@/lib/kpiCardStore";
 
 // Localized "… Kartı" suffix so we don't stuff Azerbaijani copy in EN/RU rows.
 const kartiSuffix = (lang: string) =>
@@ -27,6 +28,7 @@ const departments = [];
 const HomePage = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const cards = useSharedKpiCards();
   const [period, setPeriod] = useState<PeriodValue>(() => currentPeriod("year"));
   const chartData = useMemo(() => buildDemoSeries(period, 78), [period]);
   const subtitle = periodLabel(period);
@@ -34,12 +36,16 @@ const HomePage = () => {
   const suffix = kartiSuffix(i18n.language);
   const heroName = user?.name?.split(" ")[0] || t("home.default_admin");
 
-  const stats = [
-    { icon: TrendingUp, label: t("home.stat_total_perf"), value: "88.5%", sub: t("home.stat_total_perf_sub"), accent: "primary" as const },
-    { icon: Target, label: t("home.stat_active_kpi"), value: "24", sub: t("home.stat_active_kpi_sub"), accent: "violet" as const },
-    { icon: CheckCircle, label: t("home.stat_met_kpi"), value: "18", sub: t("home.stat_met_kpi_sub"), accent: "emerald" as const },
-    { icon: AlertTriangle, label: t("home.stat_attention"), value: "3", sub: t("home.stat_attention_sub"), accent: "amber" as const },
-  ];
+  const stats = useMemo(() => {
+    const active = cards.filter(c => c.status === "aktiv").length;
+    const pending = cards.filter(c => c.status === "tesdiq_gozlenilir" || c.status === "natamam").length;
+    return [
+      { icon: TrendingUp, label: t("home.stat_total_perf"), value: active > 0 ? "0%" : "0%", sub: t("home.stat_total_perf_sub"), accent: "primary" as const },
+      { icon: Target, label: t("home.stat_active_kpi"), value: String(active), sub: t("home.stat_active_kpi_sub"), accent: "violet" as const },
+      { icon: CheckCircle, label: t("home.stat_met_kpi"), value: "0", sub: t("home.stat_met_kpi_sub"), accent: "emerald" as const },
+      { icon: AlertTriangle, label: t("home.stat_attention"), value: String(pending), sub: t("home.stat_attention_sub"), accent: "amber" as const },
+    ];
+  }, [cards, t]);
 
   return (
     <div className="min-h-screen">

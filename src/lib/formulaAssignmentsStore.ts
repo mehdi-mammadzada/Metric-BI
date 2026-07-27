@@ -25,34 +25,11 @@ export interface FormulaAssignment {
 }
 
 const KEY = "kpi_formula_assignments_v1";
-const SEED_KEY = "kpi_formula_assignments_seeded_v1";
-
-const seedDefaults = (): FormulaAssignment[] => {
-  const now = new Date().toISOString();
-  return getFormulas().map((f, i) => ({
-    id: Date.now() + i,
-    formulaId: f.id,
-    formulaName: f.name,
-    variables: f.variables ?? [],
-    targetTypes: [],
-    targets: [],
-    employeeIds: [],
-    status: "active",
-    assignedAt: now,
-    updatedAt: now,
-  }));
-};
 
 export const getAssignments = (): FormulaAssignment[] => {
   const saved = localStorage.getItem(KEY);
   if (saved) {
     try { return JSON.parse(saved); } catch { /* fallthrough */ }
-  }
-  if (!localStorage.getItem(SEED_KEY)) {
-    const seed = seedDefaults();
-    localStorage.setItem(KEY, JSON.stringify(seed));
-    localStorage.setItem(SEED_KEY, "1");
-    return seed;
   }
   return [];
 };
