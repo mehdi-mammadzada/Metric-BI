@@ -47,15 +47,9 @@ export const periodCategories = (p: PeriodValue): string[] => {
   return Array.from({ length: days }, (_, i) => String(i + 1).padStart(2, "0"));
 };
 
-/** Deterministic pseudo-random data generator for a period (demo). */
-export const buildDemoSeries = (p: PeriodValue, baseline = 75): { name: string; value: number }[] => {
-  const cats = periodCategories(p);
-  const seed = p.year * 1000 + (p.mode === "year" ? 0 : p.mode === "quarter" ? (p.quarter ?? 1) * 10 : (p.month ?? 0) + 1);
-  return cats.map((name, i) => {
-    const n = Math.sin((seed + i * 17.31) * 0.7) * 18 + Math.cos((seed + i) * 1.13) * 6;
-    return { name, value: Math.max(35, Math.min(100, Math.round(baseline + n))) };
-  });
-};
+/** Empty series scaffold — real values come from the database, never demo noise. */
+export const buildDemoSeries = (p: PeriodValue, _baseline = 75): { name: string; value: number }[] =>
+  periodCategories(p).map((name) => ({ name, value: 0 }));
 
 interface Props {
   value: PeriodValue;
