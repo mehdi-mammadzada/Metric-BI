@@ -2075,7 +2075,7 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
       if (b <= prev) b = prev + 1;
       bounds.push(b);
     }
-    bounds[count - 1] = Math.max(targetNumber, bounds[count - 2] ?? 0 + 1);
+    bounds[count - 1] = Math.max(targetNumber, (bounds[count - 2] ?? -1) + 1);
     const byScore = new Map<string, { mn: number; mx: number }>();
     ordered.forEach((r, i) => {
       const mn = i === 0 ? 0 : bounds[i - 1] + 1;
