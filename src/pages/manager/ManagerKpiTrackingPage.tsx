@@ -2277,30 +2277,9 @@ const useReviewRows = (): ReviewRow[] => {
       const sharedCard: SharedKpiCard | undefined = sharedCards.find(c => c.numericId === lc.cardId);
       const assigneeIds = sharedCard?.assigneeIds ?? [];
 
-      if (assigneeIds.length === 0) {
-        const seed = lc.cardId;
-        const exec = pick(EXECS, seed);
-        rows.push({
-          key: `${lc.cardId}-none`,
-          cardId: lc.cardId,
-          reviewId: active.id,
-          cardName: lc.cardName,
-          empId: null,
-          empName: "—",
-          department: pick(DEPARTMENTS, seed),
-          division: pick(DIVISIONS, seed + 1),
-          position: pick(POSITIONS, seed + 2),
-          progress: pick(PROGRESSES, seed),
-          reviewLabel: active.period || "Review",
-          reviewStart: fmtDate(active.start),
-          reviewEnd: fmtDate(active.end),
-          reviewStatus,
-          outcomeComment: active.outcomeComment,
-          updatedAt: (lc.updatedAt || "").slice(0, 10) ? fmtDate((lc.updatedAt || "").slice(0, 10)) : fmtDate(active.start),
-          execution: exec,
-        });
-        return;
-      }
+      // Review yalnız real təyin olunmuş əməkdaşlar üçün göstərilir — dublikat/demo sətir yaradılmır.
+      if (assigneeIds.length === 0) return;
+
 
       assigneeIds.forEach((aid, idx) => {
         const empIdNum = Number(String(aid).replace(/^e/, ""));
