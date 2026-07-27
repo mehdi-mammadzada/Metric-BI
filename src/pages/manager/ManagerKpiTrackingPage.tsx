@@ -308,24 +308,13 @@ interface CommentItem { id: string; author: string; role: string; date: string; 
 interface HistoryItem { id: string; date: string; time: string; author: string; field: string; from: string; to: string; }
 interface ReminderItem { id: string; date: string; time: string; author: string; text: string; read: boolean; }
 
-const initialComments = (kpiId: string): CommentItem[] => [
-  { id: `${kpiId}-c1`, author: "Aysel Məmmədova", role: "Satış meneceri", date: "15.05.2025 14:35", text: "Aprel ayında artım tempi gözləntilərimizə uyğundur. Davam edirik." },
-  { id: `${kpiId}-c2`, author: "Nicat Əliyev",    role: "Satış Direktoru", date: "15.05.2025 14:45", text: "Yaxşı xəbərdir. May ayında kampaniyanın təsiri ilə hədəfə daha da yaxınlaşacağımıza əminəm." },
-  { id: `${kpiId}-c3`, author: "Aysel Məmmədova", role: "Satış meneceri", date: "15.05.2025 14:50", text: "May ayı üçün yeni kampaniya planlaşdırılıb." },
-];
+// Real data yoxdursa — boş siyahı (mock şərh/tarixçə/xatırlatma yaradılmır).
+const initialComments = (_kpiId: string): CommentItem[] => [];
 
-const initialHistory = (kpiId: string): HistoryItem[] => [
-  { id: `${kpiId}-h1`, date: "15.05.2025", time: "14:30", author: "Aysel Məmmədova", field: "İcra faizi", from: "45%", to: "53%" },
-  { id: `${kpiId}-h2`, date: "30.04.2025", time: "11:20", author: "Aysel Məmmədova", field: "İcra faizi", from: "28%", to: "45%" },
-  { id: `${kpiId}-h3`, date: "15.04.2025", time: "10:15", author: "Aysel Məmmədova", field: "İcra faizi", from: "12%", to: "28%" },
-  { id: `${kpiId}-h4`, date: "01.04.2025", time: "09:00", author: "Sistem",           field: "KPI yaradıldı", from: "—", to: "plan təyin edildi" },
-];
+const initialHistory = (_kpiId: string): HistoryItem[] => [];
 
-const initialReminders = (kpiId: string): ReminderItem[] => [
-  { id: `${kpiId}-r1`, date: "15.05.2025", time: "10:00", author: "Aysel Məmmədova", text: "KPI icra vəziyyətini yeniləməyi xatırladırıq.", read: true },
-  { id: `${kpiId}-r2`, date: "30.04.2025", time: "09:30", author: "Aysel Məmmədova", text: "KPI icra vəziyyətini yeniləməyi xatırladırıq.", read: true },
-  { id: `${kpiId}-r3`, date: "15.04.2025", time: "09:15", author: "Aysel Məmmədova", text: "KPI icra vəziyyətini yeniləməyi xatırladırıq.", read: true },
-];
+const initialReminders = (_kpiId: string): ReminderItem[] => [];
+
 
 const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: string; subtitle: string; data: Kpi[]; cascadeNodes?: CascadeTreeNode[] }) => {
   const [statusF, setStatusF] = useState<string>("all");
