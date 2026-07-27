@@ -780,14 +780,6 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   }>(null);
   const [hrCascadeDistribute, setHrCascadeDistribute] = useState<typeof hrCascade>(null);
   const [employeeDrilldown, setEmployeeDrilldown] = useState<string | null>(null);
-  // KPI Set entry-ləri dəyişdikdə təyinat map-ini yenidən hesabla
-  const [kpiSetVersion, setKpiSetVersion] = useState(0);
-  useEffect(() => {
-    const bump = () => setKpiSetVersion(v => v + 1);
-    window.addEventListener("kpi-set-updated", bump);
-    window.addEventListener("storage", bump);
-    return () => { window.removeEventListener("kpi-set-updated", bump); window.removeEventListener("storage", bump); };
-  }, []);
   useEffect(() => {
     let timer: number | null = null;
     const refresh = () => import("@/lib/kpiCardStatusStore").then(m => m.fetchAllStatuses().then(setStatusMap));
@@ -1050,67 +1042,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     const extras = sharedCards
       .filter(s => !(s.numericId && existingNumIds.has(s.numericId)))
       .map(toKpiCard);
-    // Stabil sıra — kartlar siyahıda öz yerini dəyişməsin (id-yə görə deterministik).
-    return [...kpiCards, ...extras].sort((a, b) => a.id - b.id);
+    return [...kpiCards, ...extras];
   }, [kpiCards, sharedCards]);
-
-  /** Kartın tətbiq olunduğu (təyin edilmiş) əməkdaşların adları.
-   *  Mənbə: shared kart assigneeIds + KPI Set entry-ləri (hər ikisi bulud sinxronludur). */
-  const assigneesByCardId = useMemo(() => {
-    const norm = (s: string) => (s || "").split(" — ")[0].trim();
-    const employees = getEmployees();
-    const empByKey = new Map<string, any>();
-    employees.forEach((e: any) => {
-      const full = `${e.firstName} ${e.lastName}`.trim();
-      [String(e.id), `e${e.id}`, e.email, full, `${e.lastName} ${e.firstName}`.trim()]
-        .filter(Boolean)
-        .forEach(k => empByKey.set(String(k).toLowerCase(), e));
-    });
-    const resolve = (raw: string): string | null => {
-      const v = norm(raw);
-      if (!v) return null;
-      const e = empByKey.get(v.toLowerCase());
-      return e ? `${e.firstName} ${e.lastName}`.trim() : (/^e?\d+$/i.test(v) ? null : v);
-    };
-    const map = new Map<number, Set<string>>();
-    const add = (cardId: number, name: string | null) => {
-      if (!cardId || !name) return;
-      if (!map.has(cardId)) map.set(cardId, new Set());
-      map.get(cardId)!.add(name);
-    };
-    sharedCards.forEach(s => {
-      const numericId = s.numericId ?? Math.abs(hashStrLocal(s.id));
-      (s.assigneeIds || []).forEach(id => add(numericId, resolve(String(id))));
-    });
-    getKpiSetEntries().forEach((e: any) => {
-      if (e?.cardId != null) add(Number(e.cardId), resolve(String(e.assigneeName || "")));
-    });
-    Object.entries(cardDrafts).forEach(([id, d]: any) => {
-      const cardId = Number(id);
-      if (d?.mode === "individual") (d.individualEmployees || []).forEach((n: string) => add(cardId, resolve(n)));
-      else {
-        const bs = d?.bulkSelections;
-        (bs?.persons || []).forEach((n: string) => add(cardId, resolve(n)));
-        if (bs?.teams?.length) {
-          const allTeams = getTeams();
-          bs.teams.forEach((tn: string) => {
-            const t = allTeams.find(x => x.name === tn);
-            if (!t) return;
-            add(cardId, resolve(t.leader));
-            t.members.forEach(m => add(cardId, resolve(m.name)));
-          });
-        }
-      }
-    });
-    return map;
-  }, [sharedCards, cardDrafts, kpiSetVersion]);
-
-  /** Kart hansı əməkdaşlara tətbiq olunub — heç nə tapılmasa məsul şəxs. */
-  const getCardAssignees = (card: KpiCard): string[] => {
-    const set = assigneesByCardId.get(card.id);
-    const list = set ? Array.from(set) : [];
-    return list.length > 0 ? list : (card.responsible ? [card.responsible] : []);
-  };
 
   const filteredCards = mergedKpiCards.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchText.toLowerCase());
@@ -1204,8 +1137,6 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   const handleDragEnd = () => setDragIndex(null);
 
   const openDetail = (card: KpiCard) => { setSelectedKpi(card); setDetailTab("general"); };
-  // Əməkdaşlar üzrə görünüşdən açıldıqda — kartın hansı əməkdaş kontekstində göstərildiyi
-  const [detailEmployee, setDetailEmployee] = useState<string | null>(null);
   const resetFilters = () => { setFilterDepartment("Hamısı"); setFilterSubdivision("Hamısı"); setFilterGroup("Hamısı"); setFilterTeamId(null); setFilterStatus("Hamısı"); setSearchText(""); };
 
   const handleDeleteCard = (card: KpiCard) => {
@@ -1584,31 +1515,33 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                   </div>
               );
             })() : kartView === "kart2" ? (() => {
-              // Kartlar tətbiq olunduğu (təyin edilmiş) əməkdaşlara görə qruplaşdırılır
+              // Aggregate KPI stats per employee (by responsible full-name match)
               const norm = (s: string) => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
               const emps = getEmployees().filter((e: any) => e.active);
-              const perEmp = new Map<number, number>();
-              emps.forEach((e: any) => perEmp.set(e.id, 0));
+              const perEmp = new Map<number, { count: number; sumProgress: number }>();
+              emps.forEach((e: any) => perEmp.set(e.id, { count: 0, sumProgress: 0 }));
               const empByName = new Map<string, any>();
               emps.forEach((e: any) => {
                 empByName.set(norm(`${e.firstName} ${e.lastName}`), e);
                 empByName.set(norm(`${e.lastName} ${e.firstName}`), e);
               });
               filteredCards.forEach(c => {
-                const seen = new Set<number>();
-                getCardAssignees(c).forEach(nm => {
-                  const e = empByName.get(norm(nm));
-                  if (!e || seen.has(e.id)) return;
-                  seen.add(e.id);
-                  perEmp.set(e.id, (perEmp.get(e.id) || 0) + 1);
-                });
+                const e = empByName.get(norm(c.responsible || ""));
+                if (!e) return;
+                const cur = perEmp.get(e.id)!;
+                cur.count += 1;
+                cur.sumProgress += Number(c.progress) || 0;
               });
-              const rows = emps.map((e: any) => ({
-                id: e.id,
-                name: [e.firstName, e.lastName].filter(Boolean).join(" "),
-                position: e.positionName || "Əməkdaş",
-                count: perEmp.get(e.id) || 0,
-              }));
+              const rows = emps.map((e: any) => {
+                const st = perEmp.get(e.id)!;
+                return {
+                  id: e.id,
+                  name: [e.firstName, e.lastName].filter(Boolean).join(" "),
+                  position: e.positionName || "Əməkdaş",
+                  count: st.count,
+                  avg: st.count > 0 ? Math.round(st.sumProgress / st.count) : 0,
+                };
+              });
 
               return (
                 <div className="space-y-4">
@@ -1632,7 +1565,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
                   {kart2SubView === "structure" ? (
                     <EmployeesTreeView
-                      cards={filteredCards.flatMap(c => getCardAssignees(c).map(nm => ({ responsible: nm })))}
+                      cards={filteredCards.map(c => ({ responsible: c.responsible, progress: c.progress }))}
                       onOpenEmployee={(name) => setEmployeeDrilldown(name)}
                     />
                   ) : (
@@ -1675,6 +1608,24 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                             <span className="inline-flex items-center justify-center min-w-[36px] px-2 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
                               {r.count}
                             </span>
+                          ),
+                        },
+                        {
+                          key: "avg",
+                          label: "Ortalama Progress",
+                          filterType: "number",
+                          width: 220,
+                          accessor: (r) => r.avg,
+                          render: (r) => (
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
+                                <div
+                                  className={`h-full transition-all duration-500 ${r.avg >= 90 ? "bg-emerald-500" : r.avg >= 75 ? "bg-amber-500" : "bg-rose-500"}`}
+                                  style={{ width: `${Math.min(r.avg, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-xs tabular-nums font-medium w-9 text-right">{r.avg}%</span>
+                            </div>
                           ),
                         },
                         {
@@ -1866,8 +1817,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
             <DialogTitle>{employeeDrilldown} — KPI kartları</DialogTitle>
           </DialogHeader>
           {employeeDrilldown && (() => {
-            const normName = (s: string) => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
-            const cards = filteredCards.filter(c => getCardAssignees(c).some(n => normName(n) === normName(employeeDrilldown)));
+            const cards = filteredCards.filter(c => (c.responsible || "Təyin olunmayıb") === employeeDrilldown);
             if (cards.length === 0) return <p className="text-sm text-muted-foreground py-4">Kart tapılmadı.</p>;
             return (
               <div className="max-h-[60vh] overflow-y-auto divide-y divide-border">
@@ -1880,10 +1830,11 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                           <span className="font-medium text-foreground truncate">{withKartSuffix(card.name)}</span>
                           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${STATUS_STYLES[st.status]}`}>{STATUS_LABELS[st.status]}</span>
                         </div>
-                        <div className="text-[11px] text-muted-foreground">{card.period} · Hədəf {card.target} {card.unit}</div>
+                        <div className="text-[11px] text-muted-foreground">{card.period} · Hədəf {card.target} {card.unit} · Cari {card.current} {card.unit}</div>
+                        <div className="w-full bg-secondary rounded-full h-1.5 mt-1.5"><div className="bg-emerald-500 rounded-full h-1.5" style={{ width: `${card.progress}%` }} /></div>
                       </div>
                       <button
-                        onClick={() => { setDetailEmployee(employeeDrilldown); setEmployeeDrilldown(null); openDetail(card); }}
+                        onClick={() => { setEmployeeDrilldown(null); openDetail(card); }}
                         className="p-1.5 rounded border border-border hover:bg-secondary text-muted-foreground hover:text-foreground shrink-0"
                         title="Bax"
                       >
@@ -2032,11 +1983,11 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       </Dialog>
 
       {/* KPI Detail Dialog */}
-      <Dialog open={!!selectedKpi} onOpenChange={() => { setSelectedKpi(null); setDetailEmployee(null); }}>
+      <Dialog open={!!selectedKpi} onOpenChange={() => setSelectedKpi(null)}>
         <DialogContent className="w-[90vw] max-w-[1500px] h-[88vh] min-h-[88vh] max-h-[88vh] p-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b border-border">
             <div className="flex items-center gap-3">
-              <DialogTitle className="text-xl">{withKartSuffix(selectedKpi?.name)}{detailEmployee ? ` — ${detailEmployee}` : ""}</DialogTitle>
+              <DialogTitle className="text-xl">{withKartSuffix(selectedKpi?.name)}</DialogTitle>
               {/* zone badge removed */}
             </div>
           </DialogHeader>
@@ -2290,7 +2241,6 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                           const updDate = upd && !isNaN(upd.getTime()) ? `${pad(upd.getDate())}.${pad(upd.getMonth() + 1)}.${upd.getFullYear()}` : "—";
                           const updTime = upd && !isNaN(upd.getTime()) ? `${pad(upd.getHours())}:${pad(upd.getMinutes())}` : "";
                           const rows = [
-                            ...(detailEmployee ? [{ icon: User, label: "Əməkdaş", value: detailEmployee }] : []),
                             { icon: User, label: "Məsul Şəxs", value: selectedKpi.responsible || "—" },
                             { icon: Crosshair, label: "Təyinat", value: <span className="text-right">{assignKind}{parts.length > 0 && <span className="block text-[11px] font-normal text-muted-foreground mt-0.5">{parts.join(" · ")}</span>}</span> },
                             { icon: Activity, label: "Status", value: <span className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${STATUS_STYLES[st.status]}`}>{STATUS_LABELS[st.status]}</span> },
@@ -2310,7 +2260,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                         })()}
                       </div>
                     </div>
-                    {(() => {
+                    {getAssignKindFor(selectedKpi.id) !== "Fərdi" && (() => {
                       const own = selectedKpi.subKpis || [];
                       const entries = selectedKpi.id ? getEntriesForCard(selectedKpi.id) : [];
                       const ownIds = new Set(own.map(s => s.id));
@@ -2343,18 +2293,29 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                         </div>
                         <div className="rounded-xl border border-border overflow-hidden">
                           <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-secondary/40 text-xs font-medium text-muted-foreground">
-                            <div className="col-span-6">Hədəf</div>
-                            <div className="col-span-3">Təyin olunan</div>
+                            <div className="col-span-4">Hədəf</div>
+                            <div className="col-span-4">Cari vəziyyət</div>
                             <div className="col-span-2">Hədəf dəyər</div>
-                            <div className="col-span-1 text-right">Çəki</div>
+                            <div className="col-span-2 text-right">Çəki</div>
                           </div>
                           <div className="divide-y divide-border">
                             {merged.map((sk, i) => {
+                              const parseNum = (v: any) => {
+                                if (v === null || v === undefined) return NaN;
+                                const s = String(v).replace(/[^\d.,-]/g, "").replace(",", ".");
+                                const n = parseFloat(s);
+                                return isNaN(n) ? NaN : n;
+                              };
+                              const cur = parseNum(sk.current);
+                              const tgt = parseNum(sk.target);
+                              const pct = !isNaN(cur) && !isNaN(tgt) && tgt !== 0
+                                ? Math.min(100, Math.round((cur / tgt) * 100))
+                                : (typeof sk.progress === "number" ? sk.progress : 0);
                               const icons = [ShoppingCart, Store, Monitor, BarChart3, Target];
                               const Icon = icons[i % icons.length];
                               return (
                                 <div key={sk.id} className="grid grid-cols-12 gap-2 px-4 py-4 items-center hover:bg-secondary/20 transition-colors">
-                                  <div className="col-span-6 flex items-center gap-3 min-w-0">
+                                  <div className="col-span-4 flex items-center gap-3 min-w-0">
                                     <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                                       <Icon className="w-5 h-5" />
                                     </div>
@@ -2366,13 +2327,25 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                       <p className="text-xs text-muted-foreground truncate">Dəyər: {sk.target}{sk.unit ? ` ${sk.unit}` : ""}</p>
                                     </div>
                                   </div>
-                                  <div className="col-span-3 text-sm text-muted-foreground truncate">{detailEmployee || sk._assignee || "—"}</div>
+                                  <div className="col-span-4">
+                                    <p className="text-sm font-bold text-primary tabular-nums">{sk.current && String(sk.current).trim() !== "" ? `${sk.current}${sk.unit ? ` ${sk.unit}` : ""}` : "—"}</p>
+                                    <div className="mt-1.5 flex items-center gap-2">
+                                      <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                                        <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                      </div>
+                                      <span className="text-[11px] font-semibold text-primary tabular-nums">{pct}%</span>
+                                    </div>
+                                  </div>
                                   <div className="col-span-2 text-sm font-medium text-foreground tabular-nums">{sk.target}{sk.unit ? ` ${sk.unit}` : ""}</div>
-                                  <div className="col-span-1 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{sk.weight ? `${sk.weight}%` : "—"}</div>
+                                  <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{sk.weight ? `${sk.weight}%` : "—"}</div>
                                 </div>
                               );
                             })}
                           </div>
+                        </div>
+                        <div className="mt-3 flex items-start gap-2 rounded-lg bg-secondary/40 border border-border px-3 py-2">
+                          <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                          <p className="text-xs text-muted-foreground">Faiz göstəricisi cari vəziyyətin hədəf dəyərə nisbətini göstərir.</p>
                         </div>
                       </div>
                       );
