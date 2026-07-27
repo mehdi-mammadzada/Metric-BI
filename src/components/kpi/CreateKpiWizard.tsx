@@ -1146,7 +1146,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                               }`}
                             >
                               <option value="">— Lider seçin —</option>
-                              {bs.persons.map(p => <option key={p} value={p}>{p}</option>)}
+                              {bulkTeamMembers.map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                             {!draft.bulkTeamLeader && (
                               <p className="text-[11px] text-destructive mt-1">
