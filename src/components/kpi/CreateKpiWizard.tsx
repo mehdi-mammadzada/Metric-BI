@@ -789,11 +789,12 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     if (d.mode !== "bulk") return;
     const persons = d.bulkSelections.persons;
     if (persons.length < 2) return;
+    const leader = d.bulkTeamLeader && persons.includes(d.bulkTeamLeader) ? d.bulkTeamLeader : "";
+    if (!leader) { toast.error("Komanda Lideri seçilmədən komanda yaradıla bilməz"); return; }
     const baseName = `${d.name || "KPI"} — Komandası`;
     const teams = getTeams();
     if (teams.some(t => t.name === baseName)) return;
     const newId = Math.max(0, ...teams.map(t => t.id)) + 1;
-    const leader = persons[0];
     addTeam({
       id: newId,
       name: baseName,
