@@ -1027,7 +1027,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         startDate: s.startDate || "", endDate: s.endDate || "",
         frequency: s.frequency || "Aylıq",
         team: [], history: [],
-        description: notes || `Bal sistemi: ${s.scoringSystem || "1-5"}`,
+        description: `${notes ? notes + "\n" : ""}Bal sistemi: ${s.scoringSystem || "1-5"} · ${
+          (s.teamIds?.length ?? 0) > 0 || (s.structureIds?.length ?? 0) > 0 || (s.assigneeIds?.length ?? 0) > 1 ? "Toplu" : "Fərdi"
+        }`,
+
         weight: 10,
         approvalStatus: s.status === "aktiv" ? "approved" : "pending",
         subKpis: (s.targets || []).map((t, i) => ({
