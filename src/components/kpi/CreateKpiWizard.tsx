@@ -753,7 +753,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
           && !!lc.evaluationStart && !!lc.evaluationEnd
           && !!lc.bonusStart && !!lc.bonusEnd;
         // Toplu + 2+ şəxs → avtomatik komanda yaranır, lider məcburidir
-        const bulkPersons = draft.mode === "bulk" ? draft.bulkSelections.persons : [];
+        const bulkPersons = bulkTeamMembers;
         const leaderOk = bulkPersons.length < 2
           || (!!draft.bulkTeamLeader && bulkPersons.includes(draft.bulkTeamLeader));
         return !!draft.name.trim() && !!draft.frequency && !!draft.startDate && !!draft.endDate
