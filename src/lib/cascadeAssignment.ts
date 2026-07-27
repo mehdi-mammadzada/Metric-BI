@@ -142,6 +142,8 @@ export const createRootsForCardAssignees = (payload: {
   /** Fallback: kart tapılmasa bu şəxs üçün root yaradılsın */
   fallbackEmployeeId?: number;
 }): number => {
+  // Toplu kartlar üçün kaskad ağacı yaradılmır.
+  if (isBulkAssignedCard({ cardId: payload.cardId, cardName: payload.cardName })) return 0;
   const assignees = getCardAssigneeEmployees({ cardId: payload.cardId, cardName: payload.cardName })
     .filter(e => !payload.setterEmployeeId || e.id !== payload.setterEmployeeId);
 
