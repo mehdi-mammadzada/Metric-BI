@@ -163,5 +163,21 @@ const ru: Translation = {
     toast_notify_many: "Уведомление отправлено {{count}} сотрудникам",
     toast_notify_many_desc: "Карточка: {{card}}",
   },
+  login: {
+    title: "Войдите в свой аккаунт",
+    subtitle: "Используйте выданные вам почту и пароль для входа в систему KPI",
+    email: "Эл. почта",
+    email_ph: "Введите адрес эл. почты",
+    email_required: "Эл. почта обязательна",
+    password: "Пароль",
+    password_ph: "Введите пароль",
+    password_required: "Пароль обязателен",
+    forgot: "Забыли пароль?",
+    submit: "Войти",
+    submitting: "Вход...",
+    both_required: "Введите эл. почту и пароль",
+    failed: "Не удалось войти",
+    error: "Произошла ошибка при входе",
+  },
 };
 export default ru;

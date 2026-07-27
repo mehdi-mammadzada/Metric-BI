@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import DropdownMultiSelect from "@/components/kpi/DropdownMultiSelect";
 import { getStructures, getEmployees as getLiveEmployees, type OrgStructure } from "@/lib/orgStore";
 import { useAuth } from "@/contexts/AuthContext";
-import PeriodPicker, { currentPeriod, periodLabel, type PeriodValue } from "@/components/common/PeriodPicker";
+import PeriodPicker, { currentPeriod, periodLabel, type PeriodValue , periodCategoriesToDate } from "@/components/common/PeriodPicker";
 
 
 // Legacy demo people — kept so an empty-tenant demo still has enough names
@@ -108,20 +108,10 @@ const TeamsPage = () => {
   // Chart period filter — İl / Rüb / Ay
   const [chartPeriod, setChartPeriod] = useState<PeriodValue>(() => currentPeriod("year"));
 
-  // Seçilən dövrə görə komanda müqayisə datası — deterministik variasiya
+  // Gələcək dövrlər üçün heç bir sütun formalaşdırılmır; keçmiş/cari dövr üçün real dəyərlər.
   const comparisonData = useMemo(() => {
-    const y = chartPeriod.year;
-    const seedBase = chartPeriod.mode === "year"
-      ? y * 10
-      : chartPeriod.mode === "quarter"
-        ? y * 100 + (chartPeriod.quarter ?? 1)
-        : y * 100 + (chartPeriod.month ?? 0);
-    return chartData.map((row, i) => {
-      const h = ((seedBase + i * 37) % 25) - 12; // -12..+12 delta
-      const kpi = Math.max(20, Math.min(100, (row["KPI Nəticəsi"] as number) + h));
-      const done = Math.max(0, Math.min(100, (row["Tamamlanmış"] as number) + Math.round(h / 2)));
-      return { ...row, "KPI Nəticəsi": kpi, "Tamamlanmış": done };
-    });
+    if (periodCategoriesToDate(chartPeriod).length === 0) return [];
+    return chartData;
   }, [chartData, chartPeriod]);
 
 

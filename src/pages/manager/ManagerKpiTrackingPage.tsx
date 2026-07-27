@@ -323,7 +323,6 @@ const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: stri
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="Axtarış..."
             className="w-64 pl-8 pr-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
         </div>
-        <Button variant="outline" size="sm" className="gap-1.5"><Filter className="w-3.5 h-3.5" /> Filtrlər</Button>
       </div>
 
       {/* KPI Cards — accordion */}
@@ -1185,8 +1184,7 @@ export const SubordinatesView = ({
             <input value={q} onChange={e => setQ(e.target.value)} placeholder="Axtarış..."
               className="w-56 pl-8 pr-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
           </div>
-          <Button variant="outline" size="sm" className="gap-1.5"><Filter className="w-3.5 h-3.5" /> Filtrlər</Button>
-        </div>
+          </div>
 
         {/* Tree grid */}
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
@@ -1855,8 +1853,8 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/40 z-40 animate-in fade-in" onClick={onClose} />
-      <aside className="fixed top-0 right-0 h-screen w-full sm:w-[520px] bg-card border-l border-border shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-0 bg-black/40 z-[80] animate-in fade-in" onClick={onClose} />
+      <aside className="fixed top-0 right-0 h-screen w-full sm:w-[520px] bg-card border-l border-border shadow-2xl z-[90] flex flex-col animate-in slide-in-from-right duration-300">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-foreground truncate">{target.name}</h3>

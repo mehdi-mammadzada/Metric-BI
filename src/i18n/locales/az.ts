@@ -161,6 +161,22 @@ const az = {
     toast_notify_many: "{{count}} şəxsə notification göndərildi",
     toast_notify_many_desc: "Kart: {{card}}",
   },
+  login: {
+    title: "Hesabınıza daxil olun!",
+    subtitle: "Sizə verilən e-poçt və şifrə ilə KPİ sisteminə daxil olun",
+    email: "E-poçt",
+    email_ph: "E-poçt ünvanınızı daxil edin",
+    email_required: "E-poçt tələb olunur",
+    password: "Şifrə",
+    password_ph: "Şifrənizi daxil edin",
+    password_required: "Şifrə tələb olunur",
+    forgot: "Şifrəni unutdunmu?",
+    submit: "Daxil ol",
+    submitting: "Daxil olunur...",
+    both_required: "E-poçt və şifrə daxil edin",
+    failed: "Giriş uğursuz oldu",
+    error: "Giriş zamanı xəta baş verdi",
+  },
 };
 export default az;
 export type Translation = typeof az;

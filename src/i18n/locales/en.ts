@@ -163,5 +163,21 @@ const en: Translation = {
     toast_notify_many: "Notification sent to {{count}} people",
     toast_notify_many_desc: "Card: {{card}}",
   },
+  login: {
+    title: "Sign in to your account",
+    subtitle: "Use the email and password provided to access the KPI system",
+    email: "Email",
+    email_ph: "Enter your email address",
+    email_required: "Email is required",
+    password: "Password",
+    password_ph: "Enter your password",
+    password_required: "Password is required",
+    forgot: "Forgot your password?",
+    submit: "Sign in",
+    submitting: "Signing in...",
+    both_required: "Enter your email and password",
+    failed: "Sign in failed",
+    error: "An error occurred while signing in",
+  },
 };
 export default en;

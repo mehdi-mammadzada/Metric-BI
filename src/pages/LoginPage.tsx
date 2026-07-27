@@ -1,25 +1,50 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
-import { AlertCircle, Eye, EyeOff, LogIn } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, LogIn, Moon, Sun, Globe, ChevronDown } from "lucide-react";
 import loginHero from "@/assets/login-hero.png.asset.json";
+import { applyTheme, getStoredTheme } from "@/lib/theme";
+import { CODE_TO_UI, UI_TO_CODE, type SupportedLang } from "@/i18n";
 
 const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [touched, setTouched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [dark, setDark] = useState(() => getStoredTheme() === "dark");
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+  const lang = CODE_TO_UI[(i18n.language?.split("-")[0] as SupportedLang) || "az"] ?? "AZ";
+
+  useEffect(() => { applyTheme(dark ? "dark" : "light"); }, [dark]);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const chooseLang = (l: "AZ" | "ENG" | "RU") => {
+    i18n.changeLanguage(UI_TO_CODE[l]);
+    try { localStorage.setItem("kpi_lang", l); } catch { /* noop */ }
+    setLangOpen(false);
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTouched(true);
     setError("");
     if (!email || !password) {
-      setError("E-poçt və şifrə daxil edin");
+      setError(t("login.both_required"));
       return;
     }
     setLoading(true);
@@ -29,10 +54,10 @@ const LoginPage = () => {
         // Root route handles role-based redirect (super admin, HR, manager, user).
         navigate("/");
       } else {
-        setError(result.error || "Giriş uğursuz oldu");
+        setError(result.error || t("login.failed"));
       }
     } catch (err: any) {
-      setError(err?.message || "Giriş zamanı xəta baş verdi");
+      setError(err?.message || t("login.error"));
     } finally {
       setLoading(false);
     }
@@ -56,14 +81,56 @@ const LoginPage = () => {
           }}
         />
 
+
+        {/* Compact control panel — theme + language */}
+        <div ref={langRef} className="absolute bottom-5 left-5 z-10 flex items-center gap-1.5 rounded-xl border border-border bg-card/80 backdrop-blur px-1.5 py-1.5 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setDark(!dark)}
+            aria-label={dark ? t("common.light_mode") : t("common.dark_mode")}
+            title={dark ? t("common.light_mode") : t("common.dark_mode")}
+            className="w-8 h-8 inline-flex items-center justify-center rounded-lg hover:bg-secondary transition-colors"
+          >
+            {dark ? <Sun className="w-4 h-4 text-warning" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
+          </button>
+          <span className="w-px h-5 bg-border" />
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setLangOpen(o => !o)}
+              className="h-8 px-2 inline-flex items-center gap-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              aria-label={t("common.language")}
+            >
+              <Globe className="w-4 h-4" /> {lang}
+              <ChevronDown className="w-3 h-3" />
+            </button>
+            {langOpen && (
+              <div className="absolute bottom-full left-0 mb-2 w-28 rounded-lg border border-border bg-popover shadow-lg overflow-hidden">
+                {(["AZ", "ENG", "RU"] as const).map(l => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => chooseLang(l)}
+                    className={`w-full text-left px-3 py-2 text-xs transition-colors hover:bg-secondary ${
+                      lang === l ? "text-primary font-semibold" : "text-foreground"
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="relative w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/30 mb-4">
               <LogIn className="w-7 h-7 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Hesabınıza daxil olun!</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t("login.title")}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Sizə verilən e-poçt və şifrə ilə KPİ sisteminə daxil olun
+              {t("login.subtitle")}
             </p>
           </div>
 
@@ -77,31 +144,31 @@ const LoginPage = () => {
 
             <div>
               <label className="text-sm font-medium text-foreground">
-                E-poçt <span className="text-destructive">*</span>
+                {t("login.email")} <span className="text-destructive">*</span>
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="E-poçt ünvanınızı daxil edin"
+                placeholder={t("login.email_ph")}
                 className="w-full mt-1 px-4 py-3 text-sm border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition"
                 autoComplete="email"
               />
               {touched && !email && (
-                <p className="text-xs text-destructive font-medium mt-1.5">E-poçt tələb olunur</p>
+                <p className="text-xs text-destructive font-medium mt-1.5">{t("login.email_required")}</p>
               )}
             </div>
 
             <div>
               <label className="text-sm font-medium text-foreground">
-                Şifrə <span className="text-destructive">*</span>
+                {t("login.password")} <span className="text-destructive">*</span>
               </label>
               <div className="relative mt-1">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="Şifrənizi daxil edin"
+                  placeholder={t("login.password_ph")}
                   className="w-full pr-10 px-4 py-3 text-sm border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/30 focus:border-primary focus:outline-none transition"
                   autoComplete="current-password"
                 />
@@ -114,7 +181,7 @@ const LoginPage = () => {
                 </button>
               </div>
               {touched && !password && (
-                <p className="text-xs text-destructive font-medium mt-1.5">Şifrə tələb olunur</p>
+                <p className="text-xs text-destructive font-medium mt-1.5">{t("login.password_required")}</p>
               )}
             </div>
 
@@ -123,7 +190,7 @@ const LoginPage = () => {
                 to="/forgot-password"
                 className="text-sm text-primary hover:text-primary/80 hover:underline transition-colors"
               >
-                Şifrəni unutdunmu?
+                {t("login.forgot")}
               </Link>
             </div>
 
@@ -132,7 +199,7 @@ const LoginPage = () => {
               disabled={loading}
               className="w-full py-3 text-sm font-semibold rounded-lg bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-md hover:shadow-lg disabled:opacity-50 transition-all"
             >
-              {loading ? "Daxil olunur..." : "Daxil ol"}
+              {loading ? t("login.submitting") : t("login.submit")}
             </button>
           </form>
         </div>
