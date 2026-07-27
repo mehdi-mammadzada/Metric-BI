@@ -11,6 +11,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { getEmployees, getStructures, type OrgStructure } from "@/lib/orgStore";
+import {
+  getRealKpiCardsForEmployee,
+  getRealTeamKpiCards,
+  findEmployeeByUser,
+  type RealKpiCard,
+} from "@/lib/managerKpiData";
+
 import { useCascadeTree, type CascadeTreeNode } from "@/lib/cascadeTreeStore";
 import { useSharedKpiCards, type SharedKpiCard, type ExecutionStatus } from "@/lib/kpiCardStore";
 import { computeReviewStatus, setReviewOutcome, useKpiLifecycles, type CardLifecycle, type LifecycleReview, type ReviewComputedStatus } from "@/lib/kpiLifecycleStore";
@@ -40,7 +47,10 @@ interface Kpi {
   responsible: { name: string; role: string };
   measure: string; type: string; method: string; weight: number;
   cascadeNodeId?: string;
+  /** Real (DB/store) hədəflər — mock generatorlar əvəzinə istifadə olunur. */
+  realTargets?: CardTarget[];
 }
+
 interface Person { id: string; name: string; position: string; parent?: string; level: number; assigned: boolean; stage: Stage; }
 
 const MY_KPIS: Kpi[] = [
@@ -144,6 +154,16 @@ const SEED_TARGETS: Record<string, { name: string; plan: number; fakt: number; u
 };
 
 const targetsForKpi = (k: Kpi) => {
+  if (k.realTargets?.length) {
+    return k.realTargets.map(t => ({
+      id: t.id,
+      name: t.name,
+      plan: t.plan,
+      fakt: t.fakt,
+      unit: t.unit,
+      status: t.status as AccordionKpiStatus,
+    }));
+  }
   const key = k.name.replace(/\s+—.*$/, "");
   const seed = SEED_TARGETS[key];
   if (seed) return seed.map((t, i) => ({ id: `${k.id}-t${i + 1}`, ...t }));
@@ -156,6 +176,9 @@ const targetsForKpi = (k: Kpi) => {
     status: k.status as AccordionKpiStatus,
   }];
 };
+
+
+
 
 const dedupeKpis = <T extends Kpi>(rows: T[]): T[] => {
   const norm = (value?: string) => String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -178,72 +201,49 @@ const ManagerKpiTrackingPage = () => {
   const tree = useCascadeTree();
   const sharedCards = useSharedKpiCards();
 
-  // Cari istifadəçiyə cascade və Owner-tipli SharedKpiCard-lardan yaranan dinamik KPI-lar
-  const dynamicMyKpis = useMemo<Kpi[]>(() => {
-    if (!user?.name) return [];
-    const result: Kpi[] = [];
-    // 1) Cascade tree node-ları (yuxarıdan pay alınmış hədəflər)
-    tree.filter(n => n.assigneeName === user.name).forEach(n => {
-      result.push({
-        id: `ct-${n.id}`,
-        name: `${withKartSuffix(n.cardName)} — ${n.goalName || "Ana hədəf"}`,
-        description: `${n.parentId ? "Yuxarı rəhbərdən pay" : "HR tərəfindən təyin edilmiş hədəf"}: ${new Intl.NumberFormat("az-AZ").format(n.limit)} ${n.unit}`,
-        period: new Date(n.createdAt).toLocaleDateString("az-AZ"),
-        target: Number(n.limit) || 0,
-        actual: 0,
-        unit: n.unit || "AZN",
-        stage: "assigned",
-        status: "in_progress",
-        deadline: "—",
-        createdAt: new Date(n.createdAt).toLocaleDateString("az-AZ"),
-        updatedAt: new Date(n.updatedAt).toLocaleDateString("az-AZ"),
-        responsible: { name: n.assigneeName, role: n.positionName || "İcraçı" },
-        measure: n.unit || "AZN", type: "Cascade", method: "Cascade paylanma", weight: 20,
-        cascadeNodeId: n.id,
-      });
-    });
-    // 2) SharedKpiCard-lar — cari istifadəçi assignee (və ya owner) olduğu kartlar.
-    // HR yaradan olsa da, kart Elvinə təyin edilibsə, Elvinin KPI-larında görünməlidir,
-    // yaradan HR-in "Mənim KPI-larım"-da yox.
-    const emp = getEmployees().find(e => `${e.firstName} ${e.lastName}` === user.name);
-    if (emp) {
-      const empKey = `e${emp.id}`;
-      sharedCards
-        .filter(c => (c.status === "aktiv" || c.status === "natamam") &&
-          (c.assigneeIds?.includes(empKey) || (!c.assigneeIds?.length && c.ownerId === empKey)))
-        .forEach(c => {
-          (c.targets || []).forEach((t: any) => {
-            const existsInCascadeTree = tree.some(n => n.assigneeName === user.name && n.cardName === c.name && n.goalName === (t.name || "Ana hədəf"));
-            if (existsInCascadeTree) return;
-            const target = parseFloat(String(t.targetValue ?? t.value ?? t.target ?? t.scoreLimit ?? "").replace(/[^\d.\-]/g, "")) || 0;
-            result.push({
-              id: `sk-${c.id}-${t.id}`,
-              name: `${withKartSuffix(c.name)} — ${t.name || "Hədəf"}`,
-              description: `HR tərəfindən sizə təyin olunmuş KPI (${c.status})`,
-              period: c.startDate || "—",
-              target, actual: 0, unit: t.unit || (t.type === "Məbləğ" ? "AZN" : ""),
-              stage: "assigned",
-              status: c.status === "aktiv" ? "in_progress" : "at_risk",
-              deadline: c.endDate || "—",
-              createdAt: c.createdAt?.slice(0, 10) || "—",
-              updatedAt: c.updatedAt?.slice(0, 10) || "—",
-              responsible: { name: user.name, role: emp.positionName || "İcraçı" },
-              measure: t.type || "—", type: c.frequency || "—", method: t.name || "—", weight: t.weight || 20,
-            });
-          });
-        });
-    }
-    return dedupeKpis(result);
-  }, [tree, sharedCards, user?.name]);
+  const me = useMemo(() => findEmployeeByUser(user), [user?.email, user?.name, sharedCards, tree]);
 
-  // Yalnız cari istifadəçiyə aid KPI-lar. Seed-də olan digər şəxslərin
-  // demo KPI-ları başqa hesablarda "Mənim KPI-larım"-da görünməməlidir.
-  const myKpis = useMemo(() => {
-    const seed = user?.name
-      ? MY_KPIS.filter(k => k.responsible.name === user.name)
-      : MY_KPIS;
-    return dedupeKpis([...dynamicMyKpis, ...seed]);
-  }, [dynamicMyKpis, user?.name]);
+  const realToKpi = (c: RealKpiCard, ownerName: string, ownerRole: string): Kpi => {
+    const plan = c.targets.reduce((s, t) => s + t.plan, 0);
+    const fakt = c.targets.reduce((s, t) => s + t.fakt, 0);
+    return {
+      id: c.id,
+      name: c.name,
+      description: "",
+      period: c.frequency || "—",
+      target: plan,
+      actual: fakt,
+      unit: c.targets[0]?.unit || "",
+      stage: "assigned",
+      status: "in_progress",
+      deadline: c.deadline,
+      createdAt: c.createdAt,
+      updatedAt: c.createdAt,
+      responsible: { name: ownerName, role: ownerRole },
+      measure: c.targets[0]?.unit || "—",
+      type: c.frequency || "—",
+      method: "—",
+      weight: 0,
+      realTargets: c.targets.map(t => ({ ...t, status: "in_progress" as KpiStatus })),
+    };
+  };
+
+  // Mənim KPI-larım — yalnız REAL kartlar (shared_kpi_cards + cascade_tree).
+  const myKpis = useMemo<Kpi[]>(() => {
+    if (!me) return [];
+    return getRealKpiCardsForEmployee(me.id).map(c =>
+      realToKpi(c, `${me.firstName} ${me.lastName}`, me.positionName || "İcraçı"),
+    );
+  }, [me, sharedCards, tree]);
+
+  // Komanda KPI-ları — istifadəçinin üzv olduğu komandalara TOPLU verilmiş kartlar.
+  const teamKpis = useMemo<Kpi[]>(() => {
+    if (!me) return [];
+    return getRealTeamKpiCards(me.id).map(c =>
+      realToKpi(c, `${me.firstName} ${me.lastName}`, me.positionName || "İcraçı"),
+    );
+  }, [me, sharedCards]);
+
 
   // Rəhbər yalnız öz strukturunu görməlidir, HR/SUPER_ADMIN isə bütün şirkəti.
   const subScopePath = useMemo<string | null>(() => {
@@ -269,14 +269,15 @@ const ManagerKpiTrackingPage = () => {
             <PageHero badge="Rəhbər Paneli" icon={Activity} title="KPI İzlənməsi" subtitle="Fərdi, komanda və tabeçilik KPI-larını fərqli baxış bucaqlarından izləyin." />
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mt-2">
               <HubCard icon={User} title="Mənim KPI-larım" subtitle="Sizə aid fərdi hədəflər və onların icra vəziyyəti." count={myKpis.length} gradient="from-indigo-500/15 via-indigo-500/5 to-transparent border-indigo-400/40" onClick={() => setView("own")} />
-              <HubCard icon={Users} title="Komanda KPI-ları" subtitle="Toplu (kollektiv) hədəflər — komanda olaraq eyni nəticə." count={TEAM_KPIS.length} gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40" onClick={() => setView("team")} />
-              <HubCard icon={Network} title="Tabeçiliyimdəkilərin KPI-ları" subtitle="İyerarxik görünüş, mərhələ nəzarəti və gecikmə bildirişləri." count={HIERARCHY.length} gradient="from-amber-500/15 via-amber-500/5 to-transparent border-amber-400/40" onClick={() => setView("sub")} />
+              <HubCard icon={Users} title="Komanda KPI-ları" subtitle="Toplu (kollektiv) hədəflər — komanda olaraq eyni nəticə." count={teamKpis.length} gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40" onClick={() => setView("team")} />
+              <HubCard icon={Network} title="Tabeçiliyimdəkilərin KPI-ları" subtitle="İyerarxik görünüş, mərhələ nəzarəti və gecikmə bildirişləri." count={<SubordinatesCount scopePath={subScopePath} />} gradient="from-amber-500/15 via-amber-500/5 to-transparent border-amber-400/40" onClick={() => setView("sub")} />
               <HubCard icon={RefreshCw} title="Reviewlar" subtitle="Hazırda Review mərhələsində olan bütün KPI kartları — bir ekrandan izləyin." count={<ReviewsCount />} gradient="from-sky-500/15 via-sky-500/5 to-transparent border-sky-400/40" onClick={() => setView("reviews")} />
             </div>
           </>
         )}
         {view === "own" && <OwnKpisView title="Mənim KPI-larım" subtitle="Sizə aid fərdi hədəflər və onların icra vəziyyəti." data={myKpis} cascadeNodes={tree} />}
-        {view === "team" && <OwnKpisView title="Komanda KPI-ları" subtitle="Toplu (kollektiv) hədəflər — komanda olaraq eyni nəticə." data={TEAM_KPIS} />}
+        {view === "team" && <OwnKpisView title="Komanda KPI-ları" subtitle="Toplu (kollektiv) hədəflər — komanda olaraq eyni nəticə." data={teamKpis} />}
+
         {view === "sub" && <SubordinatesView scopePath={subScopePath} />}
         {view === "reviews" && <ReviewsView />}
       </main>
@@ -307,24 +308,13 @@ interface CommentItem { id: string; author: string; role: string; date: string; 
 interface HistoryItem { id: string; date: string; time: string; author: string; field: string; from: string; to: string; }
 interface ReminderItem { id: string; date: string; time: string; author: string; text: string; read: boolean; }
 
-const initialComments = (kpiId: string): CommentItem[] => [
-  { id: `${kpiId}-c1`, author: "Aysel Məmmədova", role: "Satış meneceri", date: "15.05.2025 14:35", text: "Aprel ayında artım tempi gözləntilərimizə uyğundur. Davam edirik." },
-  { id: `${kpiId}-c2`, author: "Nicat Əliyev",    role: "Satış Direktoru", date: "15.05.2025 14:45", text: "Yaxşı xəbərdir. May ayında kampaniyanın təsiri ilə hədəfə daha da yaxınlaşacağımıza əminəm." },
-  { id: `${kpiId}-c3`, author: "Aysel Məmmədova", role: "Satış meneceri", date: "15.05.2025 14:50", text: "May ayı üçün yeni kampaniya planlaşdırılıb." },
-];
+// Real data yoxdursa — boş siyahı (mock şərh/tarixçə/xatırlatma yaradılmır).
+const initialComments = (_kpiId: string): CommentItem[] => [];
 
-const initialHistory = (kpiId: string): HistoryItem[] => [
-  { id: `${kpiId}-h1`, date: "15.05.2025", time: "14:30", author: "Aysel Məmmədova", field: "İcra faizi", from: "45%", to: "53%" },
-  { id: `${kpiId}-h2`, date: "30.04.2025", time: "11:20", author: "Aysel Məmmədova", field: "İcra faizi", from: "28%", to: "45%" },
-  { id: `${kpiId}-h3`, date: "15.04.2025", time: "10:15", author: "Aysel Məmmədova", field: "İcra faizi", from: "12%", to: "28%" },
-  { id: `${kpiId}-h4`, date: "01.04.2025", time: "09:00", author: "Sistem",           field: "KPI yaradıldı", from: "—", to: "plan təyin edildi" },
-];
+const initialHistory = (_kpiId: string): HistoryItem[] => [];
 
-const initialReminders = (kpiId: string): ReminderItem[] => [
-  { id: `${kpiId}-r1`, date: "15.05.2025", time: "10:00", author: "Aysel Məmmədova", text: "KPI icra vəziyyətini yeniləməyi xatırladırıq.", read: true },
-  { id: `${kpiId}-r2`, date: "30.04.2025", time: "09:30", author: "Aysel Məmmədova", text: "KPI icra vəziyyətini yeniləməyi xatırladırıq.", read: true },
-  { id: `${kpiId}-r3`, date: "15.04.2025", time: "09:15", author: "Aysel Məmmədova", text: "KPI icra vəziyyətini yeniləməyi xatırladırıq.", read: true },
-];
+const initialReminders = (_kpiId: string): ReminderItem[] => [];
+
 
 const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: string; subtitle: string; data: Kpi[]; cascadeNodes?: CascadeTreeNode[] }) => {
   const [statusF, setStatusF] = useState<string>("all");
@@ -1157,23 +1147,22 @@ export const SubordinatesView = ({
   const PERIODS = ["2025 / 1-ci rüb", "2025 / 2-ci rüb", "2025 / 3-cü rüb", "2025 / 4-cü rüb"];
   const empKpiCards = useMemo(() => {
     if (!empKpiListFor) return [] as (Kpi & { progress: number; createdAt: string; updatedAt: string })[];
-    return buildEmpKpis(empKpiListFor.empId).map((k, i) => {
-      const h = hashStr(k.id);
-      const pct = Math.round((k.fakt / k.plan) * 100);
-      const period = PERIODS[Math.abs(h) % PERIODS.length];
-      const createdAt = dateFromHash(h, 2025);
-      const updatedAt = dateFromHash(h ^ 0x9e3779b1, 2025);
-      const deadline = dateFromHash(h ^ 0x51f4a5, 2025);
+    return getRealKpiCardsForEmployee(empKpiListFor.empId).map(c => {
+      const plan = c.targets.reduce((s, t) => s + t.plan, 0);
+      const fakt = c.targets.reduce((s, t) => s + t.fakt, 0);
+      const pct = plan ? Math.round((fakt / plan) * 100) : 0;
       const kpi: Kpi = {
-        id: k.id, name: k.name, description: k.desc, period,
-        target: k.plan, actual: k.fakt, unit: k.unit || "ədəd", stage: "assigned",
-        status: k.status, deadline, createdAt, updatedAt,
-        responsible: { name: empKpiListFor.name, role: "Əməkdaş" },
-        measure: k.unit || "ədəd", type: "Rüblük", method: "—", weight: 20,
+        id: c.id, name: c.name, description: "", period: c.frequency || "—",
+        target: plan, actual: fakt, unit: c.targets[0]?.unit || "", stage: "assigned",
+        status: "in_progress", deadline: c.deadline, createdAt: c.createdAt, updatedAt: c.createdAt,
+        responsible: { name: empKpiListFor.name, role: empKpiListFor.position || "Əməkdaş" },
+        measure: c.targets[0]?.unit || "—", type: c.frequency || "—", method: "—", weight: 0,
+        realTargets: c.targets.map(t => ({ ...t, status: "in_progress" as KpiStatus })),
       };
-      return { ...kpi, progress: Math.min(pct, 100), createdAt, updatedAt };
+      return { ...kpi, progress: Math.min(pct, 100), createdAt: c.createdAt, updatedAt: c.createdAt };
     });
   }, [empKpiListFor]);
+
 
   const selected = selectedId ? tree.find(n => n.id === selectedId) ?? null : null;
 
@@ -1549,7 +1538,21 @@ const SubDetailPanel = ({ node, tab, setTab, onClose }: {
   const comments = commentsMap[node.id] || [];
   const history = initialHistory(node.id);
   const reminders = initialReminders(node.id);
-  const empKpis = useMemo(() => node.empId ? buildEmpKpis(node.empId) : [], [node.empId]);
+  const empKpis = useMemo<EmpKpi[]>(() => {
+    if (!node.empId) return [];
+    return getRealKpiCardsForEmployee(node.empId).flatMap(c =>
+      c.targets.map(t => ({
+        id: t.id,
+        name: `${c.name} — ${t.name}`,
+        desc: t.unit ? `Ölçü vahidi: ${t.unit}` : "",
+        plan: t.plan,
+        fakt: t.fakt,
+        unit: t.unit || "",
+        status: "in_progress" as KpiStatus,
+      })),
+    );
+  }, [node.empId]);
+
 
   const sendComment = () => {
     const t = draft.trim(); if (!t) return;
@@ -2245,13 +2248,8 @@ const useReviewRows = (): ReviewRow[] => {
 
     const isActive = (r: LifecycleReview) => r.start && r.end && r.start <= today && today <= r.end;
 
-    // Deterministic fallbacks (demo data) when structure or execution is missing
-    const DEPARTMENTS = ["Satış Departamenti", "Marketinq Departamenti", "Maliyyə Departamenti", "İnsan Resursları", "Əməliyyat Departamenti"];
-    const DIVISIONS = ["Korporativ Satış", "Rəqəmsal Marketinq", "Büdcə və Analiz", "İşə qəbul", "Logistika"];
-    const POSITIONS = ["Baş mütəxəssis", "Aparıcı mütəxəssis", "Menecer", "Koordinator", "Mütəxəssis"];
-    const PROGRESSES = [42, 58, 65, 73, 81, 35, 90, 55, 47, 68];
-    const EXECS: ExecutionStatus[] = ["icrada", "icrada", "gecikme", "tamamlandi", "icrada"];
-    const pick = <T,>(arr: T[], seed: number) => arr[Math.abs(seed) % arr.length];
+
+
 
     lifecycles.forEach((lc: CardLifecycle) => {
       if (!lc.reviews || lc.reviews.length === 0) return;
@@ -2263,39 +2261,17 @@ const useReviewRows = (): ReviewRow[] => {
       const sharedCard: SharedKpiCard | undefined = sharedCards.find(c => c.numericId === lc.cardId);
       const assigneeIds = sharedCard?.assigneeIds ?? [];
 
-      if (assigneeIds.length === 0) {
-        const seed = lc.cardId;
-        const exec = pick(EXECS, seed);
-        rows.push({
-          key: `${lc.cardId}-none`,
-          cardId: lc.cardId,
-          reviewId: active.id,
-          cardName: lc.cardName,
-          empId: null,
-          empName: "—",
-          department: pick(DEPARTMENTS, seed),
-          division: pick(DIVISIONS, seed + 1),
-          position: pick(POSITIONS, seed + 2),
-          progress: pick(PROGRESSES, seed),
-          reviewLabel: active.period || "Review",
-          reviewStart: fmtDate(active.start),
-          reviewEnd: fmtDate(active.end),
-          reviewStatus,
-          outcomeComment: active.outcomeComment,
-          updatedAt: (lc.updatedAt || "").slice(0, 10) ? fmtDate((lc.updatedAt || "").slice(0, 10)) : fmtDate(active.start),
-          execution: exec,
-        });
-        return;
-      }
+      // Review yalnız real təyin olunmuş əməkdaşlar üçün göstərilir — dublikat/demo sətir yaradılmır.
+      if (assigneeIds.length === 0) return;
 
-      assigneeIds.forEach((aid, idx) => {
+
+      assigneeIds.forEach((aid) => {
         const empIdNum = Number(String(aid).replace(/^e/, ""));
         const emp = employees.find(e => e.id === empIdNum);
         const path = (emp?.structurePath || "").split("›").map(s => s.trim()).filter(Boolean);
-        const seed = lc.cardId + idx + empIdNum;
         const execRaw: ExecutionStatus | null | undefined = sharedCard?.execution?.[aid];
-        const exec: ExecutionStatus = execRaw && execRaw !== "baslanmayib" ? execRaw : pick(EXECS, seed);
-        const progress = execRaw && execRaw !== "baslanmayib" ? progressFromExec(exec) : pick(PROGRESSES, seed);
+        const exec: ExecutionStatus = execRaw || "baslanmayib";
+        const progress = execRaw ? progressFromExec(exec) : 0;
         rows.push({
           key: `${lc.cardId}-${aid}`,
           cardId: lc.cardId,
@@ -2303,9 +2279,10 @@ const useReviewRows = (): ReviewRow[] => {
           cardName: lc.cardName,
           empId: emp?.id ?? null,
           empName: emp ? `${emp.firstName} ${emp.lastName}` : String(aid),
-          department: path[0] || pick(DEPARTMENTS, seed),
-          division: path[1] || pick(DIVISIONS, seed + 1),
-          position: emp?.positionName || pick(POSITIONS, seed + 2),
+          department: path[0] || "—",
+          division: path[1] || "—",
+          position: emp?.positionName || "—",
+
           progress,
           reviewLabel: active.period || "Review",
           reviewStart: fmtDate(active.start),
@@ -2326,6 +2303,15 @@ const ReviewsCount = () => {
   const rows = useReviewRows();
   return <>{rows.length}</>;
 };
+
+const SubordinatesCount = ({ scopePath }: { scopePath?: string | null }) => {
+  const count = useMemo(
+    () => buildOrgTree(scopePath).filter(n => n.kind === "employee").length,
+    [scopePath],
+  );
+  return <>{count}</>;
+};
+
 
 const ReviewsView = () => {
   const rows = useReviewRows();
