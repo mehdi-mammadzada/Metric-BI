@@ -147,8 +147,10 @@ const TargetDetailDialog = ({ open, onOpenChange, kpiName, target, deadline, sta
             </div>
           )}
         </Section>
+        </div>
       </div>
-    </aside>
+    </div>
+
   );
 };
 
