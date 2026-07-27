@@ -146,8 +146,8 @@ const RAW_SEED: DropdownCatalog[] = [
   ]},
 ];
 
-// New tenants start with empty catalogs — only the catalog definitions remain.
-const SEED: DropdownCatalog[] = RAW_SEED.map(c => ({ ...c, rows: [], values: [] }));
+// Sistem kataloqlarının standart dəyərləri (Məlumat Cədvəlində görünür və redaktə edilə bilər).
+const SEED: DropdownCatalog[] = RAW_SEED;
 
 // Strukturlaşdırılmış kataloqlarda values array-ı rows.name-dən avtomatik sinxronlaşdırılır
 const syncValues = (cat: DropdownCatalog): DropdownCatalog => {
@@ -157,40 +157,45 @@ const syncValues = (cat: DropdownCatalog): DropdownCatalog => {
   return cat;
 };
 
-// Bu kataloqlar Məlumat Cədvəli tabından tam çıxarılıb (istifadəçi tələbi).
-// Fallback dəyərləri hər zaman kodda `useCatalogValues(id, fallback)` vasitəsilə təmin edilir.
-export const REMOVED_CATALOG_IDS = new Set<string>([
-  "kpi_types",
-  "kpi_kinds",
-  "sub_kpis",
-  "kpi_periods",
-  "kpi_categories",
-  "calc_units",
-  "kpi_lifecycle_periods",
-  "kpi_zones",
-  "integration_systems",
-  "approver_roles",
-  "notification_channels",
-  "kpi_card_types",
-]);
+// Artıq heç bir kataloq gizlədilmir — hamısı Məlumat Cədvəlində göstərilir.
+export const REMOVED_CATALOG_IDS = new Set<string>([]);
+
+// Boş qalmış sistem kataloqlarını standart dəyərlərlə doldurur (bir dəfəlik bərpa).
+const backfill = (list: DropdownCatalog[]): { list: DropdownCatalog[]; changed: boolean } => {
+  let changed = false;
+  const next = list.map(c => {
+    const seed = RAW_SEED.find(s => s.id === c.id);
+    if (!seed || !c.system) return c;
+    const needValues = (!c.values || c.values.length === 0) && seed.values.length > 0;
+    const needRows = !!seed.rows && seed.rows.length > 0 && (!c.rows || c.rows.length === 0);
+    if (!needValues && !needRows) return c;
+    changed = true;
+    return {
+      ...c,
+      values: needValues ? [...seed.values] : c.values,
+      rows: needRows ? [...(seed.rows || [])] : c.rows,
+    };
+  });
+  return { list: next, changed };
+};
 
 const load = (): DropdownCatalog[] => {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed: DropdownCatalog[] = JSON.parse(raw);
-      const cleaned = parsed.filter(c => !REMOVED_CATALOG_IDS.has(c.id));
-      const ids = new Set(cleaned.map(c => c.id));
-      const missing = SEED.filter(s => !ids.has(s.id) && !REMOVED_CATALOG_IDS.has(s.id));
-      const merged = missing.length === 0 ? cleaned : [...cleaned, ...missing];
-      const synced = merged.map(syncValues);
-      if (missing.length > 0 || cleaned.length !== parsed.length) {
+      const ids = new Set(parsed.map(c => c.id));
+      const missing = SEED.filter(s => !ids.has(s.id));
+      const merged = missing.length === 0 ? parsed : [...parsed, ...missing];
+      const filled = backfill(merged);
+      const synced = filled.list.map(syncValues);
+      if (missing.length > 0 || filled.changed) {
         localStorage.setItem(KEY, JSON.stringify(synced));
       }
       return synced;
     }
   } catch {}
-  const seeded = SEED.filter(s => !REMOVED_CATALOG_IDS.has(s.id)).map(syncValues);
+  const seeded = SEED.map(syncValues);
   localStorage.setItem(KEY, JSON.stringify(seeded));
   return seeded;
 };
