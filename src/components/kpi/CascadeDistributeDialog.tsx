@@ -107,12 +107,23 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
   }, [node?.id]);
 
   // Qayda: yalnız HƏM tabelikdə olan, HƏM DƏ kartın tətbiq olunduğu əməkdaşlar.
+  // `restrictToEmployeeIds` artıq bu kəsişməni saxlayır — onu birbaşa istifadə edirik,
+  // beləliklə struktur axtarışı uğursuz olsa belə siyahı boş qalmır.
   const allowed = useMemo(() => {
     const restrict = bootstrap?.restrictToEmployeeIds;
     if (!restrict) return subordinates;
-    const set = new Set(restrict);
-    return subordinates.filter(e => set.has(e.id));
+    const emps = getEmployees();
+    const byId = new Map(emps.map(e => [e.id, e]));
+    const fromRestrict = restrict
+      .map(id => byId.get(id))
+      .filter((e): e is NonNullable<typeof e> => !!e && e.active !== false);
+    const merged = [...fromRestrict];
+    subordinates.forEach(s => {
+      if (restrict.includes(s.id) && !merged.find(m => m.id === s.id)) merged.push(s);
+    });
+    return merged;
   }, [subordinates, bootstrap?.restrictToEmployeeIds]);
+
 
   const leaders = useMemo(() => allowed.filter(e => e.isStarPerson), [allowed]);
   const currentList = audience === "all" ? allowed : audience === "leaders" ? leaders : [];
