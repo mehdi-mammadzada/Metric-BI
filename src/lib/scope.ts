@@ -110,28 +110,23 @@ export const getVisibleKpiCards = (
 };
 
 // ---------- Approvals ----------
+// Təsdiq qutusu HƏMİŞƏ şəxsidir: sorğu yalnız onu yaradan və matris addımlarında
+// adı keçən şəxslərə görünür. Uyğunlaşdırma id / "e{id}" / email / ad-soyad /
+// auth UUID formatlarının hamısını əhatə edir ki, istənilən brauzer və cihazda
+// eyni nəticə alınsın (icazə kodundan asılı olmadan).
 export const getVisibleApprovals = (
   user: AuthUser | null,
   all: ApprovalItem[],
 ): ApprovalItem[] => {
-  const scope = resolveScope(user, "approvals");
-  if (scope === "none") return [];
-  const meId = getCurrentEmployeeId(user);
-  if (!meId) return [];
-  const aliases = new Set<string>([
-    meId,
-    meId.startsWith("e") ? meId.slice(1) : `e${meId}`,
-  ]);
-  if (user?.email) aliases.add(user.email.trim().toLowerCase());
-  const meEmp = getEnrichedEmployee(meId);
-  if (meEmp?.fullName) aliases.add(meEmp.fullName);
+  if (!user) return [];
+  const aliases = getIdentityAliases(user);
+  if (aliases.size === 0) return [];
   const belongsToMe = (a: ApprovalItem) =>
-    a.approverIds.some(id => aliases.has(id))
-    || aliases.has(a.createdBy)
-    || Object.keys(a.decisions || {}).some(id => aliases.has(id))
-    || (a.stepsChain || []).some(step => step.some(id => aliases.has(id)));
-  // Approval inbox is always personal: even HR/admin users should not see
-  // another employee's pending/decided tasks in their own System Approvals page.
+    (a.approverIds || []).some(id => matchesIdentity(aliases, id))
+    || matchesIdentity(aliases, a.createdBy)
+    || Object.keys(a.decisions || {}).some(id => matchesIdentity(aliases, id))
+    || (a.stepsChain || []).some(step => (step || []).some(id => matchesIdentity(aliases, id)));
   return all.filter(belongsToMe);
 };
+
 
