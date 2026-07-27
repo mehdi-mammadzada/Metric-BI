@@ -780,6 +780,14 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   }>(null);
   const [hrCascadeDistribute, setHrCascadeDistribute] = useState<typeof hrCascade>(null);
   const [employeeDrilldown, setEmployeeDrilldown] = useState<string | null>(null);
+  // KPI Set entry-ləri dəyişdikdə təyinat map-ini yenidən hesabla
+  const [kpiSetVersion, setKpiSetVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setKpiSetVersion(v => v + 1);
+    window.addEventListener("kpi-set-updated", bump);
+    window.addEventListener("storage", bump);
+    return () => { window.removeEventListener("kpi-set-updated", bump); window.removeEventListener("storage", bump); };
+  }, []);
   useEffect(() => {
     let timer: number | null = null;
     const refresh = () => import("@/lib/kpiCardStatusStore").then(m => m.fetchAllStatuses().then(setStatusMap));
