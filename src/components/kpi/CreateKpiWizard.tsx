@@ -1072,7 +1072,12 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                   const bs = draft.bulkSelections;
                   const setCat = (cat: "persons" | "teams" | "structures" | "positions", v: string[]) => {
                     const cleared = { teams: [], structures: [], positions: [], persons: [] };
-                    update({ bulkSelections: { ...cleared, [cat]: v } });
+                    update({
+                      bulkSelections: { ...cleared, [cat]: v },
+                      bulkTeamLeader: cat === "persons" && draft.bulkTeamLeader && v.includes(draft.bulkTeamLeader)
+                        ? draft.bulkTeamLeader
+                        : "",
+                    });
                   };
                   return (
                     <Field
