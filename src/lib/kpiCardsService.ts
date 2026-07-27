@@ -86,6 +86,7 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
     assigneeIds: c.assignee_ids ?? [],
     structureIds: c.structure_ids ?? [],
     teamIds: c.team_ids ?? [],
+    assignmentMode: c.assignment_mode === "bulk" ? "bulk" : "individual",
     matrixId: c.matrix_id ?? null,
     status: (c.status as SharedKpiStatus) ?? "natamam",
     rejectedReason: c.rejected_reason ?? undefined,
@@ -178,6 +179,7 @@ const seedCloudFromLocal = async (orgId: string) => {
       assignee_ids: c.assigneeIds,
       structure_ids: c.structureIds,
       team_ids: c.teamIds,
+      assignment_mode: c.assignmentMode,
       execution: c.execution ?? {},
       assignees: s?.assignees ?? [],
     }).select("id").single();
@@ -239,10 +241,23 @@ export const flushLocalKpiCardsToCloud = async () => {
   if (!orgId) return;
   const shared = getSharedKpiCards();
   const status = rawRead<Record<number, any>>(STATUS_KEY, {});
+  const existingModesRes = await supabase
+    .from("kpi_cards")
+    .select("id, legacy_numeric_id, assignment_mode")
+    .eq("organization_id", orgId);
+  const modeByUuid = new Map<string, "individual" | "bulk">();
+  const modeByNumeric = new Map<number, "individual" | "bulk">();
+  (existingModesRes.data ?? []).forEach((row: any) => {
+    const mode = row.assignment_mode === "bulk" ? "bulk" : "individual";
+    if (row.id) modeByUuid.set(String(row.id), mode);
+    if (row.legacy_numeric_id != null) modeByNumeric.set(Number(row.legacy_numeric_id), mode);
+  });
 
   for (const c of shared) {
     const numeric = c.numericId ?? null;
     const s = numeric != null ? status[numeric] : undefined;
+    const persistedMode = (numeric != null ? modeByNumeric.get(Number(numeric)) : undefined) ?? modeByUuid.get(c.id);
+    const assignmentMode = persistedMode ?? (c.assignmentMode === "bulk" ? "bulk" : "individual");
     const payload: any = {
       organization_id: orgId,
       legacy_numeric_id: numeric,
@@ -263,6 +278,7 @@ export const flushLocalKpiCardsToCloud = async () => {
       assignee_ids: c.assigneeIds,
       structure_ids: c.structureIds,
       team_ids: c.teamIds,
+      assignment_mode: assignmentMode,
       execution: c.execution ?? {},
       assignees: s?.assignees ?? [],
     };

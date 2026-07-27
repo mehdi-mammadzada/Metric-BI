@@ -9,6 +9,7 @@ export type SharedKpiStatus = "qaralama" | "natamam" | "tesdiq_gozlenilir" | "im
 // Hədəf icra statusu — sistem üzrə yalnız 3 status:
 // icrada = İcrada · tamamlandi = Hədəfə çatıb · gecikme = Hədəfə çatmayıb
 export type ExecutionStatus = "icrada" | "tamamlandi" | "gecikme";
+export type SharedKpiAssignmentMode = "individual" | "bulk";
 
 export interface SharedKpiCard {
   id: string;
@@ -19,6 +20,7 @@ export interface SharedKpiCard {
   assigneeIds: string[];       // hədəfin icra olunacağı şəxslər
   structureIds: string[];
   teamIds: string[];
+  assignmentMode: SharedKpiAssignmentMode; // Fərdi / Toplu — backend source of truth
   matrixId: string | null;     // seçilmiş təsdiqləmə matrisi
   status: SharedKpiStatus;
   rejectedReason?: string;
@@ -73,9 +75,28 @@ const stableCardSort = (a: SharedKpiCard, b: SharedKpiCard) => {
   return stableCardId(a).localeCompare(stableCardId(b), "az", { numeric: true });
 };
 
+export const inferSharedCardAssignmentMode = (card: Partial<SharedKpiCard>): SharedKpiAssignmentMode => {
+  if (card.assignmentMode === "bulk" || card.assignmentMode === "individual") return card.assignmentMode;
+  return (card.teamIds?.length ?? 0) > 0 || (card.structureIds?.length ?? 0) > 0 || (card.assigneeIds?.length ?? 0) > 1
+    ? "bulk"
+    : "individual";
+};
+
+const normalizeSharedKpiCard = (card: SharedKpiCard): SharedKpiCard => ({
+  ...card,
+  evaluatorIds: card.evaluatorIds ?? [],
+  assigneeIds: card.assigneeIds ?? [],
+  structureIds: card.structureIds ?? [],
+  teamIds: card.teamIds ?? [],
+  assignmentMode: inferSharedCardAssignmentMode(card),
+  targets: card.targets ?? [],
+  execution: card.execution ?? {},
+  history: card.history ?? [],
+});
+
 export const dedupeSharedKpiCards = (rows: SharedKpiCard[]): SharedKpiCard[] => {
   const byId = new Map<string, SharedKpiCard>();
-  rows.forEach(row => byId.set(row.id, byId.has(row.id) ? betterCard(byId.get(row.id)!, row) : row));
+  rows.map(normalizeSharedKpiCard).forEach(row => byId.set(row.id, byId.has(row.id) ? betterCard(byId.get(row.id)!, row) : row));
   const byCard = new Map<string, SharedKpiCard>();
   Array.from(byId.values()).forEach(row => {
     const key = cardKey(row);
@@ -185,6 +206,7 @@ export const buildSharedCardFromDraft = (
     : Array.from(new Set(d.targets.map(t => t.assigner).filter(Boolean))),
   structureIds: meta.structureIds || [],
   teamIds: meta.teamIds || [],
+  assignmentMode: d.mode === "bulk" ? "bulk" : "individual",
   matrixId: meta.matrixId,
   status: meta.status,
   startDate: d.startDate || "",

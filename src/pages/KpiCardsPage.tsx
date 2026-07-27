@@ -43,7 +43,7 @@ import { flushLifecycleToCloud } from "@/lib/lifecycleService";
 import CreateKpiWizard, { type CreateKpiWizardDraft } from "@/components/kpi/CreateKpiWizard";
 import EmployeesTreeView from "@/components/kpi/EmployeesTreeView";
 import { upsertStatus } from "@/lib/kpiCardStatusStore";
-import { buildSharedCardFromDraft, setKpiStatus, upsertSharedKpiCard, useSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
+import { buildSharedCardFromDraft, inferSharedCardAssignmentMode, setKpiStatus, upsertSharedKpiCard, useSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
 import { withKartSuffix } from "@/lib/utils";
 import { WeightInput } from "@/components/kpi/WeightInput";
 // cascade root yaradılması `cascadeAssignment` üzərindən aparılır
@@ -373,11 +373,12 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       const m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
       return m ? `${m[3]}-${m[2]}-${m[1]}` : s;
     };
+    const assignMode = getAssignKindFor(cardId) === "Toplu" ? "bulk" : "individual";
     openWizard({
       name: card.name,
-      mode: "individual",
-      individualEmployees: [card.responsible],
-      bulkSelections: { teams: [], structures: [], positions: [], persons: [] },
+      mode: assignMode,
+      individualEmployees: assignMode === "individual" ? [card.responsible] : [],
+      bulkSelections: { teams: [], structures: [], positions: [], persons: assignMode === "bulk" ? [card.responsible].filter(Boolean) : [] },
       frequency: card.frequency || "Aylıq",
       startDate: toISO(card.startDate || ""),
       endDate: toISO(card.endDate || ""),
@@ -981,6 +982,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     return base.toISOString().slice(0, 10);
   };
   const getAssignKindFor = (cardId: number): "Fərdi" | "Toplu" => {
+    const shared = sharedCards.find(s => s.numericId === cardId || Math.abs(hashStrLocal(s.id)) === cardId);
+    if (shared) return inferSharedCardAssignmentMode(shared) === "bulk" ? "Toplu" : "Fərdi";
     const draft = cardDrafts[cardId];
     if (draft?.mode) return draft.mode === "individual" ? "Fərdi" : "Toplu";
     const card = kpiCards.find(c => c.id === cardId);
@@ -1027,9 +1030,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         startDate: s.startDate || "", endDate: s.endDate || "",
         frequency: s.frequency || "Aylıq",
         team: [], history: [],
-        description: `${notes ? notes + "\n" : ""}Bal sistemi: ${s.scoringSystem || "1-5"} · ${
-          (s.teamIds?.length ?? 0) > 0 || (s.structureIds?.length ?? 0) > 0 || (s.assigneeIds?.length ?? 0) > 1 ? "Toplu" : "Fərdi"
-        }`,
+        description: `${notes ? notes + "\n" : ""}Bal sistemi: ${s.scoringSystem || "1-5"} · ${inferSharedCardAssignmentMode(s) === "bulk" ? "Toplu" : "Fərdi"}`,
 
         weight: 10,
         approvalStatus: s.status === "aktiv" ? "approved" : "pending",
