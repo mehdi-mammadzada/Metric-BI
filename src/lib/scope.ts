@@ -38,7 +38,8 @@ const resolveScope = (user: AuthUser | null, module: "kpi" | "employees" | "appr
 };
 
 export const getCurrentEmployeeId = (user: AuthUser | null): string | null =>
-  getEmployeeIdForEmail(user?.email);
+  resolveEmployeeIdForUser(user) ?? getEmployeeIdForEmail(user?.email);
+
 
 export const getCurrentEmployee = (user: AuthUser | null): EnrichedEmployee | null =>
   getEnrichedEmployee(getCurrentEmployeeId(user));
