@@ -982,15 +982,17 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   };
   const getAssignKindFor = (cardId: number): "Fərdi" | "Toplu" => {
     const draft = cardDrafts[cardId];
-    if (!draft) {
-      const card = kpiCards.find(c => c.id === cardId);
-      if (!card) return "Fərdi";
-      const teams = getTeams();
-      const inTeam = teams.some(t => [t.leader, ...t.members.map(m => m.name)].includes(card.responsible));
-      return inTeam ? "Toplu" : "Fərdi";
-    }
-    return draft.mode === "individual" ? "Fərdi" : "Toplu";
+    if (draft?.mode) return draft.mode === "individual" ? "Fərdi" : "Toplu";
+    const card = kpiCards.find(c => c.id === cardId);
+    // Kartın öz üzərində saxlanan təyinat növü — draft yüklənməyibsə də dəyişməsin
+    const desc = String(card?.description || "");
+    if (/(^|·|\s)Toplu(\s|$)/.test(desc)) return "Toplu";
+    if (/(^|·|\s)Fərdi(\s|$)/.test(desc)) return "Fərdi";
+    if (!card) return "Fərdi";
+    if ((card.subKpis?.length ?? 0) > 0 && (card.team?.length ?? 0) > 1) return "Toplu";
+    return (card.team?.length ?? 0) > 1 ? "Toplu" : "Fərdi";
   };
+
 
   // === Rəhbər / cross-panel shared kartları HR görsün ===
   // Kartlar SharedKpiCard store-dan gəlir (Rəhbərin kartları burada da var).
