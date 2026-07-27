@@ -547,6 +547,18 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     return Array.from(set).sort().map(p => ({ value: p, label: p }));
   }, [employeesRaw]);
 
+  /** Toplu rejimdə avtomatik komandanın üzvləri: birbaşa seçilmiş şəxslər,
+   *  yaxud seçilmiş vəzifələrə uyğun gələn əməkdaşlar. */
+  const bulkTeamMembers = useMemo(() => {
+    if (draft.mode !== "bulk") return [] as string[];
+    const bs = draft.bulkSelections;
+    if (bs.persons.length) return bs.persons;
+    if (bs.positions.length) {
+      return employeesRaw.filter(e => bs.positions.includes(e.positionName)).map(e => e.value);
+    }
+    return [] as string[];
+  }, [draft.mode, draft.bulkSelections, employeesRaw]);
+
   // ===== Individual-mode filters (Vəzifə / Komanda / Struktur) =====
   const [indFilterPositions, setIndFilterPositions] = useState<string[]>([]);
   const [indFilterTeams, setIndFilterTeams] = useState<string[]>([]);
@@ -741,7 +753,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
           && !!lc.evaluationStart && !!lc.evaluationEnd
           && !!lc.bonusStart && !!lc.bonusEnd;
         // Toplu + 2+ şəxs → avtomatik komanda yaranır, lider məcburidir
-        const bulkPersons = draft.mode === "bulk" ? draft.bulkSelections.persons : [];
+        const bulkPersons = bulkTeamMembers;
         const leaderOk = bulkPersons.length < 2
           || (!!draft.bulkTeamLeader && bulkPersons.includes(draft.bulkTeamLeader));
         return !!draft.name.trim() && !!draft.frequency && !!draft.startDate && !!draft.endDate
@@ -766,7 +778,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
   const handleNext = () => {
     if (!canNext) {
       if (step === 1) {
-        const bp = draft.mode === "bulk" ? draft.bulkSelections.persons : [];
+        const bp = bulkTeamMembers;
         if (bp.length >= 2 && !(draft.bulkTeamLeader && bp.includes(draft.bulkTeamLeader))) {
           toast.error("Komanda Lideri seçilməlidir — avtomatik yaradılacaq komanda üçün 1 nəfər lider təyin edin");
         } else {
@@ -784,10 +796,10 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     if (step < TOTAL_STEPS) setStep(step + 1);
   };
 
-  /** Auto-create a team if Toplu+Şəxs has 2+ people. */
+  /** Auto-create a team if Toplu (Şəxs və ya Vəzifə) 2+ nəfər əhatə edir. */
   const ensureAutoTeam = (d: CreateKpiWizardDraft) => {
     if (d.mode !== "bulk") return;
-    const persons = d.bulkSelections.persons;
+    const persons = bulkTeamMembers;
     if (persons.length < 2) return;
     const leader = d.bulkTeamLeader && persons.includes(d.bulkTeamLeader) ? d.bulkTeamLeader : "";
     if (!leader) { toast.error("Komanda Lideri seçilmədən komanda yaradıla bilməz"); return; }
@@ -899,7 +911,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
   };
 
   const finalize = (action: WizardAction) => {
-    const bulkPersons = draft.mode === "bulk" ? draft.bulkSelections.persons : [];
+    const bulkPersons = bulkTeamMembers;
     if (bulkPersons.length >= 2 && !(draft.bulkTeamLeader && bulkPersons.includes(draft.bulkTeamLeader))) {
       toast.error("Komanda Lideri seçilməlidir — avtomatik yaradılacaq komanda üçün 1 nəfər lider təyin edin");
       setStep(1);
@@ -1078,9 +1090,14 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                   const bs = draft.bulkSelections;
                   const setCat = (cat: "persons" | "teams" | "structures" | "positions", v: string[]) => {
                     const cleared = { teams: [], structures: [], positions: [], persons: [] };
+                    const nextMembers = cat === "persons"
+                      ? v
+                      : cat === "positions"
+                        ? employeesRaw.filter(e => v.includes(e.positionName)).map(e => e.value)
+                        : [];
                     update({
                       bulkSelections: { ...cleared, [cat]: v },
-                      bulkTeamLeader: cat === "persons" && draft.bulkTeamLeader && v.includes(draft.bulkTeamLeader)
+                      bulkTeamLeader: draft.bulkTeamLeader && nextMembers.includes(draft.bulkTeamLeader)
                         ? draft.bulkTeamLeader
                         : "",
                     });
@@ -1112,10 +1129,10 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                         <MultiSelectDropdown options={positionOptions} selected={bs.positions}
                           onChange={(v) => setCat("positions", v)} placeholder="Vəzifə seçin" />
                       )}
-                      {bs.persons.length >= 2 && (
+                      {bulkTeamMembers.length >= 2 && (
                         <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
                           <p className="text-[11px] text-emerald-600 flex items-center gap-1">
-                            <Users className="w-3 h-3" /> Yadda saxladıqda bu {bs.persons.length} şəxs üçün avtomatik yeni komanda yaradılacaq.
+                            <Users className="w-3 h-3" /> Yadda saxladıqda bu {bulkTeamMembers.length} şəxs üçün avtomatik yeni komanda yaradılacaq.
                           </p>
                           <div>
                             <label className="text-xs font-medium text-foreground">
@@ -1129,7 +1146,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                               }`}
                             >
                               <option value="">— Lider seçin —</option>
-                              {bs.persons.map(p => <option key={p} value={p}>{p}</option>)}
+                              {bulkTeamMembers.map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                             {!draft.bulkTeamLeader && (
                               <p className="text-[11px] text-destructive mt-1">
