@@ -2276,14 +2276,13 @@ const useReviewRows = (): ReviewRow[] => {
       if (assigneeIds.length === 0) return;
 
 
-      assigneeIds.forEach((aid, idx) => {
+      assigneeIds.forEach((aid) => {
         const empIdNum = Number(String(aid).replace(/^e/, ""));
         const emp = employees.find(e => e.id === empIdNum);
         const path = (emp?.structurePath || "").split("›").map(s => s.trim()).filter(Boolean);
-        const seed = lc.cardId + idx + empIdNum;
         const execRaw: ExecutionStatus | null | undefined = sharedCard?.execution?.[aid];
-        const exec: ExecutionStatus = execRaw && execRaw !== "baslanmayib" ? execRaw : pick(EXECS, seed);
-        const progress = execRaw && execRaw !== "baslanmayib" ? progressFromExec(exec) : pick(PROGRESSES, seed);
+        const exec: ExecutionStatus = execRaw || "baslanmayib";
+        const progress = execRaw ? progressFromExec(exec) : 0;
         rows.push({
           key: `${lc.cardId}-${aid}`,
           cardId: lc.cardId,
@@ -2291,9 +2290,10 @@ const useReviewRows = (): ReviewRow[] => {
           cardName: lc.cardName,
           empId: emp?.id ?? null,
           empName: emp ? `${emp.firstName} ${emp.lastName}` : String(aid),
-          department: path[0] || pick(DEPARTMENTS, seed),
-          division: path[1] || pick(DIVISIONS, seed + 1),
-          position: emp?.positionName || pick(POSITIONS, seed + 2),
+          department: path[0] || "—",
+          division: path[1] || "—",
+          position: emp?.positionName || "—",
+
           progress,
           reviewLabel: active.period || "Review",
           reviewStart: fmtDate(active.start),
