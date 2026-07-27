@@ -88,25 +88,52 @@ const RAW_SEED: DropdownCatalog[] = [
   // Sadə (string-list) sistem kataloqları
   { id: "kpi_categories", name: "KPI Kateqoriyaları", system: true, values: []},
   { id: "calc_units", name: "Hesablama Vahidləri", system: true, values: []},
-  { id: "sub_kpi_units", name: "Hədəf Növləri", system: true, values: []},
+  { id: "sub_kpi_units", name: "Hədəf Növləri", system: true, values: [
+    "Məbləğ", "Say", "İcra", "Səriştə", "Fərdi İnkişaf", "Faiz", "Nisbət", "Boolean", "Zaman",
+  ]},
   { id: "frequencies", name: "Dövr", system: true, values: [
     "Aylıq", "Rüblük", "6 Aylıq", "İllik", "Custom",
   ]},
   { id: "kpi_lifecycle_periods", name: "KPI Lifecycle Dövrləri", system: true, values: []},
   { id: "kpi_statuses", name: "KPI Kartı Statusları", system: true, values: [
-    "Qaralama", "Natamam", "Təsdiq gözlənilir", "İmtina", "Aktiv", "Qiymətləndirmə", "Tamamlanıb", "Silindi",
+    "Qaralama", "Natamam", "Təsdiq gözlənilir", "İmtina", "Aktiv",
+    "Qiymətləndirmə", "Tamamlanıb", "Ləğv olundu", "Silindi",
   ]},
   { id: "kpi_zones", name: "KPI Zonaları", system: true, values: []},
-  { id: "whistleblower_statuses", name: "Anonim Bildiriş Statusları", system: true, values: []},
-  { id: "evaluation_statuses", name: "Qiymətləndirmə Statusları", system: true, values: []},
+  { id: "whistleblower_statuses", name: "Anonim Bildiriş Statusları", system: true, values: [
+    "Yeni", "Araşdırılır", "Həll olundu",
+  ]},
+  { id: "evaluation_statuses", name: "Qiymətləndirmə Statusları", system: true, values: [
+    "Tamamlanıb", "Gözləyir",
+  ]},
   { id: "integration_systems", name: "İnteqrasiya Sistemləri", system: true, values: []},
-  { id: "evaluator_types", name: "Qiymətləndirici seçimi", system: true, values: []},
-  { id: "whistleblower_categories", name: "Bildiriş Kateqoriyaları", system: true, values: []},
-  { id: "scoring_systems", name: "Qiymətləndirmə Bal Sistemi", system: true, values: []},
+  { id: "evaluator_types", name: "Qiymətləndirici seçimi", system: true, values: [
+    "Komandadaxili", "Konkret şəxs", "Özü", "İnteqrasiya",
+  ]},
+  { id: "whistleblower_categories", name: "Bildiriş Kateqoriyaları", system: true, values: [
+    "Korrupsiya", "Saxtakarlıq", "Mobbing / Təzyiq", "Diskriminasiya",
+    "Təhlükəsizlik pozuntusu", "Etik qayda pozuntusu", "Digər",
+  ]},
+  { id: "scoring_systems", name: "Qiymətləndirmə Bal Sistemi", system: true, values: [
+    "1-3 Bal Sistemi", "1-5 Bal Sistemi", "1-10 Bal Sistemi", "Faiz (0-100)",
+  ]},
 ];
 
-// Məlumat Cədvəlində yalnız kataloq başlıqları bərpa edilir; köhnə demo dəyərlər seed edilmir.
-const SEED: DropdownCatalog[] = RAW_SEED.map(c => ({ ...c, rows: [], values: c.id === "frequencies" || c.id === "kpi_statuses" ? c.values : [] }));
+const SEED: DropdownCatalog[] = RAW_SEED.map(c => ({ ...c, rows: [] }));
+
+/** Məlumat Cədvəlində göstərilən yeganə kataloqlar — bu sıra ilə. */
+export const VISIBLE_CATALOG_IDS: string[] = [
+  "frequencies",
+  "sub_kpi_units",
+  "kpi_statuses",
+  "whistleblower_statuses",
+  "evaluation_statuses",
+  "whistleblower_categories",
+  "scoring_systems",
+];
+
+/** Bu kataloqlara yeni dəyər əlavə etmək olmaz (sistem sabitləri). */
+export const LOCKED_CATALOG_IDS = new Set<string>(["kpi_statuses", "evaluator_types"]);
 
 // Strukturlaşdırılmış kataloqlarda values array-ı rows.name-dən avtomatik sinxronlaşdırılır
 const syncValues = (cat: DropdownCatalog): DropdownCatalog => {
@@ -116,67 +143,27 @@ const syncValues = (cat: DropdownCatalog): DropdownCatalog => {
   return cat;
 };
 
-// Bayaq səhvən gizlədilən sistem kataloqları yenidən göstərilir.
-export const REMOVED_CATALOG_IDS = new Set<string>([]);
+// Məlumat Cədvəlində gizlədilən (amma dropdownlar üçün saxlanılan) kataloqlar.
+export const REMOVED_CATALOG_IDS = new Set<string>(
+  RAW_SEED.map(c => c.id).filter(id => !VISIBLE_CATALOG_IDS.includes(id)),
+);
 
-const LEGACY_ROW_NAMES = new Set([
-  "absolut hədəf (məs: aylıq satış)",
-  "faiz hədəfi (məs: sifarişlərin çatdırılması)",
-  "trend hədəfi (məs: müştəri şikayətlərinin azaldılması)",
-  "benchmark hədəfi (məs: sənaye standartı üzrə məmnuniyyət)",
-  "say hədəfi (məs: yeni müştəri sayı)",
-  "fərdi inkişaf (məs: təlim modulları)",
-  "360 qiymətləndirmə (məs: performans rəyi)",
-  "kəmiyyət kpi-ları (ölçülə bilən)",
-  "keyfiyyət kpi-ları",
-  "vaxt kpi-ları",
-  "online satış",
-  "mağaza satışı",
-  "sosial media müştəriləri",
-  "referral müştərilər",
-  "reklam kampaniyası",
-]);
+// Migrasiya markeri payload-un içində saxlanılır ki, bulud sinxronizasiyası ilə
+// digər brauzerlərə də getsin və istifadəçinin əlavə etdiyi dəyərlər sıfırlanmasın.
+const META_ID = "__catalog_meta_v7";
+const META_ENTRY: DropdownCatalog = { id: META_ID, name: META_ID, system: true, values: [] };
 
-const LEGACY_SIMPLE_DEFAULTS: Record<string, string[]> = {
-  kpi_categories: ["Maliyyə KPI ları", "Müştəri KPI ları", "Əməliyyat KPI ları", "İnkişaf KPI ları"],
-  calc_units: ["Valyuta (AZN)", "Faiz (%)", "Zaman (Gün)", "Boolean (Hə/Yox)", "Qiymət", "Nisbət"],
-  sub_kpi_units: ["Məbləğ", "Say", "İcra", "Səriştə", "Fərdi İnkişaf", "Faiz", "Nisbət", "Boolean", "Zaman"],
-  kpi_lifecycle_periods: ["Günlük", "Həftəlik", "Aylıq", "Rüblük", "Yarımillik", "İllik"],
-  kpi_zones: ["Yaşıl Zona", "Sarı Zona", "Qırmızı Zona"],
-  whistleblower_statuses: ["Yeni", "Araşdırılır", "Həll olundu"],
-  evaluation_statuses: ["Tamamlanıb", "Gözləyir"],
-  integration_systems: ["CRM Sistemi", "CHR", "Microsoft 365", "SIEM Platform"],
-  evaluator_types: ["Komandadaxili", "Konkret şəxs", "Özü", "İnteqrasiya"],
-  whistleblower_categories: [
-    "Korrupsiya", "Saxtakarlıq", "Mobbing / Təzyiq", "Diskriminasiya",
-    "Təhlükəsizlik pozuntusu", "Etik qayda pozuntusu", "Digər",
-  ],
-  scoring_systems: ["1-3 Bal Sistemi", "1-5 Bal Sistemi", "1-10 Bal Sistemi", "Faiz (0-100)"],
-};
+const seedById = new Map(SEED.map(c => [c.id, c]));
 
-const normalizeText = (value: unknown) => String(value ?? "").trim().toLowerCase();
-const isSameValueSet = (current: string[] = [], legacy: string[] = []) => {
-  if (current.length !== legacy.length) return false;
-  const currentSet = new Set(current.map(normalizeText));
-  return legacy.every(value => currentSet.has(normalizeText(value)));
-};
-
-// Səhv bərpadan gəlmiş köhnə demo/pre-era dəyərləri təmizləyir, istifadəçinin yeni əlavə etdiklərinə toxunmur.
-const sanitizeLegacySeedData = (list: DropdownCatalog[]): { list: DropdownCatalog[]; changed: boolean } => {
-  let changed = false;
+// Bir dəfəlik sıfırlama: sistem kataloqları tələb olunan standart dəyərlərə gətirilir.
+const applyResetMigration = (list: DropdownCatalog[]): { list: DropdownCatalog[]; changed: boolean } => {
+  if (list.some(c => c.id === META_ID)) return { list, changed: false };
   const next = list.map(c => {
-    if (!c.system) return c;
-    const legacyDefaults = LEGACY_SIMPLE_DEFAULTS[c.id];
-    const values = legacyDefaults && isSameValueSet(c.values, legacyDefaults) ? [] : (c.values ?? []);
-    const rows = c.rows?.filter(row => !LEGACY_ROW_NAMES.has(normalizeText(row.name)));
-    if (values.length !== (c.values ?? []).length || (rows && rows.length !== (c.rows ?? []).length)) changed = true;
-    return {
-      ...c,
-      values,
-      rows,
-    };
+    const seed = seedById.get(c.id);
+    if (!seed || seed.schema) return c;
+    return { ...c, values: [...(seed.values ?? [])] };
   });
-  return { list: next, changed };
+  return { list: [...next, META_ENTRY], changed: true };
 };
 
 const load = (): DropdownCatalog[] => {
@@ -187,18 +174,22 @@ const load = (): DropdownCatalog[] => {
       const ids = new Set(parsed.map(c => c.id));
       const missing = SEED.filter(s => !ids.has(s.id));
       const merged = missing.length === 0 ? parsed : [...parsed, ...missing];
-      const sanitized = sanitizeLegacySeedData(merged);
-      const synced = sanitized.list.map(syncValues);
-      if (missing.length > 0 || sanitized.changed) {
+      const reset = applyResetMigration(merged);
+      const synced = reset.list.map(syncValues);
+      if (missing.length > 0 || reset.changed) {
         localStorage.setItem(KEY, JSON.stringify(synced));
+        window.dispatchEvent(new Event("dropdown-catalogs-updated"));
       }
       return synced;
     }
   } catch {}
-  const seeded = SEED.map(syncValues);
-  localStorage.setItem(KEY, JSON.stringify(seeded));
+  const seeded = [...SEED.map(syncValues), META_ENTRY];
+  try {
+    localStorage.setItem(KEY, JSON.stringify(seeded));
+  } catch {}
   return seeded;
 };
+
 
 const persist = (list: DropdownCatalog[]) => {
   const synced = list.map(syncValues);
@@ -206,13 +197,25 @@ const persist = (list: DropdownCatalog[]) => {
   window.dispatchEvent(new Event("dropdown-catalogs-updated"));
 };
 
-export const getDropdownCatalogs = (): DropdownCatalog[] => load();
+/** Məlumat Cədvəli üçün — yalnız icazə verilən kataloqlar, sabit sıra ilə. */
+export const getDropdownCatalogs = (): DropdownCatalog[] => {
+  const list = load();
+  return VISIBLE_CATALOG_IDS
+    .map(id => list.find(c => c.id === id))
+    .filter((c): c is DropdownCatalog => !!c);
+};
 
-/** Müəyyən kataloqun dəyərlərini qaytarır. Tapılmazsa, fallback istifadə edilir. */
+/** Bütün kataloqlar (gizlədilənlər daxil) — daxili istifadə üçün. */
+export const getAllDropdownCatalogs = (): DropdownCatalog[] => load();
+
+/** Müəyyən kataloqun dəyərlərini qaytarır. Tapılmazsa və ya boşdursa, fallback istifadə edilir. */
 export const getCatalogValues = (id: string, fallback: string[] = []): string[] => {
   const cat = load().find(c => c.id === id);
-  return cat ? cat.values : fallback;
+  if (!cat) return fallback;
+  if (cat.values.length === 0 && REMOVED_CATALOG_IDS.has(id)) return fallback;
+  return cat.values;
 };
+
 
 /** React-də canlı dinləyən hook — kataloq dəyişdikdə komponenti yeniləyir. */
 export const useCatalogValues = (id: string, fallback: string[] = []): string[] => {
@@ -258,8 +261,10 @@ export const deleteDropdownCatalog = (id: string): boolean => {
 };
 
 export const addCatalogValue = (id: string, value: string): boolean => {
+  if (LOCKED_CATALOG_IDS.has(id)) return false;
   const v = value.trim();
   if (!v) return false;
+
   const list = load();
   const cat = list.find(c => c.id === id);
   if (!cat) return false;
