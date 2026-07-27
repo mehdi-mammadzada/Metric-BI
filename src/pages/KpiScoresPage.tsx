@@ -27,13 +27,7 @@ const KPI_CARDS = [
   "Yeni Müştəri Cəlbi",
 ];
 
-const EVALUATORS = [
-  { name: "Rəşad Quliyev", role: "Satış Direktoru" },
-  { name: "Aysel İbrahimova", role: "Keyfiyyət Meneceri" },
-  { name: "Rauf Məmmədov", role: "HR Meneceri" },
-  { name: "Günel Əlizadə", role: "HR Direktoru" },
-  { name: "Nigar Hüseynova", role: "CFO" },
-];
+const EVALUATORS = [];
 
 const monthIdx = (m: string) => MONTHS.indexOf(m as Month);
 const pad = (n: number) => String(n).padStart(2, "0");

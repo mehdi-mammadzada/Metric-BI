@@ -218,12 +218,7 @@ const MyReport = ({ userName }: { userName: string }) => {
         {/* KPI list mini */}
         <ChartCard title="Aktiv KPI-lar" subtitle="Sizə təyin edilmiş">
           <div className="space-y-3 mt-2">
-            {[
-              { name: "Aylıq Satış Hədəfi", v: 84 },
-              { name: "Müştəri Əldə Etmə", v: 97 },
-              { name: "İnnovasiya İndeksi", v: 65 },
-              { name: "Çapraz Satış", v: 58 },
-            ].map(k => (
+            {([] as { name: string; v: number }[]).map(k => (
               <div key={k.name}>
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-foreground font-medium">{k.name}</span>

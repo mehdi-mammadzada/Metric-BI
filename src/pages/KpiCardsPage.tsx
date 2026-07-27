@@ -237,17 +237,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     } catch {}
     const base = initialKpiCards.filter(c => !deleted.includes(c.id));
     const maxId = Math.max(0, ...base.map(c => c.id));
-    const clone = (src: KpiCard, id: number, patch: Partial<KpiCard>): KpiCard => ({ ...src, id, ...patch });
-    const samir = base.find(c => c.responsible === "Samir Həsənov");
-    const farid = base.find(c => c.responsible === "Farid Həsənov");
     const extras: KpiCard[] = [];
-    if (samir) {
-      extras.push(clone(samir, maxId + 1, { name: "Rüblük Satış Artımı", progress: 72, target: "1.2M", current: "0.9M" }));
-      extras.push(clone(samir, maxId + 2, { name: "Müştəri Məmnuniyyəti", progress: 88, target: "90%", current: "82%", unit: "%" }));
-    }
-    if (farid) {
-      extras.push(clone(farid, maxId + 3, { name: "Yeni Kanal İnkişafı", progress: 55, target: "3", current: "1.5", unit: "kanal" }));
-    }
     return [...base, ...extras];
   });
   // Persist card list to localStorage
@@ -824,20 +814,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       window.removeEventListener("kpi-approval-queue-updated", reconcileAndRefresh);
     };
   }, []);
-  const DEMO_STATUS: Record<number, Partial<import("@/lib/kpiCardStatusStore").KpiCardStatusRow>> = {
-    1: { status: "aktiv", use_matrix: true, submitted_for_approval: true, assignees: [{ name: "Samir Həsənov", ok: true }, { name: "Leyla Məmmədova", ok: true }] },
-    2: { status: "aktiv", assignees: [{ name: "Farid Həsənov", ok: true }] },
-    3: { status: "qiymetlendirme", assignees: [{ name: "Emin Məmmədov", ok: true }] },
-    4: { status: "tamamlanib", assignees: [{ name: "Leyla Həsənova", ok: true }] },
-    5: { status: "tesdiq_gozlenilir", use_matrix: true, submitted_for_approval: false, assignees: [{ name: "Rəşad Əliyev", ok: true }] },
-    6: { status: "natamam", use_matrix: false, assignees: [{ name: "Kamran Quliyev", ok: true }, { name: "Tural İsmayılov", ok: false }] },
-    7: { status: "imtina", use_matrix: true, rejected_by: "Departament Direktoru", assignees: [{ name: "Leyla Məmmədova", ok: true }] },
-    8: { status: "tamamlanib", assignees: [{ name: "Tural İsmayılov", ok: true }] },
-    9: { status: "imtina", use_matrix: true, rejected_by: "Departament Direktoru", rejection_reason: "Hədəf dəyəri çox aşağıdır — yenidən nəzərdən keçirilməlidir.", assignees: [{ name: "Nigar Hüseynova", ok: true }, { name: "Leyla Həsənova", ok: false }] } as any,
-    10: { status: "qiymetlendirme", use_matrix: false, assignees: [{ name: "Emin Məmmədov", ok: true }] } as any,
-    11: { status: "qaralama", use_matrix: false, assignees: [] },
-    12: { status: "qaralama", use_matrix: false, assignees: [] },
-  };
+  const DEMO_STATUS: Record<number, Partial<import("@/lib/kpiCardStatusStore").KpiCardStatusRow>> = {};
   const getStatusFor = (cardId: number) => {
     const remote = statusMap[cardId];
     const shared = sharedCards.find(s => s.numericId === cardId);
