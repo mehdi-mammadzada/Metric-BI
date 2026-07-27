@@ -14,10 +14,13 @@ import { createRoot, findRootByGoal } from "@/lib/cascadeTreeStore";
 
 type Employee = ReturnType<typeof getEmployees>[number];
 
-const normId = (raw: string | number): number =>
-  Number(String(raw ?? "").replace(/^e/i, "")) || 0;
-
 const fullName = (e: Employee) => `${e.firstName} ${e.lastName}`;
+
+/** Bir əməkdaşı təmsil edə biləcək bütün açarlar (id, "e12", email, ad-soyad). */
+const aliasesOf = (e: Employee): string[] =>
+  [String(e.id), `e${e.id}`, e.email, fullName(e)]
+    .filter(Boolean)
+    .map(v => String(v).trim().toLowerCase());
 
 /** Kartın tətbiq olunduğu (assignee) əməkdaşlar. */
 export const getCardAssigneeEmployees = (opts: { cardId?: number; cardName?: string }): Employee[] => {
@@ -27,11 +30,30 @@ export const getCardAssigneeEmployees = (opts: { cardId?: number; cardName?: str
       (opts.cardId != null ? cards.find(c => c.numericId === opts.cardId) : undefined) ||
       (opts.cardName ? cards.find(c => c.name === opts.cardName) : undefined);
     if (!card) return [];
-    const ids = new Set((card.assigneeIds || []).map(normId).filter(Boolean));
-    return getEmployees().filter(e => ids.has(e.id));
+    const raw = (card.assigneeIds || []).map(v => String(v ?? "").trim().toLowerCase()).filter(Boolean);
+    if (raw.length === 0) return [];
+    const wanted = new Set(raw);
+    return getEmployees().filter(e => aliasesOf(e).some(a => wanted.has(a)));
   } catch {
     return [];
   }
+};
+
+/** Əməkdaşın ştat slotuna görə aid olduğu struktur vahidini tapır. */
+const findUnitIdOfEmployee = (employeeId: number): number | null => {
+  const walk = (list: any[]): number | null => {
+    for (const n of list) {
+      for (const p of n.positions || []) {
+        for (const s of p.slots || []) {
+          if (s.employeeId === employeeId) return n.id;
+        }
+      }
+      const inChild = walk(n.children || []);
+      if (inChild) return inChild;
+    }
+    return null;
+  };
+  return walk(getStructures());
 };
 
 /** Bir əməkdaşın öz struktur vahidi üzrə tabeliyindəki şəxslər. */
@@ -40,16 +62,20 @@ export const getSubordinatesOfEmployee = (employeeId?: number): Employee[] => {
   try {
     const emp = getEmployees().find(e => e.id === employeeId);
     if (!emp) return [];
-    const walk = (list: any[], path: string[]): number | null => {
-      for (const n of list) {
-        const cur = [...path, n.name];
-        if (cur.join(" › ") === emp.structurePath) return n.id;
-        const inChild = walk(n.children || [], cur);
-        if (inChild) return inChild;
-      }
-      return null;
-    };
-    const unitId = walk(getStructures(), []);
+    // 1) Ştat slotuna görə (ən etibarlı), 2) structurePath mətninə görə fallback.
+    let unitId = findUnitIdOfEmployee(employeeId);
+    if (!unitId && emp.structurePath) {
+      const walk = (list: any[], path: string[]): number | null => {
+        for (const n of list) {
+          const cur = [...path, n.name];
+          if (cur.join(" › ") === emp.structurePath) return n.id;
+          const inChild = walk(n.children || [], cur);
+          if (inChild) return inChild;
+        }
+        return null;
+      };
+      unitId = walk(getStructures(), []);
+    }
     if (!unitId) return [];
     return getSubordinatesOfStarHolder(employeeId, unitId) as Employee[];
   } catch {
@@ -72,8 +98,9 @@ export const getCascadeCandidateIds = (opts: {
   const subs = getSubordinatesOfEmployee(opts.setterEmployeeId);
   if (subs.length === 0) return [];
   const subIds = new Set(subs.map(s => s.id));
-  return cardEmployees.filter(e => subIds.has(e.id)).map(e => e.id);
+  return cardEmployees.filter(e => e.id !== opts.setterEmployeeId && subIds.has(e.id)).map(e => e.id);
 };
+
 
 /** Rəhbər bu hədəfi ümumiyyətlə kaskadlaya bilərmi? */
 export const canCascadeTarget = (opts: {
