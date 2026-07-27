@@ -224,6 +224,15 @@ export const deactivateApprovalsSync = () => {
   if (onFocusHandler) { window.removeEventListener("focus", onFocusHandler); onFocusHandler = null; }
 };
 
+/** Org konteksti hazır olana qədər gözləyir (login/hydrate yarışını aradan qaldırır). */
+const waitForOrgId = async (timeoutMs = 15000): Promise<string | null> => {
+  const started = Date.now();
+  while (!currentOrgId && Date.now() - started < timeoutMs) {
+    await new Promise(r => setTimeout(r, 250));
+  }
+  return currentOrgId;
+};
+
 /** Aktiv təşkilat id-si (approval yazıları üçün). */
 export const getApprovalsOrgId = (): string | null => currentOrgId;
 
@@ -242,9 +251,13 @@ export const persistApprovalRowToCloud = async (a: {
   createdAt?: string;
   updatedAt?: string;
 }): Promise<boolean> => {
-  if (!currentOrgId) return false;
+  const orgId = await waitForOrgId();
+  if (!orgId) {
+    console.error("[approvals] org context yoxdur — sətir buluda yazılmadı", a.id);
+    return false;
+  }
   const payload = {
-    organization_id: currentOrgId,
+    organization_id: orgId,
     local_id: a.id,
     kpi_card_local_id: a.kpiCardId,
     kpi_name: a.kpiName,
@@ -264,7 +277,7 @@ export const persistApprovalRowToCloud = async (a: {
     const { data, error } = await supabase
       .from("approval_queue")
       .update(payload)
-      .eq("organization_id", currentOrgId)
+      .eq("organization_id", orgId)
       .eq("local_id", a.id)
       .select("local_id")
       .maybeSingle();
