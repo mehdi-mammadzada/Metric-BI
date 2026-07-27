@@ -778,7 +778,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
   const handleNext = () => {
     if (!canNext) {
       if (step === 1) {
-        const bp = draft.mode === "bulk" ? draft.bulkSelections.persons : [];
+        const bp = bulkTeamMembers;
         if (bp.length >= 2 && !(draft.bulkTeamLeader && bp.includes(draft.bulkTeamLeader))) {
           toast.error("Komanda Lideri seçilməlidir — avtomatik yaradılacaq komanda üçün 1 nəfər lider təyin edin");
         } else {
