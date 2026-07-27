@@ -68,20 +68,23 @@ const TargetDetailDialog = ({ open, onOpenChange, kpiName, target, deadline, sta
   const unit = target.unit ? (target.unit === "AZN" ? " ₼" : ` ${target.unit}`) : "";
 
   return (
-    <aside className="fixed top-0 right-0 h-screen w-full sm:w-[560px] bg-card border-l border-border shadow-2xl z-[90] flex flex-col animate-in slide-in-from-right duration-300">
-      <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border">
-        <div className="min-w-0">
-          <h3 className="text-base font-semibold text-foreground truncate">Hədəf: {target.name}</h3>
-          <p className="text-xs text-muted-foreground truncate">KPI: {kpiName || "—"}</p>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => onOpenChange(false)} />
+      <div className="relative w-full max-w-2xl max-h-[85vh] bg-card border border-border rounded-xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border">
+          <div className="min-w-0">
+            <h3 className="text-base font-semibold text-foreground truncate">Hədəf: {target.name}</h3>
+            <p className="text-xs text-muted-foreground truncate">KPI: {kpiName || "—"}</p>
+          </div>
+          <button
+            onClick={() => onOpenChange(false)}
+            className="w-8 h-8 shrink-0 rounded-md hover:bg-secondary inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
+            aria-label="Bağla"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-        <button
-          onClick={() => onOpenChange(false)}
-          className="w-8 h-8 shrink-0 rounded-md hover:bg-secondary inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
-          aria-label="Bağla"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
+
 
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
