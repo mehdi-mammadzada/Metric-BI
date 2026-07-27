@@ -152,9 +152,61 @@ export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
 
   return (
     <div className="space-y-3">
+      {/* Üfüqi balaca kartlar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="rounded-lg border border-border bg-card px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">Perspektiv</p>
+          <p className="text-xs font-semibold text-foreground mt-0.5">{perspective}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-card px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">Hədəf / Faktiki</p>
+          <p className="text-xs font-semibold text-foreground mt-0.5 tabular-nums">
+            {fmtUnit(target, unit)} / {fmtUnit(actual, unit)}
+          </p>
+        </div>
+        <div className={`rounded-lg border border-border ${tone.bg} px-3 py-2`}>
+          <p className="text-[10px] text-muted-foreground">GSR</p>
+          <p className={`text-xs font-semibold mt-0.5 tabular-nums ${tone.text}`}>{Math.round(gsr)}%</p>
+        </div>
+        <div className={`rounded-lg border border-border ${tone.bg} px-3 py-2`}>
+          <p className="text-[10px] text-muted-foreground">Bal</p>
+          <p className={`text-xs font-semibold mt-0.5 ${tone.text}`}>{score} — {scoreLabels[score]}</p>
+        </div>
+      </div>
+
+      {/* Proqres */}
+      <div className="rounded-lg border border-border bg-card px-3 py-2.5">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[11px] text-muted-foreground">{tone.label}</span>
+          <span className="text-[11px] font-medium text-foreground tabular-nums">{Math.round(gsrClamped)}%</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+          <div className={`h-full ${tone.barColor}`} style={{ width: `${Math.min(100, gsrClamped)}%` }} />
+        </div>
+      </div>
+
+      {/* Formula */}
+      <div className="rounded-lg border border-border bg-card px-3 py-2.5">
+        <p className="text-[10px] text-muted-foreground mb-1">Hesablama düsturu</p>
+        <p className="text-xs font-mono text-foreground">{formulaText}</p>
+        <p className="text-[11px] font-mono text-muted-foreground mt-0.5">{sampleText} = {Math.round(gsr)}%</p>
+      </div>
+
+      {/* Qiymət aralıqları */}
+      <div className="grid grid-cols-5 gap-1.5">
+        {ranges.map(r => (
+          <div key={r.score} className={`rounded-md px-2 py-1.5 text-center ${r.tone}`}>
+            <p className="text-[10px] opacity-80">Bal {r.score} · {r.label}</p>
+            <p className="text-[11px] font-semibold tabular-nums mt-0.5">{r.rangeText}</p>
+          </div>
+        ))}
+      </div>
+
       {mergedSubKpis.length === 0 && (
         <p className="text-xs text-muted-foreground italic px-1">Bu kart üçün hədəf təyin edilməyib.</p>
       )}
+
+
 
 
       {mergedSubKpis.length > 0 && (
