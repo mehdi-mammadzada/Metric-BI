@@ -147,18 +147,23 @@ const SEED_TARGETS: Record<string, { name: string; plan: number; fakt: number; u
 };
 
 const targetsForKpi = (k: Kpi) => {
+  if (k.realTargets?.length) {
+    return k.realTargets.map(t => ({
+      id: t.id,
+      name: t.name,
+      plan: t.plan,
+      fakt: t.fakt,
+      unit: t.unit,
+      status: t.status as AccordionKpiStatus,
+    }));
+  }
   const key = k.name.replace(/\s+—.*$/, "");
   const seed = SEED_TARGETS[key];
   if (seed) return seed.map((t, i) => ({ id: `${k.id}-t${i + 1}`, ...t }));
   return [{
     id: `${k.id}-t1`,
     name: k.method || k.name,
-    plan: k.target,
-    fakt: k.actual,
-    unit: k.unit,
-    status: k.status as AccordionKpiStatus,
-  }];
-};
+
 
 const dedupeKpis = <T extends Kpi>(rows: T[]): T[] => {
   const norm = (value?: string) => String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
