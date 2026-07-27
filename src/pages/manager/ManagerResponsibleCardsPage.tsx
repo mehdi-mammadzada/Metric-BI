@@ -98,6 +98,7 @@ const getSetterEntriesFromSharedCards = (
   sharedCards: ReturnType<typeof useSharedKpiCards>,
   userName?: string,
   localRows: KpiSetEntry[] = [],
+  aliases: Set<string> = new Set([String(userName || "").trim().toLowerCase()]),
 ): KpiSetEntry[] => {
   const me = stripPos(userName);
   if (!me) return [];
@@ -108,7 +109,7 @@ const getSetterEntriesFromSharedCards = (
   sharedCards.forEach(card => {
     const cardId = card.numericId ?? stableNum(card.id);
     (card.targets || []).forEach((target, index) => {
-      if (target.createdBy !== "other" || stripPos(target.assigner) !== me) return;
+      if (target.createdBy !== "other" || !matchesMe(target.assigner, aliases)) return;
       const targetName = String(target.name || `Hədəf ${index + 1}`).trim();
       const key = entryKey({ cardId, subKpiId: index + 1, subKpiName: targetName, assigneeName: me });
       if (existing.has(key)) return;
@@ -171,10 +172,12 @@ const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
   // Yalnız cari istifadəçiyə həvalə olunmuş target-setter entry-ləri
   const assignCount = useMemo(
     () => {
-      const derived = getSetterEntriesFromSharedCards(sharedCards, user?.name, rows);
-      return dedupeKpiSetEntries([...rows.filter(r => isEntryAssignedToSetter(r, user?.name, sharedCards)), ...derived]).length;
+      const aliases = myAliases(user);
+      const meName = resolveMyName(user);
+      const derived = getSetterEntriesFromSharedCards(sharedCards, meName, rows, aliases);
+      return dedupeKpiSetEntries([...rows.filter(r => isEntryAssignedToSetter(r, meName, sharedCards, aliases)), ...derived]).length;
     },
-    [rows, sharedCards, user?.name],
+    [rows, sharedCards, user],
   );
   const evalCount = evalItems.length;
 
@@ -246,13 +249,15 @@ const AssignView = () => {
   const [cascadeConfirm, setCascadeConfirm] = useState<{ entry: KpiSetEntry; value: number; unit: string } | null>(null);
 
   const assignRows = useMemo(() => {
-    const derived = getSetterEntriesFromSharedCards(sharedCards, user?.name, rows);
+    const aliases = myAliases(user);
+    const meName = resolveMyName(user);
+    const derived = getSetterEntriesFromSharedCards(sharedCards, meName, rows, aliases);
     const derivedCardAssignees = new Set(derived.map(d => `${d.cardId}::${stripPos(d.assigneeName)}`));
     const local = rows
-      .filter(r => isEntryAssignedToSetter(r, user?.name, sharedCards))
+      .filter(r => isEntryAssignedToSetter(r, meName, sharedCards, aliases))
       .filter(r => String(r.subKpiName || "").trim() || !derivedCardAssignees.has(`${r.cardId}::${stripPos(r.assigneeName)}`));
     return dedupeKpiSetEntries([...local, ...derived]);
-  }, [rows, sharedCards, user?.name]);
+  }, [rows, sharedCards, user]);
 
   const groups = useMemo<CardGroup[]>(() => {
     // Yalnız cari istifadəçi target-setter olan entry-lər
