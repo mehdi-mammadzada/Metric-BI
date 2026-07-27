@@ -1549,7 +1549,21 @@ const SubDetailPanel = ({ node, tab, setTab, onClose }: {
   const comments = commentsMap[node.id] || [];
   const history = initialHistory(node.id);
   const reminders = initialReminders(node.id);
-  const empKpis = useMemo(() => node.empId ? buildEmpKpis(node.empId) : [], [node.empId]);
+  const empKpis = useMemo<EmpKpi[]>(() => {
+    if (!node.empId) return [];
+    return getRealKpiCardsForEmployee(node.empId).flatMap(c =>
+      c.targets.map(t => ({
+        id: t.id,
+        name: `${c.name} — ${t.name}`,
+        desc: t.unit ? `Ölçü vahidi: ${t.unit}` : "",
+        plan: t.plan,
+        fakt: t.fakt,
+        unit: t.unit || "",
+        status: "in_progress" as KpiStatus,
+      })),
+    );
+  }, [node.empId]);
+
 
   const sendComment = () => {
     const t = draft.trim(); if (!t) return;
