@@ -39,6 +39,19 @@ export const getCardAssigneeEmployees = (opts: { cardId?: number; cardName?: str
   }
 };
 
+/** Toplu (bulk) təyinatlı kartlar üçün kaskad ağacı/yükü YARANMIR — yalnız fərdi kartlar kaskadlanır. */
+export const isBulkAssignedCard = (opts: { cardId?: number; cardName?: string }): boolean => {
+  try {
+    const cards = getSharedKpiCards();
+    const card =
+      (opts.cardId != null ? cards.find(c => c.numericId === opts.cardId) : undefined) ||
+      (opts.cardName ? cards.find(c => c.name === opts.cardName) : undefined);
+    return !!card && (card as any).assignmentMode === "bulk";
+  } catch {
+    return false;
+  }
+};
+
 /** Əməkdaşın ştat slotuna görə aid olduğu struktur vahidini tapır. */
 const findUnitIdOfEmployee = (employeeId: number): number | null => {
   const walk = (list: any[]): number | null => {
@@ -93,6 +106,7 @@ export const getCascadeCandidateIds = (opts: {
   cardId?: number;
   cardName?: string;
 }): number[] | null => {
+  if (isBulkAssignedCard({ cardId: opts.cardId, cardName: opts.cardName })) return [];
   const cardEmployees = getCardAssigneeEmployees({ cardId: opts.cardId, cardName: opts.cardName });
   if (cardEmployees.length === 0) return null;
   const subs = getSubordinatesOfEmployee(opts.setterEmployeeId);
@@ -128,6 +142,8 @@ export const createRootsForCardAssignees = (payload: {
   /** Fallback: kart tapılmasa bu şəxs üçün root yaradılsın */
   fallbackEmployeeId?: number;
 }): number => {
+  // Toplu kartlar üçün kaskad ağacı yaradılmır.
+  if (isBulkAssignedCard({ cardId: payload.cardId, cardName: payload.cardName })) return 0;
   const assignees = getCardAssigneeEmployees({ cardId: payload.cardId, cardName: payload.cardName })
     .filter(e => !payload.setterEmployeeId || e.id !== payload.setterEmployeeId);
 

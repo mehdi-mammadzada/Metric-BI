@@ -47,7 +47,7 @@ import { buildSharedCardFromDraft, inferSharedCardAssignmentMode, setKpiStatus, 
 import { withKartSuffix } from "@/lib/utils";
 import { WeightInput } from "@/components/kpi/WeightInput";
 // cascade root yaradılması `cascadeAssignment` üzərindən aparılır
-import { createRootsForCardAssignees, getCascadeCandidateIds } from "@/lib/cascadeAssignment";
+import { createRootsForCardAssignees, getCascadeCandidateIds, isBulkAssignedCard } from "@/lib/cascadeAssignment";
 import CascadeDistributeDialog from "@/components/kpi/CascadeDistributeDialog";
 import CascadeLoadConfirmDialog from "@/components/kpi/CascadeLoadConfirmDialog";
 import { getCurrentEmployeeId } from "@/lib/scope";
@@ -730,7 +730,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         setterEmployeeId: meEmpId,
       }));
 
-      if (incoming?.nodeId && incoming.value > 0 && first) {
+      if (isBulkAssignedCard({ cardId: id, cardName: d.name })) {
+        // Toplu kartlar üçün kaskad ağacı/yükü yaradılmır.
+      } else if (incoming?.nodeId && incoming.value > 0 && first) {
         setHrCascade({
           value: incoming.value,
           unit: incoming.unit || first.unit,
