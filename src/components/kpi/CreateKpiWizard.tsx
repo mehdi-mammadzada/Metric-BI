@@ -803,7 +803,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
       kpiResult: 0,
       branch: "Auto-generated",
       activeKpi: 0, completedKpi: 0, totalKpi: 1,
-      members: persons.map(p => ({ name: p, role: "Üzv", kpiScore: 0, avatar: p.charAt(0).toUpperCase() })),
+      members: persons.map(p => ({ name: p, role: p === leader ? "Komanda Lideri" : "Üzv", kpiScore: 0, avatar: p.charAt(0).toUpperCase() })),
     });
     toast.success(`Yeni komanda yaradıldı: ${baseName}`);
   };
