@@ -131,12 +131,14 @@ export const createRootsForCardAssignees = (payload: {
   const assignees = getCardAssigneeEmployees({ cardId: payload.cardId, cardName: payload.cardName })
     .filter(e => !payload.setterEmployeeId || e.id !== payload.setterEmployeeId);
 
+  // Qayda: ROOT yalnız RƏHBƏR (star person) olan şəxslər üçün yaradılır —
+  // rəhbər olmayan şəxs hədəfi növbəti səviyyəyə paylaya bilməz.
   let targets: Employee[] = assignees.filter(e => (e as any).isStarPerson);
-  if (targets.length === 0) targets = assignees;
   if (targets.length === 0 && payload.fallbackEmployeeId) {
     const fb = getEmployees().find(e => e.id === payload.fallbackEmployeeId);
-    if (fb) targets = [fb];
+    if (fb && (fb as any).isStarPerson) targets = [fb];
   }
+
   if (targets.length === 0) return 0;
 
   let created = 0;
