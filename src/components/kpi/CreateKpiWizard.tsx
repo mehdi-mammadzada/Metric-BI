@@ -796,10 +796,10 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     if (step < TOTAL_STEPS) setStep(step + 1);
   };
 
-  /** Auto-create a team if Toplu+Şəxs has 2+ people. */
+  /** Auto-create a team if Toplu (Şəxs və ya Vəzifə) 2+ nəfər əhatə edir. */
   const ensureAutoTeam = (d: CreateKpiWizardDraft) => {
     if (d.mode !== "bulk") return;
-    const persons = d.bulkSelections.persons;
+    const persons = bulkTeamMembers;
     if (persons.length < 2) return;
     const leader = d.bulkTeamLeader && persons.includes(d.bulkTeamLeader) ? d.bulkTeamLeader : "";
     if (!leader) { toast.error("Komanda Lideri seçilmədən komanda yaradıla bilməz"); return; }
