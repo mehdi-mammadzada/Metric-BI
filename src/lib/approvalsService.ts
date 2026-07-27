@@ -265,7 +265,7 @@ export const persistApprovalRowToCloud = async (a: {
   updatedAt?: string;
 }): Promise<boolean> => {
   if (!currentOrgId) return false;
-  const { error } = await supabase.from("approval_queue").upsert({
+  const payload = {
     organization_id: currentOrgId,
     local_id: a.id,
     kpi_card_local_id: a.kpiCardId,
@@ -279,7 +279,25 @@ export const persistApprovalRowToCloud = async (a: {
     created_by: a.createdBy ?? null,
     created_at: a.createdAt ?? new Date().toISOString(),
     updated_at: a.updatedAt ?? new Date().toISOString(),
-  } as any, { onConflict: "organization_id,local_id" });
+  } as any;
+
+  const hasDecision = Object.values(a.decisions ?? {}).some((d: any) => d?.decision && d.decision !== "pending");
+  if (hasDecision || a.status !== "pending") {
+    const { data, error } = await supabase
+      .from("approval_queue")
+      .update(payload)
+      .eq("organization_id", currentOrgId)
+      .eq("local_id", a.id)
+      .select("local_id")
+      .maybeSingle();
+    if (!error && data) return true;
+    if (error) {
+      console.error("[approvals] decision update failed", error);
+      return false;
+    }
+  }
+
+  const { error } = await supabase.from("approval_queue").upsert(payload, { onConflict: "organization_id,local_id" });
   if (error) {
     console.error("[approvals] persist failed", error);
     return false;
