@@ -493,14 +493,7 @@ const KpiDetailView = ({
             const persons = (sk as any)?.evaluator?.persons || [];
             persons.forEach((p: any) => upsert(p?.name, "evaluator", "Qiymətləndirici"));
           });
-          let members = Array.from(map.values());
-          if (members.length <= 1) {
-            members = [
-              { name: selectedKpi.responsible || "Məsul şəxs", role: "Lider / Məsul", avatar: initials(selectedKpi.responsible || "MS"), kind: "leader" },
-              { name: "Nizami Əliyev", role: "Təyinedici", avatar: "NƏ", kind: "assigner" },
-              { name: "Aynur Məmmədova", role: "Qiymətləndirici", avatar: "AM", kind: "evaluator" },
-            ];
-          }
+          const members = Array.from(map.values());
           const badgeCls = (k: Member["kind"]) =>
             k === "leader" ? "bg-zone-green-bg text-zone-green-text"
             : k === "assigner" ? "bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30"

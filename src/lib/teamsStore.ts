@@ -32,17 +32,7 @@ export const getTeams = (): Team[] => {
   const saved = localStorage.getItem(TEAMS_KEY);
   if (saved) {
     try {
-      const parsed = JSON.parse(saved) as Team[];
-      // Elvin komandası mövcud deyilsə, əlavə et (seed-i qorumaq üçün).
-      if (!parsed.some(t => t.leader === "Elvin Rəhimov")) {
-        const elvinTeam = initialTeams.find(t => t.leader === "Elvin Rəhimov");
-        if (elvinTeam) {
-          const next = [...parsed, elvinTeam];
-          localStorage.setItem(TEAMS_KEY, JSON.stringify(next));
-          return next;
-        }
-      }
-      return parsed;
+      return JSON.parse(saved) as Team[];
     } catch {}
   }
   localStorage.setItem(TEAMS_KEY, JSON.stringify(initialTeams));
