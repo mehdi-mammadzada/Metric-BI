@@ -45,7 +45,10 @@ export interface DropdownCatalog {
 
 const KEY = "kpi_dropdown_catalogs_v6";
 
-const SEED: DropdownCatalog[] = [
+const RAW_SEED: DropdownCatalog[] = [
+
+// New tenants start with empty catalogs — only the catalog definitions remain.
+const SEED: DropdownCatalog[] = RAW_SEED.map(c => ({ ...c, rows: [], values: [] }));
   // Hədəf Tipləri (strukturlaşdırılmış)
   {
     id: "kpi_types",
