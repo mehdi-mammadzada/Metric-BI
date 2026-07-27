@@ -28,27 +28,52 @@ type CreateEmployeeInput = Pick<OrgEmployee, "firstName" | "lastName" | "fin" | 
 };
 
 // ── ID mapping (numeric ↔ uuid) ───────────────────────────────────────────────
-type IdMap = { toUuid: Record<number, string>; toNum: Record<string, number>; next: number };
+// Numeric local ids MUST be deterministic per UUID, otherwise the same employee
+// gets a different id in every browser/device and cross-device references
+// (approval approverIds, KPI responsible, etc.) break or render as raw numbers.
+type IdMap = { toUuid: Record<number, string>; toNum: Record<string, number>; next: number; v?: number };
 const MAP_KEY = (orgId: string) => `kpi_org_idmap_${orgId}`;
+const MAP_VERSION = 2;
+
+const emptyMap = (): IdMap => ({ toUuid: {}, toNum: {}, next: 1, v: MAP_VERSION });
 
 const loadMap = (orgId: string): IdMap => {
   try {
     const raw = localStorage.getItem(MAP_KEY(orgId));
-    if (raw) return JSON.parse(raw) as IdMap;
+    if (raw) {
+      const parsed = JSON.parse(raw) as IdMap;
+      // Old counter-based maps are per-browser and must be discarded.
+      if (parsed && parsed.v === MAP_VERSION) return parsed;
+    }
   } catch {}
-  return { toUuid: {}, toNum: {}, next: 1 };
+  return emptyMap();
 };
 const saveMap = (orgId: string, m: IdMap) => {
-  localStorage.setItem(MAP_KEY(orgId), JSON.stringify(m));
+  localStorage.setItem(MAP_KEY(orgId), JSON.stringify({ ...m, v: MAP_VERSION }));
 };
+
+/** Stable 32-bit FNV-1a hash → positive numeric id, identical in every browser. */
+const hashUuid = (uuid: string): number => {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < uuid.length; i++) {
+    h ^= uuid.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return (h % 2000000000) + 1;
+};
+
 const numFor = (m: IdMap, uuid: string): number => {
   if (m.toNum[uuid] != null) return m.toNum[uuid];
-  const id = m.next++;
+  let id = hashUuid(uuid);
+  // Resolve the (extremely rare) collision deterministically.
+  while (m.toUuid[id] && m.toUuid[id] !== uuid) id = (id % 2000000000) + 1;
   m.toNum[uuid] = id;
   m.toUuid[id] = uuid;
+  if (id >= m.next) m.next = id + 1;
   return id;
 };
 const uuidFor = (m: IdMap, num: number): string | undefined => m.toUuid[num];
+
 
 export const getOrgUuidForLocalId = (orgId: string, localId: number): string | undefined => {
   return uuidFor(loadMap(orgId), localId);
