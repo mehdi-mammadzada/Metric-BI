@@ -16,7 +16,7 @@ import { useKpiSet, getIncomingCascadeLoad, dedupeKpiSetEntries, type KpiSetEntr
 import { addPendingEntry } from "@/lib/kpiSetStore";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
 import { useCascadeTree } from "@/lib/cascadeTreeStore";
-import { createRootsForCardAssignees, getCascadeCandidateIds } from "@/lib/cascadeAssignment";
+import { createRootsForCardAssignees, getCascadeCandidateIds, isBulkAssignedCard } from "@/lib/cascadeAssignment";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCurrentEmployeeId } from "@/lib/scope";
 import { getEmployees } from "@/lib/orgStore";
