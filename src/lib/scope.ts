@@ -118,7 +118,13 @@ export const getVisibleApprovals = (
   if (scope === "none") return [];
   const meId = getCurrentEmployeeId(user);
   if (!meId) return [];
-  const aliases = new Set([meId, meId.startsWith("e") ? meId.slice(1) : `e${meId}`]);
+  const aliases = new Set<string>([
+    meId,
+    meId.startsWith("e") ? meId.slice(1) : `e${meId}`,
+  ]);
+  if (user?.email) aliases.add(user.email.trim().toLowerCase());
+  const meEmp = getEnrichedEmployee(meId);
+  if (meEmp?.fullName) aliases.add(meEmp.fullName);
   const belongsToMe = (a: ApprovalItem) =>
     a.approverIds.some(id => aliases.has(id))
     || aliases.has(a.createdBy)
