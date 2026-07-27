@@ -37,15 +37,20 @@ const HomePage = () => {
   const heroName = user?.name?.split(" ")[0] || t("home.default_admin");
 
   const stats = useMemo(() => {
-    const active = cards.filter(c => c.status === "aktiv").length;
-    const pending = cards.filter(c => c.status === "tesdiq_gozlenilir" || c.status === "natamam").length;
+    const visible = cards.filter(c => c.status !== "silindi" && c.status !== "legv_olundu");
+    const total = visible.length;
+    const active = visible.filter(c => c.status === "aktiv").length;
+    const pending = visible.filter(c => c.status === "tesdiq_gozlenilir" || c.status === "natamam").length;
+    const met = visible.filter(c => (c.targets ?? []).length > 0 && (c.targets ?? []).every(tg => tg.executionStatus === "tamamlandi")).length;
+    const successRate = total > 0 ? Math.round((met / total) * 100) : 0;
     return [
-      { icon: TrendingUp, label: t("home.stat_total_perf"), value: active > 0 ? "0%" : "0%", sub: t("home.stat_total_perf_sub"), accent: "primary" as const },
-      { icon: Target, label: t("home.stat_active_kpi"), value: String(active), sub: t("home.stat_active_kpi_sub"), accent: "violet" as const },
-      { icon: CheckCircle, label: t("home.stat_met_kpi"), value: "0", sub: t("home.stat_met_kpi_sub"), accent: "emerald" as const },
+      { icon: TrendingUp, label: t("home.stat_total_perf"), value: `${successRate}%`, sub: t("home.stat_total_perf_sub"), accent: "primary" as const },
+      { icon: Target, label: t("home.stat_active_kpi"), value: String(active), sub: t("home.stat_active_kpi_sub", { total }), accent: "violet" as const },
+      { icon: CheckCircle, label: t("home.stat_met_kpi"), value: String(met), sub: t("home.stat_met_kpi_sub", { rate: successRate }), accent: "emerald" as const },
       { icon: AlertTriangle, label: t("home.stat_attention"), value: String(pending), sub: t("home.stat_attention_sub"), accent: "amber" as const },
     ];
   }, [cards, t]);
+
 
   return (
     <div className="min-h-screen">
