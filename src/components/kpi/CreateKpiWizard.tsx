@@ -899,6 +899,12 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
   };
 
   const finalize = (action: WizardAction) => {
+    const bulkPersons = draft.mode === "bulk" ? draft.bulkSelections.persons : [];
+    if (bulkPersons.length >= 2 && !(draft.bulkTeamLeader && bulkPersons.includes(draft.bulkTeamLeader))) {
+      toast.error("Komanda Lideri seçilməlidir — avtomatik yaradılacaq komanda üçün 1 nəfər lider təyin edin");
+      setStep(1);
+      return;
+    }
     if (action === "submit") {
       const err = validateApprovalTargets(draft);
       if (err) { toast.error(err); return; }
