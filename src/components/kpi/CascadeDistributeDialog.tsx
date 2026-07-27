@@ -84,27 +84,12 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
   }, [open, existingNode, bootstrap]);
 
 
-  // Tabelikdəki bütün şəxslər (setter-in structurePath-ı üzrə)
+  // Tabelikdəki bütün şəxslər (mərkəzləşdirilmiş qayda ilə)
   const subordinates = useMemo(() => {
     if (!node) return [];
-    const emp = getEmployees().find(e => e.id === node.assigneeId);
-    if (!emp) return [];
-    const findUnitId = (): number | null => {
-      const walk = (list: any[], path: string[]): number | null => {
-        for (const n of list) {
-          const cur = [...path, n.name];
-          if (cur.join(" › ") === emp.structurePath) return n.id;
-          const inChild = walk(n.children, cur);
-          if (inChild) return inChild;
-        }
-        return null;
-      };
-      return walk(getStructures(), []);
-    };
-    const unitId = findUnitId();
-    if (!unitId) return [];
-    return getSubordinatesOfStarHolder(node.assigneeId, unitId);
+    return getSubordinatesOfEmployee(node.assigneeId) as any[];
   }, [node?.id]);
+
 
   // Qayda: yalnız HƏM tabelikdə olan, HƏM DƏ kartın tətbiq olunduğu əməkdaşlar.
   // `restrictToEmployeeIds` artıq bu kəsişməni saxlayır — onu birbaşa istifadə edirik,
