@@ -596,8 +596,6 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
             <div className="space-y-2">
               {[
                 { name: kpi.responsible.name, role: kpi.responsible.role, tag: "Məsul" },
-                { name: "Aysel İbrahimova", role: "Qiymətləndirici", tag: "Qiymətləndirici" },
-                { name: "Rəşad Quliyev", role: "Təsdiqləyən", tag: "Təsdiqləyən" },
               ].map((m, i) => (
                 <div key={i} className="flex items-center gap-3 rounded-lg border border-border p-3">
                   <div className="w-9 h-9 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold">
@@ -650,9 +648,7 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
           {tab === "status" && (
             <ol className="space-y-2">
               {[
-                { role: "Şöbə Müdiri", name: "Abbas Əliyev", state: "ok" as const },
-                { role: "Departament Direktoru", name: "Aysel Məmmədova", state: "wait" as const },
-                { role: "HR Admin", name: "Super Adminov", state: "wait" as const },
+                { role: kpi.responsible.role, name: kpi.responsible.name, state: "wait" as const },
               ].map((r, i) => (
                 <li key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg border ${r.state === "ok" ? "border-emerald-500/30 bg-emerald-500/10" : "border-blue-500/30 bg-blue-500/10"}`}>
                   <div className="min-w-0">
@@ -741,7 +737,7 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
           })()}
 
           {tab === "review" && (() => {
-            const targets = buildCardTargets(kpi.id, kpi.target || 100, kpi.unit || "%");
+            const targets = buildCardTargets(kpi);
             const completed = targets.filter(t => t.status === "completed").length;
             const atRisk = targets.filter(t => t.status === "at_risk" || t.status === "delayed").length;
             const avgProg = targets.length ? Math.round(targets.reduce((s, t) => s + Math.round((t.fakt / t.plan) * 100), 0) / targets.length) : 0;
@@ -768,8 +764,8 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
                     <SummaryStat label="Ortalama Progress" value={`${avgProg}%`} tone="indigo" />
                     <SummaryStat label="Tamamlanan KPI" value={`${completed} / ${targets.length}`} tone="green" />
                     <SummaryStat label="Riskdə olan KPI" value={`${atRisk}`} tone="red" />
-                    <SummaryStat label="Son qiymətləndirmə" value="4.6 / 5" tone="amber" />
-                    <SummaryStat label="Növbəti Review" value={reviewMeta?.nextReview || "22.06.2025"} tone="blue" />
+                    <SummaryStat label="Son qiymətləndirmə" value="—" tone="amber" />
+                    <SummaryStat label="Növbəti Review" value={reviewMeta?.nextReview || "—"} tone="blue" />
                   </div>
                 </div>
 
@@ -922,7 +918,7 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
       employees: 1,
       avgPct,
       completed: targets.filter(t => t.status === "completed").length,
-      atRisk: targets.filter(t => t.status === "not_achieved").length,
+      atRisk: targets.filter(t => t.status === "at_risk" || t.status === "delayed").length,
       delayed: 0,
       trend: "flat",
       status: avgPct >= 100 ? "completed" : avgPct > 0 ? "in_progress" : undefined,
@@ -998,17 +994,7 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
 // Per-employee KPI list (deterministic subset of MY_KPIS variants)
 interface EmpKpi { id: string; name: string; desc: string; plan: number; fakt: number; unit: string; status: KpiStatus; }
 const BASE_KPIS: Omit<EmpKpi, "id" | "fakt" | "status">[] = [];
-const buildEmpKpis = (empId: number): EmpKpi[] => {
-  const h = hashStr(`ek${empId}`);
-  return BASE_KPIS.map((b, i) => {
-    const hh = hashStr(`ek${empId}-${i}`);
-    const ratio = 0.6 + ((hh % 45) / 100); // 0.60..1.05
-    const fakt = Math.round(b.plan * ratio);
-    const pct = Math.round((fakt / b.plan) * 100);
-    const status: KpiStatus = pct >= 100 ? "completed" : pct >= 90 ? "in_progress" : pct >= 75 ? "at_risk" : "delayed";
-    return { id: `${empId}-k${i}`, ...b, fakt, status };
-  }).filter((_, i) => (h >> i) & 1 || i < 3); // at least 3
-};
+const buildEmpKpis = (_empId: number): EmpKpi[] => [];
 
 interface SubordinatesViewProps {
   scopePath?: string | null;
@@ -1987,26 +1973,14 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
                 <div>
                   <div className="text-xs font-semibold text-foreground mb-1.5">Review Timeline</div>
                   <ol className="relative border-l-2 border-border pl-4 space-y-3">
-                    {[
-                      { d: "01.06.2025 09:00", a: "Sistem", t: "Review yaradıldı" },
-                      { d: "05.06.2025 10:30", a: "Rəhbər", t: "Review başladı" },
-                      { d: "10.06.2025 14:20", a: "Rəhbər", t: "Qeyd əlavə etdi: Plan üzrə irəliləyir." },
-                      { d: "12.06.2025 11:15", a: "Əməkdaş", t: "Cavab verdi: Növbəti həftə əlavə plan hazırlanır." },
-                    ].map((x, i) => (
-                      <li key={i} className="relative">
-                        <span className="absolute -left-[9px] top-1 w-3 h-3 rounded-full bg-sky-500 ring-4 ring-sky-500/15" />
-                        <div className="text-[11px] text-muted-foreground">{x.d}</div>
-                        <div className="text-sm font-medium text-foreground">{x.a}</div>
-                        <div className="text-xs text-muted-foreground">{x.t}</div>
-                      </li>
-                    ))}
+                    <li className="relative text-xs text-muted-foreground">Review tarixçəsi qeyd edilməyib.</li>
                   </ol>
                 </div>
                 <div className="rounded-xl border border-border p-3 space-y-2 text-xs">
-                  <MetaRow label="Qiymətləndiricinin qeydi" value="Yeni müştəri hədəfi üzrə bir qədər gecikmə var. Növbəti həftə əlavə plan hazırlansın." />
-                  <MetaRow label="Əməkdaşın cavabı" value="Yeni kampaniyaya start verilib. Gələn həftə nəticələr yaxşılaşacaq." />
+                  <MetaRow label="Qiymətləndiricinin qeydi" value="—" />
+                  <MetaRow label="Əməkdaşın cavabı" value="—" />
                   <MetaRow label="Review qərarı" value={<Badge className="bg-sky-500/15 text-sky-700">Davam edir</Badge>} />
-                  <MetaRow label="Növbəti Review tarixi" value="22.06.2025" />
+                  <MetaRow label="Növbəti Review tarixi" value="—" />
                 </div>
               </TabsContent>
 
@@ -2036,32 +2010,16 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
                 <div>
                   <div className="text-xs font-semibold text-foreground mb-2">Dövr üzrə dinamika</div>
                   <div className="grid grid-cols-4 gap-1.5">
-                    {["Yan","Fev","Mar","Apr","May","İyn","İyl","Avq","Sen","Okt","Noy","Dek"].map((m, i) => {
-                      const v = Math.round(20 + ((pct + i * 7) % 80));
-                      const c = v >= 90 ? "bg-emerald-500" : v >= 70 ? "bg-amber-500" : "bg-rose-500";
-                      return (
-                        <div key={m} className="rounded-md border border-border p-2 text-center">
-                          <div className="text-[10px] text-muted-foreground">{m}</div>
-                          <div className="mt-1 h-1.5 rounded-full bg-secondary overflow-hidden"><div className={`h-full ${c}`} style={{ width: `${Math.min(v,100)}%` }} /></div>
-                          <div className="text-[10px] tabular-nums mt-1">{v}%</div>
-                        </div>
-                      );
-                    })}
+                    <div className="col-span-4 rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+                      Performans dinamikası qeyd edilməyib.
+                    </div>
                   </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="attachments" className="mt-0">
                 <ul className="space-y-2 text-xs">
-                  {["Review_Report.pdf", "Satış_Hesabatı.xlsx", "Bonus_Hesabatı.pdf"].map(f => (
-                    <li key={f} className="flex items-center justify-between px-3 py-2 rounded-lg border border-border hover:bg-secondary/30">
-                      <div className="flex items-center gap-2">
-                        <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-foreground">{f}</span>
-                      </div>
-                      <button className="text-primary hover:underline">Yüklə</button>
-                    </li>
-                  ))}
+                  <li className="px-3 py-4 rounded-lg border border-dashed border-border text-center text-muted-foreground">Əlavə fayl yoxdur.</li>
                 </ul>
               </TabsContent>
             </div>
