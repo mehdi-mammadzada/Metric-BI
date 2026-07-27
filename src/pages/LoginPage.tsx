@@ -211,9 +211,14 @@ const LoginPage = () => {
           src={loginHero.url}
           alt="KPI ekosistemi — Hədəflər, Qiymətləndirmə, Performans, Bonus, Kaskadlama, Komandalar, Hesabatlar"
           className="w-full h-full object-cover"
-          style={{ mixBlendMode: "multiply" }}
+          style={
+            dark
+              ? { mixBlendMode: "screen", filter: "invert(1) hue-rotate(180deg)" }
+              : { mixBlendMode: "multiply" }
+          }
         />
       </div>
+
     </div>
   );
 };
