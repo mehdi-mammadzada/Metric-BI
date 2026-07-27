@@ -964,13 +964,16 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
   // Helpers for new columns
   const getCreatedAtFor = (cardId: number): string => {
-    const st = statusMap[cardId] as any;
-    const s = (st?.updated_at as string | undefined) || undefined;
-    if (s) return s.slice(0, 10);
+    const shared = sharedCards.find(s => s.numericId === cardId || Math.abs(hashStrLocal(s.id)) === cardId);
+    if (shared?.createdAt) return shared.createdAt.slice(0, 10);
     const draft = cardDrafts[cardId];
     if (draft?.startDate) return draft.startDate;
     const card = kpiCards.find(c => c.id === cardId);
     if (card?.startDate) return card.startDate;
+    if (cardId > 1_000_000_000_000) {
+      const fromId = new Date(cardId);
+      if (!isNaN(fromId.getTime())) return fromId.toISOString().slice(0, 10);
+    }
     // Deterministic fallback date based on card id so column is never empty
     const base = new Date(2026, 0, 15);
     base.setDate(base.getDate() - (Math.abs(cardId) % 365) * 3);
@@ -1067,6 +1070,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     if (filterAssignKind === "Fərdi") matchesKind = kind === "Fərdi";
     else if (filterAssignKind === "Toplu") matchesKind = kind === "Toplu";
     return matchesSearch && matchesTeam && matchesStatus && matchesKind;
+  }).sort((a, b) => {
+    const byCreated = (Date.parse(getCreatedAtFor(b.id)) || 0) - (Date.parse(getCreatedAtFor(a.id)) || 0);
+    if (byCreated !== 0) return byCreated;
+    return String(b.id).localeCompare(String(a.id), "az", { numeric: true });
   });
 
   const pickBscFormulaName = (types: string[]) => {
