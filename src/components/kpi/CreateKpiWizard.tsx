@@ -547,6 +547,18 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     return Array.from(set).sort().map(p => ({ value: p, label: p }));
   }, [employeesRaw]);
 
+  /** Toplu rejimdə avtomatik komandanın üzvləri: birbaşa seçilmiş şəxslər,
+   *  yaxud seçilmiş vəzifələrə uyğun gələn əməkdaşlar. */
+  const bulkTeamMembers = useMemo(() => {
+    if (draft.mode !== "bulk") return [] as string[];
+    const bs = draft.bulkSelections;
+    if (bs.persons.length) return bs.persons;
+    if (bs.positions.length) {
+      return employeesRaw.filter(e => bs.positions.includes(e.positionName)).map(e => e.value);
+    }
+    return [] as string[];
+  }, [draft.mode, draft.bulkSelections, employeesRaw]);
+
   // ===== Individual-mode filters (Vəzifə / Komanda / Struktur) =====
   const [indFilterPositions, setIndFilterPositions] = useState<string[]>([]);
   const [indFilterTeams, setIndFilterTeams] = useState<string[]>([]);
