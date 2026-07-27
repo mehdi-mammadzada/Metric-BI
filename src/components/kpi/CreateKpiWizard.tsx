@@ -811,12 +811,14 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     if (approvalMethodTouched) return;
     const suggested = suggestApprovalMethod(draft);
     if (suggested !== draft.approvalMethod) {
-      setDraft(p => ({ ...p, approvalMethod: suggested, useMatrix: suggested === "matrix" }));
+      setDraft(p => ({ ...p, approvalMethod: suggested }));
     }
   }, [draft.mode, draft.bulkSelections, approvalMethodTouched]);
+  // Təsdiqləmə üsulu dəyişəndə "təsdiqləmə matrisi olsun" seçimi silinmir —
+  // istifadəçi səhvən seçib sonra fikrini dəyişə bilsin deyə blok görünən qalır.
   const setApprovalMethod = (m: CreateKpiWizardDraft["approvalMethod"]) => {
     setApprovalMethodTouched(true);
-    update({ approvalMethod: m, useMatrix: m === "matrix" });
+    update({ approvalMethod: m, approvalMatrixId: m === "matrix" ? draft.approvalMatrixId : "" });
   };
 
   // ==== Approval targets validation (team_leader / structure_leader / matrix) ====
