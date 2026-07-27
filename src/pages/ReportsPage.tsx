@@ -25,24 +25,7 @@ const FILTER_LABELS: Record<FilterType, string> = {
 };
 
 // --- Sample KPI dataset (organized by team) ---
-const teamKpis: Record<string, { name: string; structure: string; subStructure: string; progress: number; target: string; current: string; icon: any }[]> = {
-  "Elite Satış Komandası": [
-    { name: "Aylıq Satış Hədəfi", structure: "Satış Departamenti", subStructure: "Bakı Satış Qrupu", progress: 84, target: "5M AZN", current: "4.2M AZN", icon: Target },
-    { name: "Müştəri Saxlama", structure: "Satış Departamenti", subStructure: "Bakı Satış Qrupu", progress: 76, target: "85%", current: "65%", icon: Users },
-    { name: "Yeni Müştəri Sayı", structure: "Satış Departamenti", subStructure: "Bakı Satış Qrupu", progress: 92, target: "200", current: "184", icon: ShoppingCart },
-    { name: "Çapraz Satış", structure: "Satış Departamenti", subStructure: "Bakı Satış Qrupu", progress: 58, target: "30%", current: "17%", icon: AlertCircle },
-  ],
-  "Regional Satış Komandası": [
-    { name: "Parakəndə Satış", structure: "Satış Departamenti", subStructure: "Regional Satış Qrupu", progress: 75, target: "2M AZN", current: "1.5M AZN", icon: ShoppingCart },
-    { name: "Region Pəncərəsi", structure: "Satış Departamenti", subStructure: "Regional Satış Qrupu", progress: 88, target: "12 region", current: "10", icon: Target },
-    { name: "Çatdırılma Vaxtı", structure: "Logistika", subStructure: "Çatdırılma Qrupu", progress: 95, target: "< 24 saat", current: "22 saat", icon: Settings2 },
-  ],
-  "İpoteka Satış Komandası": [
-    { name: "İpoteka Müraciətləri", structure: "Maliyyə", subStructure: "İpoteka Qrupu", progress: 90, target: "150", current: "135", icon: Target },
-    { name: "Onay Faizi", structure: "Maliyyə", subStructure: "İpoteka Qrupu", progress: 70, target: "70%", current: "49%", icon: AlertCircle },
-    { name: "Orta Müraciət Məbləği", structure: "Maliyyə", subStructure: "İpoteka Qrupu", progress: 82, target: "120K AZN", current: "98K AZN", icon: ShoppingCart },
-  ],
-};
+const teamKpis: Record<string, { name: string; structure: string; subStructure: string; progress: number; target: string; current: string; icon: any }[]> = {};
 
 const COLORS = [
   "hsl(230, 75%, 50%)", "hsl(145, 65%, 42%)", "hsl(38, 92%, 55%)", "hsl(0, 78%, 60%)",

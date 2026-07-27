@@ -12,47 +12,27 @@ import RolesPermissionsTab from "@/components/settings/RolesPermissionsTab";
 import { useCatalogValues } from "@/lib/dropdownCatalogStore";
 
 // Settings Tab 1 - Məlumat Cədvəli
-const initialTargetTypes = [
-  { id: 1, name: "Absolut Hədəf (Aylıq Satış)", structure: "Satış Departamenti (Bakı Branch)", calcType: "Valyuta (AZN), Ədəd", active: true, usedIn: "Aylıq Satış Hədəfi" },
-  { id: 2, name: "Faiz Hədəfi (Sifarişlərin Çatdırılması)", structure: "Logistika Şöbəsi", calcType: "Faiz (%)", active: true, usedIn: "" },
-  { id: 3, name: "Trend Hədəfi (Müştəri Şikayətlərinin Azaldılması)", structure: "Müştəri Xidmətləri", calcType: "Zaman (Gün)", active: true, usedIn: "Müştəri Saxlama Nisbəti" },
-  { id: 4, name: "Benchmark Hədəfi (Sənaye Standartı Üzrə Məmnuniyyət)", structure: "Keyfiyyətə Nəzarət", calcType: "Say (Hə/Yox)", active: false, usedIn: "" },
-];
+const initialTargetTypes = [];
 
-const structures = ["Satış Departamenti", "Logistika Şöbəsi", "Müştəri Xidmətləri", "Keyfiyyətə Nəzarət", "Maliyyə Departamenti", "İT Departamenti", "HR Departamenti"];
+const structures = [];
 const CALC_TYPE_DEFAULTS = ["Valyuta (AZN)", "Faiz (%)", "Zaman (Gün)", "Say (Hə/Yox)", "Ədəd"];
 const KPI_CATEGORY_DEFAULTS = ["Maliyyə KPI ları", "Müştəri KPI ları", "Əməliyyat KPI ları", "İnkişaf KPI ları"];
 const KPI_UNIT_DEFAULTS = ["Valyuta", "Faiz", "Gün/Saat", "Ədəd", "Nisbət"];
 
-const initialKpiTypes = [
-  { id: 1, name: "Kəmiyyət KPI-ları (Ölçülə bilən)", category: "Maliyyə KPI ları", unit: "Valyuta, Ədəd", active: true, usedIn: "Aylıq Satış Hədəfi" },
-  { id: 2, name: "Keyfiyyət KPI-ları", category: "Müştəri KPI ları", unit: "Faiz", active: true, usedIn: "" },
-  { id: 3, name: "Vaxt KPI-ları", category: "Əməliyyat KPI ları", unit: "Gün/Saat, Nisbət", active: false, usedIn: "" },
-];
+const initialKpiTypes = [];
 
 // Hədəf data (matching KPI creation)
 const SUB_KPI_UNIT_DEFAULTS = ["Valyuta (AZN)", "Faiz (%)", "Ədəd", "Zaman (Gün)", "Nisbət", "Say (Hə/Yox)"];
 
-const initialSubKpis = [
-  { id: 1, name: "Online Satış", kpiName: "Aylıq Satış Hədəfi", units: ["Valyuta (AZN)"], weight: 40, active: true, usedIn: "Aylıq Satış Hədəfi" },
-  { id: 2, name: "Mağaza Satışı", kpiName: "Aylıq Satış Hədəfi", units: ["Valyuta (AZN)"], weight: 60, active: true, usedIn: "Aylıq Satış Hədəfi" },
-  { id: 3, name: "Sosial Media Müştəriləri", kpiName: "Müştəri Əldə Etmə", units: ["Ədəd"], weight: 35, active: true, usedIn: "Müştəri Əldə Etmə" },
-  { id: 4, name: "Referral Müştərilər", kpiName: "Müştəri Əldə Etmə", units: ["Ədəd"], weight: 30, active: true, usedIn: "Müştəri Əldə Etmə" },
-  { id: 5, name: "Reklam Kampaniyası", kpiName: "Müştəri Əldə Etmə", units: ["Valyuta (AZN)", "Ədəd"], weight: 35, active: true, usedIn: "Müştəri Əldə Etmə" },
-];
+const initialSubKpis = [];
 
-const kpiNameOptions = ["Aylıq Satış Hədəfi", "Parakəndə Satış Göstəriciləri", "Müştəri Əldə Etmə", "Müştəri Saxlama Nisbəti", "İnnovasiya İndeksi", "Əməliyyat Effektivliyi"];
+const kpiNameOptions = [];
 
 interface Formula {
   id: number; name: string; formula: string; description: string; kpiName: string; variables: string[];
 }
 
-const initialFormulas: Formula[] = [
-  { id: 1, name: "Satış Performans Düsturu", formula: "(Cari Satış / Hədəf Satış) × 100", description: "Satış hədəfinin faizlə yerinə yetirilmə nisbəti", kpiName: "Aylıq Satış Hədəfi", variables: ["Cari Satış", "Hədəf Satış"] },
-  { id: 2, name: "Müştəri Məmnuniyyət İndeksi", formula: "(Məmnun Müştəri / Ümumi Müştəri) × 100", description: "Müştəri sorğusu əsasında məmnuniyyət faizi", kpiName: "Müştəri Məmnuniyyəti", variables: ["Məmnun Müştəri", "Ümumi Müştəri"] },
-  { id: 3, name: "Əməliyyat Effektivlik Düsturu", formula: "(Uğurlu Əməliyyat / Ümumi Əməliyyat) × 100", description: "Uğurlu əməliyyatların ümumi əməliyyatlara nisbəti", kpiName: "Əməliyyat Effektivliyi", variables: ["Uğurlu Əməliyyat", "Ümumi Əməliyyat"] },
-  { id: 4, name: "İnnovasiya Skor Düsturu", formula: "(İnnovasiya Xalı / Maksimum Xal) × 100", description: "İnnovasiya göstəricisinin maksimuma nisbəti", kpiName: "İnnovasiya İndeksi", variables: ["İnnovasiya Xalı", "Maksimum Xal"] },
-];
+const initialFormulas: Formula[] = [];
 
 interface Role {
   id: number; name: string; permissions: Record<string, string[]>; users: string[];
@@ -237,52 +217,7 @@ const allUsers = _getEmployeesForRoles()
     avatar: (e.firstName?.[0] || "?").toUpperCase(),
   }));
 
-const initialRoles: Role[] = [
-  {
-    id: 1, name: "USER", description: "Adi əməkdaş — yalnız öz məlumatları və KPI kartları",
-    permissions: {
-      home: ["view"],
-      kpi: ["view_own", "view_team", "view_results"],
-      kpi_scores: ["view"],
-      approvals: ["view", "comment"],
-      reporting: ["view_own", "view_team"],
-      teams: ["view_own", "view_compare"],
-      evaluation: ["view"],
-      whistleblower: ["view", "submit"],
-      notifications: ["send"],
-      settings: ["view"],
-    },
-    users: ["Samir Həsənov", "Leyla Məmmədova", "Rəşad Əliyev", "Farid Həsənov", "Emin Məmmədov"]
-  },
-  {
-    id: 2, name: "HR", description: "İnsan resursları admin — bütün modullara tam giriş",
-    permissions: Object.fromEntries(permissionModules.map(m => [m.key, m.actions.map(a => a.key)])),
-    users: ["Günel Əlizadə", "Nigar Hüseynova"]
-  },
-  {
-    id: 3, name: "MANAGER", description: "Rəhbər — komandası, KPI-lər, cascading və qiymətləndirmə üzrə idarəetmə",
-    permissions: {
-      home: ["view", "view_widgets"],
-      kpi: ["view_own", "view_team", "create", "edit", "copy", "archive", "view_results", "view_calc_details"],
-      kpi_scores: ["view", "view_calc_details", "view_evaluator_scores", "view_weights", "export"],
-      approvals: ["view", "approve", "reject", "comment"],
-      reporting: ["view_own", "view_team", "export_pdf", "export_excel", "use_ai"],
-      teams: ["view_own", "view_compare", "view_all", "manage_members"],
-      evaluation: ["view", "create_assignment", "send", "approve", "manual_score", "manual_assign", "view_status"],
-      cascading: ["view", "distribute", "set_slice_limits", "edit", "cascade_push", "cascade_pull", "approve", "reject"],
-      cascade_matrix: ["view"],
-      kpi_lifecycle: ["view", "view_detail"],
-      bonus: ["view", "send_reminder", "view_details"],
-      whistleblower: ["view", "submit"],
-      notifications: ["send"],
-      organization: ["view"],
-      matrix: ["view"],
-      settings: ["view"],
-      notifications_settings: ["view"],
-    },
-    users: ["Elvin Rəhimov", "Kamran Quliyev"]
-  },
-];
+const initialRoles: Role[] = [];
 
 
 const SettingsPage = () => {

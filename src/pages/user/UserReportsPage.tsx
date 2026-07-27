@@ -21,7 +21,7 @@ type TabKey = "mine" | "team";
 
 
 // --- Mock individual KPI assignments (which users appear on individual KPIs) ---
-const individualKpiAssignees = ["Samir Həsənov", "Leyla Məmmədova", "Rəşad Əliyev", "Günel Əlizadə"];
+const individualKpiAssignees = [];
 
 const TAB_DEFS: { key: TabKey; label: string; icon: any; gradient: string }[] = [
   { key: "mine", label: "Mənim Hesabatım", icon: UserIcon, gradient: "from-primary to-primary/60" },

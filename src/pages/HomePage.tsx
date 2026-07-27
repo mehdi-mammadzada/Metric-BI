@@ -20,23 +20,9 @@ type Row = {
   responsible: string;
 };
 
-const rows: Row[] = [
-  { nameKey: "home.row_monthly_sales",   assignType: "bulk",       createdAt: "12.01.2026", progress: 84, responsible: "Samir Həsənov" },
-  { nameKey: "home.row_retail_sales",    assignType: "bulk",       createdAt: "05.02.2026", progress: 95, responsible: "Farid Həsənov" },
-  { nameKey: "home.row_customer_acq",    assignType: "individual", createdAt: "18.03.2026", progress: 97, responsible: "Emin Məmmədov" },
-  { nameKey: "home.row_customer_ret",    assignType: "bulk",       createdAt: "22.03.2026", progress: 98, responsible: "Leyla Həsənova" },
-  { nameKey: "home.row_innovation",      assignType: "individual", createdAt: "07.04.2026", progress: 65, responsible: "Rəşad Əliyev" },
-  { nameKey: "home.row_ops_efficiency",  assignType: "bulk",       createdAt: "14.05.2026", progress: 98, responsible: "Kamran Quliyev" },
-  { nameKey: "home.row_complaints",      assignType: "individual", createdAt: "02.06.2026", progress: 40, responsible: "Nigar Hüseynova" },
-];
+const rows: Row[] = [];
 
-const departments = [
-  { key: "home.dept_sales",    value: 92, count: 8 },
-  { key: "home.dept_it",       value: 88, count: 6 },
-  { key: "home.dept_finance",  value: 85, count: 7 },
-  { key: "home.dept_hr",       value: 78, count: 5 },
-  { key: "home.dept_marketing",value: 82, count: 4 },
-];
+const departments = [];
 
 const HomePage = () => {
   const { t, i18n } = useTranslation();
