@@ -2290,6 +2290,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                           const updDate = upd && !isNaN(upd.getTime()) ? `${pad(upd.getDate())}.${pad(upd.getMonth() + 1)}.${upd.getFullYear()}` : "—";
                           const updTime = upd && !isNaN(upd.getTime()) ? `${pad(upd.getHours())}:${pad(upd.getMinutes())}` : "";
                           const rows = [
+                            ...(detailEmployee ? [{ icon: User, label: "Əməkdaş", value: detailEmployee }] : []),
                             { icon: User, label: "Məsul Şəxs", value: selectedKpi.responsible || "—" },
                             { icon: Crosshair, label: "Təyinat", value: <span className="text-right">{assignKind}{parts.length > 0 && <span className="block text-[11px] font-normal text-muted-foreground mt-0.5">{parts.join(" · ")}</span>}</span> },
                             { icon: Activity, label: "Status", value: <span className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${STATUS_STYLES[st.status]}`}>{STATUS_LABELS[st.status]}</span> },
