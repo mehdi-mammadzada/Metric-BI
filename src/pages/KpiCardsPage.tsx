@@ -1582,33 +1582,31 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                   </div>
               );
             })() : kartView === "kart2" ? (() => {
-              // Aggregate KPI stats per employee (by responsible full-name match)
+              // Kartlar tətbiq olunduğu (təyin edilmiş) əməkdaşlara görə qruplaşdırılır
               const norm = (s: string) => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
               const emps = getEmployees().filter((e: any) => e.active);
-              const perEmp = new Map<number, { count: number; sumProgress: number }>();
-              emps.forEach((e: any) => perEmp.set(e.id, { count: 0, sumProgress: 0 }));
+              const perEmp = new Map<number, number>();
+              emps.forEach((e: any) => perEmp.set(e.id, 0));
               const empByName = new Map<string, any>();
               emps.forEach((e: any) => {
                 empByName.set(norm(`${e.firstName} ${e.lastName}`), e);
                 empByName.set(norm(`${e.lastName} ${e.firstName}`), e);
               });
               filteredCards.forEach(c => {
-                const e = empByName.get(norm(c.responsible || ""));
-                if (!e) return;
-                const cur = perEmp.get(e.id)!;
-                cur.count += 1;
-                cur.sumProgress += Number(c.progress) || 0;
+                const seen = new Set<number>();
+                getCardAssignees(c).forEach(nm => {
+                  const e = empByName.get(norm(nm));
+                  if (!e || seen.has(e.id)) return;
+                  seen.add(e.id);
+                  perEmp.set(e.id, (perEmp.get(e.id) || 0) + 1);
+                });
               });
-              const rows = emps.map((e: any) => {
-                const st = perEmp.get(e.id)!;
-                return {
-                  id: e.id,
-                  name: [e.firstName, e.lastName].filter(Boolean).join(" "),
-                  position: e.positionName || "Əməkdaş",
-                  count: st.count,
-                  avg: st.count > 0 ? Math.round(st.sumProgress / st.count) : 0,
-                };
-              });
+              const rows = emps.map((e: any) => ({
+                id: e.id,
+                name: [e.firstName, e.lastName].filter(Boolean).join(" "),
+                position: e.positionName || "Əməkdaş",
+                count: perEmp.get(e.id) || 0,
+              }));
 
               return (
                 <div className="space-y-4">
