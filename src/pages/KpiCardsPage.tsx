@@ -227,18 +227,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   const positionOptions = getPositions();
   const [kpiCards, setKpiCards] = useState<KpiCard[]>(() => {
     const deleted = getDeletedKpiIds();
-    // Persistensiya — yaradılmış kartlar refresh və modul dəyişikliyində itməsin.
-    try {
-      const raw = localStorage.getItem("kpi_cards_v1");
-      if (raw) {
-        const saved = JSON.parse(raw) as KpiCard[];
-        return saved.filter(c => !deleted.includes(c.id)).map(c => ({ ...c, icon: c.icon || Target }));
-      }
-    } catch {}
+    // Backend/shared registry is authoritative. Do not hydrate this page from
+    // a global browser cache because it can belong to another organization.
     const base = initialKpiCards.filter(c => !deleted.includes(c.id));
-    const maxId = Math.max(0, ...base.map(c => c.id));
-    const extras: KpiCard[] = [];
-    return [...base, ...extras];
+    return base;
   });
   // Persist card list to localStorage
   useEffect(() => {

@@ -19,6 +19,7 @@ import { logAudit } from "@/lib/auditService";
 const SHARED_KEY = "shared_kpi_cards_v1";
 const STATUS_KEY = "kpi_card_status_v1";
 const META_KEY   = "kpi_card_meta_v1";
+const LEGACY_ROWS_KEY = "kpi_cards_v1";
 const EVT_SHARED = "shared-kpi-cards-updated";
 const EVT_ALL    = "kpi-cards-updated";
 
@@ -30,6 +31,17 @@ const rawRead = <T,>(key: string, fallback: T): T => {
     const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch { return fallback; }
+};
+
+const replaceLocalKpiCache = (shared: SharedKpiCard[] = [], status: Record<number, any> = {}, meta: any[] = []) => {
+  suppressFlush = true;
+  rawWrite(SHARED_KEY, shared);
+  rawWrite(STATUS_KEY, status);
+  rawWrite(META_KEY, meta);
+  rawWrite(LEGACY_ROWS_KEY, []);
+  window.dispatchEvent(new Event(EVT_SHARED));
+  window.dispatchEvent(new Event(EVT_ALL));
+  suppressFlush = false;
 };
 
 // ── HYDRATE ───────────────────────────────────────────────────────────────────
@@ -44,9 +56,10 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
   const targets = targetsRes.data ?? [];
   const history = historyRes.data ?? [];
 
-  // First-time bootstrap: push local snapshot into empty cloud.
+  // Empty backend means empty organization. Never bootstrap a new org from
+  // browser/localStorage cache, otherwise old data leaks into freshly-created orgs.
   if (cards.length === 0) {
-    await seedCloudFromLocal(orgId);
+    replaceLocalKpiCache();
     return;
   }
 
@@ -131,12 +144,7 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
     }
   }
 
-  suppressFlush = true;
-  rawWrite(SHARED_KEY, shared);
-  rawWrite(STATUS_KEY, status);
-  rawWrite(META_KEY, meta);
-  window.dispatchEvent(new Event(EVT_SHARED));
-  suppressFlush = false;
+  replaceLocalKpiCache(shared, status, meta);
 };
 
 // ── SEED cloud from current local snapshot ────────────────────────────────────
@@ -347,6 +355,7 @@ const scheduleRehydrate = () => {
 export const activateKpiCardsSync = async (orgId: string) => {
   if (currentOrgId === orgId) return;
   currentOrgId = orgId;
+  replaceLocalKpiCache();
   await hydrateKpiCardsFromCloud(orgId);
   window.addEventListener(EVT_SHARED, scheduleFlush);
   window.addEventListener(EVT_ALL, scheduleFlush);
