@@ -765,7 +765,14 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
 
   const handleNext = () => {
     if (!canNext) {
-      if (step === 1) toast.error("Bütün tələb olunan sahələri (lifecycle tarixləri daxil) doldurun");
+      if (step === 1) {
+        const bp = draft.mode === "bulk" ? draft.bulkSelections.persons : [];
+        if (bp.length >= 2 && !(draft.bulkTeamLeader && bp.includes(draft.bulkTeamLeader))) {
+          toast.error("Komanda Lideri seçilməlidir — avtomatik yaradılacaq komanda üçün 1 nəfər lider təyin edin");
+        } else {
+          toast.error("Bütün tələb olunan sahələri (lifecycle tarixləri daxil) doldurun");
+        }
+      }
       else if (step === 2) {
         const first = draft.targets.map(validateHedef).find(Boolean);
         if (first) toast.error(first);
