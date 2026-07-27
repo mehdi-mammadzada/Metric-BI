@@ -187,7 +187,10 @@ export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
         </div>
       </div>
 
+      {mergedSubKpis.length > 0 && (
+        <div className="rounded-lg border border-border bg-card">
           <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+
             <p className="text-xs font-medium text-foreground">Hədəflər ({mergedSubKpis.length})</p>
             <span className="text-[10px] text-muted-foreground">Hər hədəfin çəkisi, dəyəri və qiymət limitləri</span>
           </div>
