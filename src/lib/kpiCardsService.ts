@@ -86,6 +86,7 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
     assigneeIds: c.assignee_ids ?? [],
     structureIds: c.structure_ids ?? [],
     teamIds: c.team_ids ?? [],
+    assignmentMode: c.assignment_mode === "bulk" ? "bulk" : "individual",
     matrixId: c.matrix_id ?? null,
     status: (c.status as SharedKpiStatus) ?? "natamam",
     rejectedReason: c.rejected_reason ?? undefined,
@@ -178,6 +179,7 @@ const seedCloudFromLocal = async (orgId: string) => {
       assignee_ids: c.assigneeIds,
       structure_ids: c.structureIds,
       team_ids: c.teamIds,
+      assignment_mode: c.assignmentMode,
       execution: c.execution ?? {},
       assignees: s?.assignees ?? [],
     }).select("id").single();
@@ -263,6 +265,7 @@ export const flushLocalKpiCardsToCloud = async () => {
       assignee_ids: c.assigneeIds,
       structure_ids: c.structureIds,
       team_ids: c.teamIds,
+      assignment_mode: c.assignmentMode,
       execution: c.execution ?? {},
       assignees: s?.assignees ?? [],
     };
