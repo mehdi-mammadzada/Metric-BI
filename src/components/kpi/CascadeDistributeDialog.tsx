@@ -7,7 +7,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { GitBranch, Crown, AlertTriangle, Users, ShieldCheck } from "lucide-react";
-import { getEmployees, getSubordinatesOfStarHolder, getStructures } from "@/lib/orgStore";
+import { getEmployees } from "@/lib/orgStore";
+import { getSubordinatesOfEmployee } from "@/lib/cascadeAssignment";
 import { distribute, createRoot, findRootByGoal, getNodes, remainingOf, type CascadeTreeNode } from "@/lib/cascadeTreeStore";
 
 interface Props {
@@ -84,35 +85,31 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
   }, [open, existingNode, bootstrap]);
 
 
-  // Tabelikdəki bütün şəxslər (setter-in structurePath-ı üzrə)
+  // Tabelikdəki bütün şəxslər (mərkəzləşdirilmiş qayda ilə)
   const subordinates = useMemo(() => {
     if (!node) return [];
-    const emp = getEmployees().find(e => e.id === node.assigneeId);
-    if (!emp) return [];
-    const findUnitId = (): number | null => {
-      const walk = (list: any[], path: string[]): number | null => {
-        for (const n of list) {
-          const cur = [...path, n.name];
-          if (cur.join(" › ") === emp.structurePath) return n.id;
-          const inChild = walk(n.children, cur);
-          if (inChild) return inChild;
-        }
-        return null;
-      };
-      return walk(getStructures(), []);
-    };
-    const unitId = findUnitId();
-    if (!unitId) return [];
-    return getSubordinatesOfStarHolder(node.assigneeId, unitId);
+    return getSubordinatesOfEmployee(node.assigneeId) as any[];
   }, [node?.id]);
 
+
   // Qayda: yalnız HƏM tabelikdə olan, HƏM DƏ kartın tətbiq olunduğu əməkdaşlar.
+  // `restrictToEmployeeIds` artıq bu kəsişməni saxlayır — onu birbaşa istifadə edirik,
+  // beləliklə struktur axtarışı uğursuz olsa belə siyahı boş qalmır.
   const allowed = useMemo(() => {
     const restrict = bootstrap?.restrictToEmployeeIds;
     if (!restrict) return subordinates;
-    const set = new Set(restrict);
-    return subordinates.filter(e => set.has(e.id));
+    const emps = getEmployees();
+    const byId = new Map(emps.map(e => [e.id, e]));
+    const fromRestrict = restrict
+      .map(id => byId.get(id))
+      .filter((e): e is NonNullable<typeof e> => !!e && e.active !== false);
+    const merged = [...fromRestrict];
+    subordinates.forEach(s => {
+      if (restrict.includes(s.id) && !merged.find(m => m.id === s.id)) merged.push(s);
+    });
+    return merged;
   }, [subordinates, bootstrap?.restrictToEmployeeIds]);
+
 
   const leaders = useMemo(() => allowed.filter(e => e.isStarPerson), [allowed]);
   const currentList = audience === "all" ? allowed : audience === "leaders" ? leaders : [];
