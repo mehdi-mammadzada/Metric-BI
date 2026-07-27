@@ -1676,24 +1676,6 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                           ),
                         },
                         {
-                          key: "avg",
-                          label: "Ortalama Progress",
-                          filterType: "number",
-                          width: 220,
-                          accessor: (r) => r.avg,
-                          render: (r) => (
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
-                                <div
-                                  className={`h-full transition-all duration-500 ${r.avg >= 90 ? "bg-emerald-500" : r.avg >= 75 ? "bg-amber-500" : "bg-rose-500"}`}
-                                  style={{ width: `${Math.min(r.avg, 100)}%` }}
-                                />
-                              </div>
-                              <span className="text-xs tabular-nums font-medium w-9 text-right">{r.avg}%</span>
-                            </div>
-                          ),
-                        },
-                        {
                           key: "ops",
                           label: "Əməliyyat",
                           filterType: "none",
