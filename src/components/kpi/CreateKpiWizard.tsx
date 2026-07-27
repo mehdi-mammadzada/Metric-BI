@@ -1107,9 +1107,31 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                           onChange={(v) => setCat("positions", v)} placeholder="Vəzifə seçin" />
                       )}
                       {bs.persons.length >= 2 && (
-                        <p className="text-[11px] text-emerald-600 mt-1 flex items-center gap-1">
-                          <Users className="w-3 h-3" /> Yadda saxladıqda bu {bs.persons.length} şəxs üçün avtomatik yeni komanda yaradılacaq.
-                        </p>
+                        <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+                          <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+                            <Users className="w-3 h-3" /> Yadda saxladıqda bu {bs.persons.length} şəxs üçün avtomatik yeni komanda yaradılacaq.
+                          </p>
+                          <div>
+                            <label className="text-xs font-medium text-foreground">
+                              Komanda Lideri <span className="text-destructive">*</span>
+                            </label>
+                            <select
+                              value={draft.bulkTeamLeader || ""}
+                              onChange={e => update({ bulkTeamLeader: e.target.value })}
+                              className={`w-full mt-1 px-3 py-2 text-sm border rounded-lg bg-background ${
+                                draft.bulkTeamLeader ? "border-border" : "border-destructive"
+                              }`}
+                            >
+                              <option value="">— Lider seçin —</option>
+                              {bs.persons.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
+                            {!draft.bulkTeamLeader && (
+                              <p className="text-[11px] text-destructive mt-1">
+                                Komanda Lideri seçilməlidir — bu sahə məcburidir.
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </Field>
                   );
