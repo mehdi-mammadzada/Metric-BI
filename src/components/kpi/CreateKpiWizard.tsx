@@ -112,6 +112,8 @@ export interface CreateKpiWizardDraft {
     positions: string[];
     persons: string[];
   };
+  /** Toplu + Şəxs(lər): avtomatik yaradılacaq komandanın lideri (məcburi) */
+  bulkTeamLeader?: string;
 
   frequency: string;
   /** Rüblük: il və rüb */
