@@ -148,22 +148,22 @@ export const REMOVED_CATALOG_IDS = new Set<string>(
   RAW_SEED.map(c => c.id).filter(id => !VISIBLE_CATALOG_IDS.includes(id)),
 );
 
-const RESET_FLAG = "kpi_dropdown_catalogs_reset_v7";
+// Migrasiya markeri payload-un içində saxlanılır ki, bulud sinxronizasiyası ilə
+// digər brauzerlərə də getsin və istifadəçinin əlavə etdiyi dəyərlər sıfırlanmasın.
+const META_ID = "__catalog_meta_v7";
+const META_ENTRY: DropdownCatalog = { id: META_ID, name: META_ID, system: true, values: [] };
 
 const seedById = new Map(SEED.map(c => [c.id, c]));
 
 // Bir dəfəlik sıfırlama: sistem kataloqları tələb olunan standart dəyərlərə gətirilir.
 const applyResetMigration = (list: DropdownCatalog[]): { list: DropdownCatalog[]; changed: boolean } => {
-  let done = false;
-  try { done = localStorage.getItem(RESET_FLAG) === "1"; } catch {}
-  if (done) return { list, changed: false };
+  if (list.some(c => c.id === META_ID)) return { list, changed: false };
   const next = list.map(c => {
     const seed = seedById.get(c.id);
     if (!seed || seed.schema) return c;
     return { ...c, values: [...(seed.values ?? [])] };
   });
-  try { localStorage.setItem(RESET_FLAG, "1"); } catch {}
-  return { list: next, changed: true };
+  return { list: [...next, META_ENTRY], changed: true };
 };
 
 const load = (): DropdownCatalog[] => {
@@ -178,17 +178,18 @@ const load = (): DropdownCatalog[] => {
       const synced = reset.list.map(syncValues);
       if (missing.length > 0 || reset.changed) {
         localStorage.setItem(KEY, JSON.stringify(synced));
+        window.dispatchEvent(new Event("dropdown-catalogs-updated"));
       }
       return synced;
     }
   } catch {}
-  const seeded = SEED.map(syncValues);
+  const seeded = [...SEED.map(syncValues), META_ENTRY];
   try {
     localStorage.setItem(KEY, JSON.stringify(seeded));
-    localStorage.setItem(RESET_FLAG, "1");
   } catch {}
   return seeded;
 };
+
 
 const persist = (list: DropdownCatalog[]) => {
   const synced = list.map(syncValues);
