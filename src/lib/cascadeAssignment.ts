@@ -106,6 +106,7 @@ export const getCascadeCandidateIds = (opts: {
   cardId?: number;
   cardName?: string;
 }): number[] | null => {
+  if (isBulkAssignedCard({ cardId: opts.cardId, cardName: opts.cardName })) return [];
   const cardEmployees = getCardAssigneeEmployees({ cardId: opts.cardId, cardName: opts.cardName });
   if (cardEmployees.length === 0) return null;
   const subs = getSubordinatesOfEmployee(opts.setterEmployeeId);
