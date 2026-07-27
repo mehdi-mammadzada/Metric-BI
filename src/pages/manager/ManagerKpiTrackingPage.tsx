@@ -1158,23 +1158,22 @@ export const SubordinatesView = ({
   const PERIODS = ["2025 / 1-ci rüb", "2025 / 2-ci rüb", "2025 / 3-cü rüb", "2025 / 4-cü rüb"];
   const empKpiCards = useMemo(() => {
     if (!empKpiListFor) return [] as (Kpi & { progress: number; createdAt: string; updatedAt: string })[];
-    return buildEmpKpis(empKpiListFor.empId).map((k, i) => {
-      const h = hashStr(k.id);
-      const pct = Math.round((k.fakt / k.plan) * 100);
-      const period = PERIODS[Math.abs(h) % PERIODS.length];
-      const createdAt = dateFromHash(h, 2025);
-      const updatedAt = dateFromHash(h ^ 0x9e3779b1, 2025);
-      const deadline = dateFromHash(h ^ 0x51f4a5, 2025);
+    return getRealKpiCardsForEmployee(empKpiListFor.empId).map(c => {
+      const plan = c.targets.reduce((s, t) => s + t.plan, 0);
+      const fakt = c.targets.reduce((s, t) => s + t.fakt, 0);
+      const pct = plan ? Math.round((fakt / plan) * 100) : 0;
       const kpi: Kpi = {
-        id: k.id, name: k.name, description: k.desc, period,
-        target: k.plan, actual: k.fakt, unit: k.unit || "ədəd", stage: "assigned",
-        status: k.status, deadline, createdAt, updatedAt,
-        responsible: { name: empKpiListFor.name, role: "Əməkdaş" },
-        measure: k.unit || "ədəd", type: "Rüblük", method: "—", weight: 20,
+        id: c.id, name: c.name, description: "", period: c.frequency || "—",
+        target: plan, actual: fakt, unit: c.targets[0]?.unit || "", stage: "assigned",
+        status: "in_progress", deadline: c.deadline, createdAt: c.createdAt, updatedAt: c.createdAt,
+        responsible: { name: empKpiListFor.name, role: empKpiListFor.position || "Əməkdaş" },
+        measure: c.targets[0]?.unit || "—", type: c.frequency || "—", method: "—", weight: 0,
+        realTargets: c.targets.map(t => ({ ...t, status: "in_progress" as KpiStatus })),
       };
-      return { ...kpi, progress: Math.min(pct, 100), createdAt, updatedAt };
+      return { ...kpi, progress: Math.min(pct, 100), createdAt: c.createdAt, updatedAt: c.createdAt };
     });
   }, [empKpiListFor]);
+
 
   const selected = selectedId ? tree.find(n => n.id === selectedId) ?? null : null;
 
