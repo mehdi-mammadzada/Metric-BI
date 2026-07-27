@@ -41,7 +41,11 @@ const HomePage = () => {
     const total = visible.length;
     const active = visible.filter(c => c.status === "aktiv").length;
     const pending = visible.filter(c => c.status === "tesdiq_gozlenilir" || c.status === "natamam").length;
-    const met = visible.filter(c => (c.targets ?? []).length > 0 && (c.targets ?? []).every(tg => tg.executionStatus === "tamamlandi")).length;
+    const met = visible.filter(c => {
+      const states = Object.values(c.execution ?? {});
+      return states.length > 0 && states.every(s => s === "tamamlandi");
+    }).length;
+
     const successRate = total > 0 ? Math.round((met / total) * 100) : 0;
     return [
       { icon: TrendingUp, label: t("home.stat_total_perf"), value: `${successRate}%`, sub: t("home.stat_total_perf_sub"), accent: "primary" as const },
