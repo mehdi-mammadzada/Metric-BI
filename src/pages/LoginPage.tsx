@@ -1,18 +1,43 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
-import { AlertCircle, Eye, EyeOff, LogIn } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, LogIn, Moon, Sun, Globe, ChevronDown } from "lucide-react";
 import loginHero from "@/assets/login-hero.png.asset.json";
+import { applyTheme, getStoredTheme } from "@/lib/theme";
+import { CODE_TO_UI, UI_TO_CODE, type SupportedLang } from "@/i18n";
 
 const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [touched, setTouched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [dark, setDark] = useState(() => getStoredTheme() === "dark");
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+  const lang = CODE_TO_UI[(i18n.language?.split("-")[0] as SupportedLang) || "az"] ?? "AZ";
+
+  useEffect(() => { applyTheme(dark ? "dark" : "light"); }, [dark]);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const chooseLang = (l: "AZ" | "ENG" | "RU") => {
+    i18n.changeLanguage(UI_TO_CODE[l]);
+    try { localStorage.setItem("kpi_lang", l); } catch { /* noop */ }
+    setLangOpen(false);
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
