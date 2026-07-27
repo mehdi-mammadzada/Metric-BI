@@ -28,6 +28,8 @@ const STORES: StoreMirror[] = [
   { localKey: "kpi_formula_assignments_v1",  cloudKey: "formula_assignments",  event: "formula-assignments-updated",         table: "org_catalogs" },
   { localKey: "kpi_catalog_v2",              cloudKey: "catalog",              event: "catalog:updated",                     table: "org_catalogs" },
   { localKey: "kpi_dropdown_catalog_v1",     cloudKey: "dropdown_catalog",     event: "dropdown-catalog:updated",            table: "org_catalogs" },
+  // Məlumat Cədvəli (Sazlamalar) — sistem dropdown kataloqları
+  { localKey: "kpi_dropdown_catalogs_v6",    cloudKey: "dropdown_catalogs_v6", event: "dropdown-catalogs-updated",           table: "org_catalogs" },
   { localKey: "kpi_deletion_requests_v1",    cloudKey: "deletion_requests",    event: "kpi-deletion-requests-updated",       table: "org_catalogs" },
   { localKey: "kpi_deleted_ids_v1",          cloudKey: "deleted_kpi_ids",      event: "kpi-deletion-requests-updated",       table: "org_catalogs" },
   // Phase 2 — evaluation domain
