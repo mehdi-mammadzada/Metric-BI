@@ -5,21 +5,9 @@ const KEY_STRUCT_TYPES = "kpi_catalog_struct_types_v1";
 const KEY_POSITIONS = "kpi_catalog_positions_v1";
 const KEY_CRITERIA = "kpi_catalog_criteria_v1";
 
-const seedStructTypes = ["Departament", "Şöbə", "Sektor", "Qrup", "Komanda"];
-const seedPositions = [
-  "HR Manager", "HR Mütəxəssisi", "Recruiter", "L&D Specialist",
-  "Backend Developer", "Frontend Developer", "QA Engineer", "DevOps Engineer",
-  "Marketinq Meneceri", "Content Specialist", "SMM Specialist",
-  "Satış Meneceri", "Satış Təmsilçisi", "Satış Analitiki",
-  "Mühasib", "Baş Mühasib", "Maliyyə Analitiki",
-];
-const seedCriteria = [
-  "Texniki Bacarıqlar",
-  "Komanda İşi",
-  "Kommunikasiya",
-  "Vaxtında İcra",
-  "İnnovasiya",
-];
+const seedStructTypes: string[] = [];
+const seedPositions: string[] = [];
+const seedCriteria: string[] = [];
 
 const load = (key: string, fallback: string[]): string[] => {
   try {
