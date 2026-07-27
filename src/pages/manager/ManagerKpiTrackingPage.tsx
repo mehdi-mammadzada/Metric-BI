@@ -1460,9 +1460,8 @@ const SubDetailPanel = ({ node, tab, setTab, onClose }: {
 
   const riskLevel = node.notAchieved > 0 ? "high" : "low";
   const riskColor = riskLevel === "high" ? "bg-rose-500/10 text-rose-600 border-rose-500/30"
-    : riskLevel === "med" ? "bg-amber-500/10 text-amber-600 border-amber-500/30"
     : "bg-emerald-500/10 text-emerald-600 border-emerald-500/30";
-  const riskLabel = riskLevel === "high" ? "Yüksək" : riskLevel === "med" ? "Orta" : "Aşağı";
+  const riskLabel = riskLevel === "high" ? "Yüksək" : "Aşağı";
 
   return (
     <aside className="hidden lg:flex sticky top-4 h-[calc(100vh-2rem)] w-[440px] shrink-0 flex-col rounded-xl border border-border bg-card shadow-lg overflow-hidden animate-in slide-in-from-right duration-300">

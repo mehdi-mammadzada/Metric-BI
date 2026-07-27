@@ -181,9 +181,8 @@ const GoalTrackingPage = () => {
                               <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
                                 <div
                                   className={`h-full rounded-full transition-all ${
-                                    status === "completed" ? "bg-emerald-500" :
-                                    status === "overdue" ? "bg-red-500" :
-                                    status === "pending" ? "bg-amber-500" : "bg-blue-500"
+                                    status === "achieved" ? "bg-emerald-500" :
+                                    status === "not_achieved" ? "bg-rose-500" : "bg-amber-500"
                                   }`}
                                   style={{ width: `${progress}%` }}
                                 />
