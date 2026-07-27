@@ -52,15 +52,7 @@ const RAW_SEED: DropdownCatalog[] = [
     name: "Hədəf Tipləri",
     system: true,
     schema: "target_types",
-    rows: [
-      { id: "tt1", name: "Absolut Hədəf (məs: Aylıq Satış)", structure: "Satış Departamenti (Bakı Branch)", calcTypes: ["Valyuta (AZN)", "Qiymət"], active: true },
-      { id: "tt2", name: "Faiz Hədəfi (məs: Sifarişlərin Çatdırılması)", structure: "Logistika Şöbəsi", calcTypes: ["Faiz (%)"], active: true },
-      { id: "tt3", name: "Trend Hədəfi (məs: Müştəri Şikayətlərinin Azaldılması)", structure: "Müştəri Xidmətləri", calcTypes: ["Zaman (Gün)"], active: true },
-      { id: "tt4", name: "Benchmark Hədəfi (məs: Sənaye Standartı Üzrə Məmnuniyyət)", structure: "Keyfiyyətə Nəzarət", calcTypes: ["Boolean (Hə/Yox)"], active: true },
-      { id: "tt5", name: "Say Hədəfi (məs: Yeni Müştəri Sayı)", structure: "Marketinq", calcTypes: ["Qiymət"], active: true },
-      { id: "tt6", name: "Fərdi inkişaf (məs: Təlim Modulları)", structure: "HR Departamenti", calcTypes: ["Qiymət"], active: true },
-      { id: "tt7", name: "360 qiymətləndirmə (məs: Performans Rəyi)", structure: "HR Departamenti", calcTypes: ["Faiz (%)"], active: true },
-    ],
+    rows: [],
     values: [],
   },
 
@@ -70,11 +62,7 @@ const RAW_SEED: DropdownCatalog[] = [
     name: "KPI Növləri",
     system: true,
     schema: "kpi_kinds",
-    rows: [
-      { id: "kk1", name: "Kəmiyyət KPI-ları (Ölçülə bilən)", category: "Maliyyə KPI ları", units: ["Valyuta", "Qiymət"], active: true },
-      { id: "kk2", name: "Keyfiyyət KPI-ları", category: "Müştəri KPI ları", units: ["Faiz"], active: true },
-      { id: "kk3", name: "Vaxt KPI-ları", category: "Əməliyyat KPI ları", units: ["Gün/Saat", "Nisbət"], active: true },
-    ],
+    rows: [],
     values: [],
   },
 
@@ -84,13 +72,7 @@ const RAW_SEED: DropdownCatalog[] = [
     name: "Hədəf",
     system: true,
     schema: "sub_kpis",
-    rows: [
-      { id: "sk1", name: "Online Satış", parent: "Aylıq Satış Hədəfi", units: ["Valyuta (AZN)"], weight: 40, active: true },
-      { id: "sk2", name: "Mağaza Satışı", parent: "Aylıq Satış Hədəfi", units: ["Valyuta (AZN)"], weight: 60, active: true },
-      { id: "sk3", name: "Sosial Media Müştəriləri", parent: "Müştəri Əldə Etmə", units: ["Qiymət"], weight: 35, active: true },
-      { id: "sk4", name: "Referral Müştərilər", parent: "Müştəri Əldə Etmə", units: ["Qiymət"], weight: 30, active: true },
-      { id: "sk5", name: "Reklam Kampaniyası", parent: "Müştəri Əldə Etmə", units: ["Valyuta (AZN)", "Qiymət"], weight: 35, active: true },
-    ],
+    rows: [],
     values: [],
   },
 
@@ -104,50 +86,27 @@ const RAW_SEED: DropdownCatalog[] = [
   },
 
   // Sadə (string-list) sistem kataloqları
-  { id: "kpi_categories", name: "KPI Kateqoriyaları", system: true, values: [
-    "Maliyyə KPI ları", "Müştəri KPI ları", "Əməliyyat KPI ları", "İnkişaf KPI ları",
-  ]},
-  { id: "calc_units", name: "Hesablama Vahidləri", system: true, values: [
-    "Valyuta (AZN)", "Faiz (%)", "Zaman (Gün)", "Boolean (Hə/Yox)", "Qiymət", "Nisbət",
-  ]},
-  { id: "sub_kpi_units", name: "Hədəf Növləri", system: true, values: [
-    "Məbləğ", "Say", "İcra", "Səriştə", "Fərdi İnkişaf", "Faiz", "Nisbət", "Boolean", "Zaman",
-  ]},
+  { id: "kpi_categories", name: "KPI Kateqoriyaları", system: true, values: []},
+  { id: "calc_units", name: "Hesablama Vahidləri", system: true, values: []},
+  { id: "sub_kpi_units", name: "Hədəf Növləri", system: true, values: []},
   { id: "frequencies", name: "Dövr", system: true, values: [
     "Aylıq", "Rüblük", "6 Aylıq", "İllik", "Custom",
   ]},
-  { id: "kpi_lifecycle_periods", name: "KPI Lifecycle Dövrləri", system: true, values: [
-    "Günlük", "Həftəlik", "Aylıq", "Rüblük", "Yarımillik", "İllik",
-  ]},
+  { id: "kpi_lifecycle_periods", name: "KPI Lifecycle Dövrləri", system: true, values: []},
   { id: "kpi_statuses", name: "KPI Kartı Statusları", system: true, values: [
     "Qaralama", "Natamam", "Təsdiq gözlənilir", "İmtina", "Aktiv", "Qiymətləndirmə", "Tamamlanıb", "Silindi",
   ]},
-  { id: "kpi_zones", name: "KPI Zonaları", system: true, values: [
-    "Yaşıl Zona", "Sarı Zona", "Qırmızı Zona",
-  ]},
-  { id: "whistleblower_statuses", name: "Anonim Bildiriş Statusları", system: true, values: [
-    "Yeni", "Araşdırılır", "Həll olundu",
-  ]},
-  { id: "evaluation_statuses", name: "Qiymətləndirmə Statusları", system: true, values: [
-    "Tamamlanıb", "Gözləyir",
-  ]},
-  { id: "integration_systems", name: "İnteqrasiya Sistemləri", system: true, values: [
-    "CRM Sistemi", "CHR", "Microsoft 365", "SIEM Platform",
-  ]},
-  { id: "evaluator_types", name: "Qiymətləndirici seçimi", system: true, values: [
-    "Komandadaxili", "Konkret şəxs", "Özü", "İnteqrasiya",
-  ]},
-  { id: "whistleblower_categories", name: "Bildiriş Kateqoriyaları", system: true, values: [
-    "Korrupsiya", "Saxtakarlıq", "Mobbing / Təzyiq", "Diskriminasiya",
-    "Təhlükəsizlik pozuntusu", "Etik qayda pozuntusu", "Digər",
-  ]},
-  { id: "scoring_systems", name: "Qiymətləndirmə Bal Sistemi", system: true, values: [
-    "1-3 Bal Sistemi", "1-5 Bal Sistemi", "1-10 Bal Sistemi", "Faiz (0-100)",
-  ]},
+  { id: "kpi_zones", name: "KPI Zonaları", system: true, values: []},
+  { id: "whistleblower_statuses", name: "Anonim Bildiriş Statusları", system: true, values: []},
+  { id: "evaluation_statuses", name: "Qiymətləndirmə Statusları", system: true, values: []},
+  { id: "integration_systems", name: "İnteqrasiya Sistemləri", system: true, values: []},
+  { id: "evaluator_types", name: "Qiymətləndirici seçimi", system: true, values: []},
+  { id: "whistleblower_categories", name: "Bildiriş Kateqoriyaları", system: true, values: []},
+  { id: "scoring_systems", name: "Qiymətləndirmə Bal Sistemi", system: true, values: []},
 ];
 
-// Sistem kataloqlarının standart dəyərləri (Məlumat Cədvəlində görünür və redaktə edilə bilər).
-const SEED: DropdownCatalog[] = RAW_SEED;
+// Məlumat Cədvəlində yalnız kataloq başlıqları bərpa edilir; köhnə demo dəyərlər seed edilmir.
+const SEED: DropdownCatalog[] = RAW_SEED.map(c => ({ ...c, rows: [], values: c.id === "frequencies" || c.id === "kpi_statuses" ? c.values : [] }));
 
 // Strukturlaşdırılmış kataloqlarda values array-ı rows.name-dən avtomatik sinxronlaşdırılır
 const syncValues = (cat: DropdownCatalog): DropdownCatalog => {
@@ -157,23 +116,64 @@ const syncValues = (cat: DropdownCatalog): DropdownCatalog => {
   return cat;
 };
 
-// Artıq heç bir kataloq gizlədilmir — hamısı Məlumat Cədvəlində göstərilir.
+// Bayaq səhvən gizlədilən sistem kataloqları yenidən göstərilir.
 export const REMOVED_CATALOG_IDS = new Set<string>([]);
 
-// Boş qalmış sistem kataloqlarını standart dəyərlərlə doldurur (bir dəfəlik bərpa).
-const backfill = (list: DropdownCatalog[]): { list: DropdownCatalog[]; changed: boolean } => {
+const LEGACY_ROW_NAMES = new Set([
+  "absolut hədəf (məs: aylıq satış)",
+  "faiz hədəfi (məs: sifarişlərin çatdırılması)",
+  "trend hədəfi (məs: müştəri şikayətlərinin azaldılması)",
+  "benchmark hədəfi (məs: sənaye standartı üzrə məmnuniyyət)",
+  "say hədəfi (məs: yeni müştəri sayı)",
+  "fərdi inkişaf (məs: təlim modulları)",
+  "360 qiymətləndirmə (məs: performans rəyi)",
+  "kəmiyyət kpi-ları (ölçülə bilən)",
+  "keyfiyyət kpi-ları",
+  "vaxt kpi-ları",
+  "online satış",
+  "mağaza satışı",
+  "sosial media müştəriləri",
+  "referral müştərilər",
+  "reklam kampaniyası",
+]);
+
+const LEGACY_SIMPLE_DEFAULTS: Record<string, string[]> = {
+  kpi_categories: ["Maliyyə KPI ları", "Müştəri KPI ları", "Əməliyyat KPI ları", "İnkişaf KPI ları"],
+  calc_units: ["Valyuta (AZN)", "Faiz (%)", "Zaman (Gün)", "Boolean (Hə/Yox)", "Qiymət", "Nisbət"],
+  sub_kpi_units: ["Məbləğ", "Say", "İcra", "Səriştə", "Fərdi İnkişaf", "Faiz", "Nisbət", "Boolean", "Zaman"],
+  kpi_lifecycle_periods: ["Günlük", "Həftəlik", "Aylıq", "Rüblük", "Yarımillik", "İllik"],
+  kpi_zones: ["Yaşıl Zona", "Sarı Zona", "Qırmızı Zona"],
+  whistleblower_statuses: ["Yeni", "Araşdırılır", "Həll olundu"],
+  evaluation_statuses: ["Tamamlanıb", "Gözləyir"],
+  integration_systems: ["CRM Sistemi", "CHR", "Microsoft 365", "SIEM Platform"],
+  evaluator_types: ["Komandadaxili", "Konkret şəxs", "Özü", "İnteqrasiya"],
+  whistleblower_categories: [
+    "Korrupsiya", "Saxtakarlıq", "Mobbing / Təzyiq", "Diskriminasiya",
+    "Təhlükəsizlik pozuntusu", "Etik qayda pozuntusu", "Digər",
+  ],
+  scoring_systems: ["1-3 Bal Sistemi", "1-5 Bal Sistemi", "1-10 Bal Sistemi", "Faiz (0-100)"],
+};
+
+const normalizeText = (value: unknown) => String(value ?? "").trim().toLowerCase();
+const isSameValueSet = (current: string[] = [], legacy: string[] = []) => {
+  if (current.length !== legacy.length) return false;
+  const currentSet = new Set(current.map(normalizeText));
+  return legacy.every(value => currentSet.has(normalizeText(value)));
+};
+
+// Səhv bərpadan gəlmiş köhnə demo/pre-era dəyərləri təmizləyir, istifadəçinin yeni əlavə etdiklərinə toxunmur.
+const sanitizeLegacySeedData = (list: DropdownCatalog[]): { list: DropdownCatalog[]; changed: boolean } => {
   let changed = false;
   const next = list.map(c => {
-    const seed = RAW_SEED.find(s => s.id === c.id);
-    if (!seed || !c.system) return c;
-    const needValues = (!c.values || c.values.length === 0) && seed.values.length > 0;
-    const needRows = !!seed.rows && seed.rows.length > 0 && (!c.rows || c.rows.length === 0);
-    if (!needValues && !needRows) return c;
-    changed = true;
+    if (!c.system) return c;
+    const legacyDefaults = LEGACY_SIMPLE_DEFAULTS[c.id];
+    const values = legacyDefaults && isSameValueSet(c.values, legacyDefaults) ? [] : (c.values ?? []);
+    const rows = c.rows?.filter(row => !LEGACY_ROW_NAMES.has(normalizeText(row.name)));
+    if (values.length !== (c.values ?? []).length || (rows && rows.length !== (c.rows ?? []).length)) changed = true;
     return {
       ...c,
-      values: needValues ? [...seed.values] : c.values,
-      rows: needRows ? [...(seed.rows || [])] : c.rows,
+      values,
+      rows,
     };
   });
   return { list: next, changed };
@@ -187,9 +187,9 @@ const load = (): DropdownCatalog[] => {
       const ids = new Set(parsed.map(c => c.id));
       const missing = SEED.filter(s => !ids.has(s.id));
       const merged = missing.length === 0 ? parsed : [...parsed, ...missing];
-      const filled = backfill(merged);
-      const synced = filled.list.map(syncValues);
-      if (missing.length > 0 || filled.changed) {
+      const sanitized = sanitizeLegacySeedData(merged);
+      const synced = sanitized.list.map(syncValues);
+      if (missing.length > 0 || sanitized.changed) {
         localStorage.setItem(KEY, JSON.stringify(synced));
       }
       return synced;
