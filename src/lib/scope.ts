@@ -116,7 +116,6 @@ export const getVisibleApprovals = (
 ): ApprovalItem[] => {
   const scope = resolveScope(user, "approvals");
   if (scope === "none") return [];
-  if (scope === "all") return all;
   const meId = getCurrentEmployeeId(user);
   if (!meId) return [];
   const aliases = new Set([meId, meId.startsWith("e") ? meId.slice(1) : `e${meId}`]);
@@ -125,6 +124,8 @@ export const getVisibleApprovals = (
     || aliases.has(a.createdBy)
     || Object.keys(a.decisions || {}).some(id => aliases.has(id))
     || (a.stepsChain || []).some(step => step.some(id => aliases.has(id)));
+  // Approval inbox is always personal: even HR/admin users should not see
+  // another employee's pending/decided tasks in their own System Approvals page.
   return all.filter(belongsToMe);
 };
 
