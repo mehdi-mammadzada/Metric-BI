@@ -18,8 +18,10 @@ import {
   type MockStructure,
   type MockTeam,
 } from "@/data/mockExtras";
+import { getIdentityAliases, matchesIdentity, resolveEmployeeIdForUser } from "./identity";
 import type { SharedKpiCard } from "./kpiCardStore";
 import type { ApprovalItem } from "./approvalsStore";
+
 
 const has = (user: AuthUser | null, code: string) =>
   !!user && Array.isArray(user.permissions) && user.permissions.includes(code);
