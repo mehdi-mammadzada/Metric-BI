@@ -31,7 +31,7 @@ const HomePage = () => {
   const cards = useSharedKpiCards();
   const [period, setPeriod] = useState<PeriodValue>(() => currentPeriod("year"));
   const chartData = useMemo(() => {
-    const points = period.kind === "year" ? 12 : period.kind === "quarter" ? 3 : 6;
+    const points = period.mode === "year" ? 12 : period.mode === "quarter" ? 3 : 31;
     return Array.from({ length: points }, (_, i) => ({ name: String(i + 1), value: 0 }));
   }, [period]);
   const subtitle = periodLabel(period);
