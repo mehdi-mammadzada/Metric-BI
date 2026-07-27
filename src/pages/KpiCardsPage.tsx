@@ -2032,11 +2032,11 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       </Dialog>
 
       {/* KPI Detail Dialog */}
-      <Dialog open={!!selectedKpi} onOpenChange={() => setSelectedKpi(null)}>
+      <Dialog open={!!selectedKpi} onOpenChange={() => { setSelectedKpi(null); setDetailEmployee(null); }}>
         <DialogContent className="w-[90vw] max-w-[1500px] h-[88vh] min-h-[88vh] max-h-[88vh] p-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b border-border">
             <div className="flex items-center gap-3">
-              <DialogTitle className="text-xl">{withKartSuffix(selectedKpi?.name)}</DialogTitle>
+              <DialogTitle className="text-xl">{withKartSuffix(selectedKpi?.name)}{detailEmployee ? ` — ${detailEmployee}` : ""}</DialogTitle>
               {/* zone badge removed */}
             </div>
           </DialogHeader>
