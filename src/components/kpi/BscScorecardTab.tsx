@@ -98,39 +98,15 @@ const unitRangesFromTarget = (target: number, unit: string) => {
 };
 
 export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
-  const target = parseNum(kpi.target);
-  const actual = parseNum(kpi.current);
-  const inverse = isInverse(kpi.type, kpi.name);
-  const gsr = inverse
-    ? (actual === 0 ? 0 : (target / actual) * 100)
-    : (target === 0 ? 0 : (actual / target) * 100);
-  const gsrClamped = Math.max(0, Math.min(150, gsr));
-  const score = gsrToScore(gsr);
-  const tone = gsrTone(gsr);
-  const perspective = perspectiveByDept[kpi.department] || "Daxili Proseslər";
-  const unit = kpi.unit || "";
-
-  const formulaText = inverse
-    ? "GSR = ( Hədəf Dəyər / Faktiki Dəyər ) × 100"
-    : "GSR = ( Faktiki Dəyər / Hədəf Dəyər ) × 100";
-  const sampleText = inverse
-    ? `GSR = ( ${fmt(target)} / ${fmt(actual)} ) × 100`
-    : `GSR = ( ${fmt(actual)} / ${fmt(target)} ) × 100`;
-
-  const ranges = useMemo(() => unitRangesFromTarget(target, unit), [target, unit]);
-
-  // KPI Set entry-lərini hədəf kimi birləşdir
+  // KPI Set entry-lərini hədəf kimi birləşdir (təkrarlanmalar aradan qaldırılır)
   const mergedSubKpis = useMemo(() => {
     const own = kpi.subKpis || [];
-    if (!kpi.id) return own.map(s => ({ ...s, _entryId: null as string | null, limits: undefined as LimitSet | undefined }));
-    const entries = getEntriesForCard(kpi.id);
+    const entries = kpi.id ? getEntriesForCard(kpi.id) : [];
     const ownById = new Map(own.map(s => [s.id, s]));
     const list: any[] = own.map((s: any) => {
       const e = entries.find(en => en.subKpiId === s.id);
-      // Wizard-dan gələn subKpi.limits/scoreDescriptions üstünlük təşkil edir
       return { ...s, _entryId: e?.id ?? null, limits: s.limits ?? e?.limits, scoreDescriptions: s.scoreDescriptions ?? e?.scoreDescriptions, assignerFromSet: e?.assigneeName, unit: s.unit || e?.unit };
     });
-    // KPI Set-də olan, kartda olmayan hədəf-lar
     entries.forEach(e => {
       if (!ownById.has(e.subKpiId) && e.subKpiName) {
         list.push({
@@ -145,66 +121,24 @@ export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
         });
       }
     });
-    return list;
+    // Dublikatları sil: eyni ad + hədəf + təyinedici yalnız bir dəfə
+    const seen = new Set<string>();
+    return list.filter(s => {
+      const name = String(s.name || "").trim();
+      if (!name) return false;
+      const key = `${name.toLowerCase()}::${String(s.target ?? "").trim()}::${String(s.assigner || s.assignerFromSet || "").trim().toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }, [kpi.id, kpi.subKpis]);
-
-  
 
   return (
     <div className="space-y-3">
-      {/* Üfüqi balaca kartlar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        <div className="rounded-lg border border-border bg-card px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">Perspektiv</p>
-          <p className="text-xs font-semibold text-foreground mt-0.5">{perspective}</p>
-        </div>
-        <div className="rounded-lg border border-border bg-card px-3 py-2">
-          <p className="text-[10px] text-muted-foreground">Hədəf / Faktiki</p>
-          <p className="text-xs font-semibold text-foreground mt-0.5 tabular-nums">
-            {fmtUnit(target, unit)} / {fmtUnit(actual, unit)}
-          </p>
-        </div>
-        <div className={`rounded-lg border border-border ${tone.bg} px-3 py-2`}>
-          <p className="text-[10px] text-muted-foreground">GSR</p>
-          <p className={`text-xs font-semibold mt-0.5 tabular-nums ${tone.text}`}>{Math.round(gsr)}%</p>
-        </div>
-        <div className={`rounded-lg border border-border ${tone.bg} px-3 py-2`}>
-          <p className="text-[10px] text-muted-foreground">Bal</p>
-          <p className={`text-xs font-semibold mt-0.5 ${tone.text}`}>{score} — {scoreLabels[score]}</p>
-        </div>
-      </div>
-
-      {/* Proqres */}
-      <div className="rounded-lg border border-border bg-card px-3 py-2.5">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[11px] text-muted-foreground">{tone.label}</span>
-          <span className="text-[11px] font-medium text-foreground tabular-nums">{Math.round(gsrClamped)}%</span>
-        </div>
-        <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-          <div className={`h-full ${tone.barColor}`} style={{ width: `${Math.min(100, gsrClamped)}%` }} />
-        </div>
-      </div>
-
-      {/* Formula */}
-      <div className="rounded-lg border border-border bg-card px-3 py-2.5">
-        <p className="text-[10px] text-muted-foreground mb-1">Hesablama düsturu</p>
-        <p className="text-xs font-mono text-foreground">{formulaText}</p>
-        <p className="text-[11px] font-mono text-muted-foreground mt-0.5">{sampleText} = {Math.round(gsr)}%</p>
-      </div>
-
-      {/* Qiymət aralıqları */}
-      <div className="grid grid-cols-5 gap-1.5">
-        {ranges.map(r => (
-          <div key={r.score} className={`rounded-md px-2 py-1.5 text-center ${r.tone}`}>
-            <p className="text-[10px] opacity-80">Bal {r.score} · {r.label}</p>
-            <p className="text-[11px] font-semibold tabular-nums mt-0.5">{r.rangeText}</p>
-          </div>
-        ))}
-      </div>
-
       {mergedSubKpis.length === 0 && (
         <p className="text-xs text-muted-foreground italic px-1">Bu kart üçün hədəf təyin edilməyib.</p>
       )}
+
 
 
 
