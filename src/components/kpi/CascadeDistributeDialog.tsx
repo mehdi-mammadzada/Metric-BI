@@ -7,7 +7,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { GitBranch, Crown, AlertTriangle, Users, ShieldCheck } from "lucide-react";
-import { getEmployees, getSubordinatesOfStarHolder, getStructures } from "@/lib/orgStore";
+import { getEmployees } from "@/lib/orgStore";
+import { getSubordinatesOfEmployee } from "@/lib/cascadeAssignment";
 import { distribute, createRoot, findRootByGoal, getNodes, remainingOf, type CascadeTreeNode } from "@/lib/cascadeTreeStore";
 
 interface Props {
