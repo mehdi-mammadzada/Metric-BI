@@ -83,7 +83,7 @@ const LoginPage = () => {
 
 
         {/* Compact control panel — theme + language */}
-        <div ref={langRef} className="absolute bottom-5 left-5 z-10 flex items-center gap-1.5 rounded-xl border border-border bg-card/80 backdrop-blur px-1.5 py-1.5 shadow-sm">
+        <div ref={langRef} className="absolute bottom-16 left-5 z-10 flex items-center gap-1.5 rounded-xl border border-border bg-card/80 backdrop-blur px-1.5 py-1.5 shadow-sm">
           <button
             type="button"
             onClick={() => setDark(!dark)}
