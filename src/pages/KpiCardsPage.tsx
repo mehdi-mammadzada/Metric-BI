@@ -2342,29 +2342,18 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                         </div>
                         <div className="rounded-xl border border-border overflow-hidden">
                           <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-secondary/40 text-xs font-medium text-muted-foreground">
-                            <div className="col-span-4">Hədəf</div>
-                            <div className="col-span-4">Cari vəziyyət</div>
+                            <div className="col-span-6">Hədəf</div>
+                            <div className="col-span-3">Təyin olunan</div>
                             <div className="col-span-2">Hədəf dəyər</div>
-                            <div className="col-span-2 text-right">Çəki</div>
+                            <div className="col-span-1 text-right">Çəki</div>
                           </div>
                           <div className="divide-y divide-border">
                             {merged.map((sk, i) => {
-                              const parseNum = (v: any) => {
-                                if (v === null || v === undefined) return NaN;
-                                const s = String(v).replace(/[^\d.,-]/g, "").replace(",", ".");
-                                const n = parseFloat(s);
-                                return isNaN(n) ? NaN : n;
-                              };
-                              const cur = parseNum(sk.current);
-                              const tgt = parseNum(sk.target);
-                              const pct = !isNaN(cur) && !isNaN(tgt) && tgt !== 0
-                                ? Math.min(100, Math.round((cur / tgt) * 100))
-                                : (typeof sk.progress === "number" ? sk.progress : 0);
                               const icons = [ShoppingCart, Store, Monitor, BarChart3, Target];
                               const Icon = icons[i % icons.length];
                               return (
                                 <div key={sk.id} className="grid grid-cols-12 gap-2 px-4 py-4 items-center hover:bg-secondary/20 transition-colors">
-                                  <div className="col-span-4 flex items-center gap-3 min-w-0">
+                                  <div className="col-span-6 flex items-center gap-3 min-w-0">
                                     <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                                       <Icon className="w-5 h-5" />
                                     </div>
@@ -2376,25 +2365,13 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                       <p className="text-xs text-muted-foreground truncate">Dəyər: {sk.target}{sk.unit ? ` ${sk.unit}` : ""}</p>
                                     </div>
                                   </div>
-                                  <div className="col-span-4">
-                                    <p className="text-sm font-bold text-primary tabular-nums">{sk.current && String(sk.current).trim() !== "" ? `${sk.current}${sk.unit ? ` ${sk.unit}` : ""}` : "—"}</p>
-                                    <div className="mt-1.5 flex items-center gap-2">
-                                      <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                                        <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
-                                      </div>
-                                      <span className="text-[11px] font-semibold text-primary tabular-nums">{pct}%</span>
-                                    </div>
-                                  </div>
+                                  <div className="col-span-3 text-sm text-muted-foreground truncate">{detailEmployee || sk._assignee || "—"}</div>
                                   <div className="col-span-2 text-sm font-medium text-foreground tabular-nums">{sk.target}{sk.unit ? ` ${sk.unit}` : ""}</div>
-                                  <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{sk.weight ? `${sk.weight}%` : "—"}</div>
+                                  <div className="col-span-1 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{sk.weight ? `${sk.weight}%` : "—"}</div>
                                 </div>
                               );
                             })}
                           </div>
-                        </div>
-                        <div className="mt-3 flex items-start gap-2 rounded-lg bg-secondary/40 border border-border px-3 py-2">
-                          <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
-                          <p className="text-xs text-muted-foreground">Faiz göstəricisi cari vəziyyətin hədəf dəyərə nisbətini göstərir.</p>
                         </div>
                       </div>
                       );
