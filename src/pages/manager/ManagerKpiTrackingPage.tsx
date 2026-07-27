@@ -40,7 +40,10 @@ interface Kpi {
   responsible: { name: string; role: string };
   measure: string; type: string; method: string; weight: number;
   cascadeNodeId?: string;
+  /** Real (DB/store) hədəflər — mock generatorlar əvəzinə istifadə olunur. */
+  realTargets?: CardTarget[];
 }
+
 interface Person { id: string; name: string; position: string; parent?: string; level: number; assigned: boolean; stage: Stage; }
 
 const MY_KPIS: Kpi[] = [
