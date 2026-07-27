@@ -176,6 +176,7 @@ export const flushApprovalsToCloud = async () => {
 let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 let rehydrateTimer: number | null = null;
 let onFocusHandler: (() => void) | null = null;
+let pollTimer: number | null = null;
 
 const scheduleRehydrate = () => {
   if (!currentOrgId) return;
@@ -211,6 +212,12 @@ export const activateApprovalsSync = async (orgId: string) => {
 
   onFocusHandler = () => scheduleRehydrate();
   window.addEventListener("focus", onFocusHandler);
+  document.addEventListener("visibilitychange", onFocusHandler);
+
+  // Polling fallback — bəzi brauzer/şəbəkələrdə (Safari, korporativ proxy)
+  // websocket bağlantısı kəsilir; 20 saniyəlik yoxlama sinxronluğu qoruyur.
+  if (pollTimer) window.clearInterval(pollTimer);
+  pollTimer = window.setInterval(() => scheduleRehydrate(), 20000);
 };
 
 export const deactivateApprovalsSync = () => {
@@ -221,7 +228,12 @@ export const deactivateApprovalsSync = () => {
   if (flushTimer) { window.clearTimeout(flushTimer); flushTimer = null; }
   if (rehydrateTimer) { window.clearTimeout(rehydrateTimer); rehydrateTimer = null; }
   if (realtimeChannel) { supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
-  if (onFocusHandler) { window.removeEventListener("focus", onFocusHandler); onFocusHandler = null; }
+  if (pollTimer) { window.clearInterval(pollTimer); pollTimer = null; }
+  if (onFocusHandler) {
+    window.removeEventListener("focus", onFocusHandler);
+    document.removeEventListener("visibilitychange", onFocusHandler);
+    onFocusHandler = null;
+  }
 };
 
 /** Org konteksti hazır olana qədər gözləyir (login/hydrate yarışını aradan qaldırır). */
