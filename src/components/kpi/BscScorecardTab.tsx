@@ -25,51 +25,10 @@ interface KpiLike {
   subKpis?: SubKpiLike[];
 }
 
-const perspectiveByDept: Record<string, string> = {
-  "Satış Departamenti": "Maliyyə",
-  "Marketinq": "Müştəri",
-  "Müştəri Xidmətləri": "Müştəri",
-  "Əməliyyatlar": "Daxili Proseslər",
-  "R&D": "Öyrənmə və İnkişaf",
-  "Audit Departamenti": "Daxili Proseslər",
-};
-
-const parseNum = (v: string): number => {
-  if (!v) return 0;
-  const s = String(v).replace(/\s+/g, "").replace(",", ".");
-  const m = s.match(/-?\d+(\.\d+)?/);
-  if (!m) return 0;
-  let n = parseFloat(m[0]);
-  if (/m/i.test(s)) n *= 1_000_000;
-  else if (/k/i.test(s)) n *= 1_000;
-  return n;
-};
-
 const fmt = (n: number) => {
   if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
   if (Math.abs(n) >= 1_000) return `${(n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1)}K`;
   return Number.isInteger(n) ? String(n) : n.toFixed(2);
-};
-
-const gsrToScore = (gsr: number) => {
-  if (gsr >= 90) return 5;
-  if (gsr >= 80) return 4;
-  if (gsr >= 60) return 3;
-  if (gsr >= 40) return 2;
-  return 1;
-};
-
-const gsrTone = (gsr: number) => {
-  if (gsr >= 95) return { bg: "bg-zone-green-bg", text: "text-zone-green-text", label: "Əla Performans", barColor: "bg-zone-green-text" };
-  if (gsr >= 80) return { bg: "bg-zone-yellow-bg", text: "text-zone-yellow-text", label: "Yaxşı Performans", barColor: "bg-zone-yellow-text" };
-  return { bg: "bg-zone-red-bg", text: "text-zone-red-text", label: "Aşağı Performans", barColor: "bg-zone-red-text" };
-};
-
-const scoreLabels = ["", "Aşağı", "Orta-Aşağı", "Orta", "Yaxşı", "Çox Yaxşı"];
-
-const isInverse = (type: string, name: string) => {
-  const k = `${type} ${name}`.toLowerCase();
-  return /(xərc|müddət|şikayət|cost|time|defect|qüsur)/i.test(k);
 };
 
 // Vahidə görə dəyər formatla (faiz isə % əlavə et)
@@ -77,24 +36,6 @@ const fmtUnit = (n: number, unit: string) => {
   const isPct = unit === "%" || /faiz/i.test(unit);
   if (isPct) return `${Math.round(n)}%`;
   return `${fmt(n)} ${unit}`.trim();
-};
-
-// % aralıqlarını hədəfə görə vahid aralığına çevir
-const unitRangesFromTarget = (target: number, unit: string) => {
-  const pcts = [
-    { from: 0, to: 39, score: 1, label: "Aşağı", tone: "bg-zone-red-bg text-zone-red-text" },
-    { from: 40, to: 59, score: 2, label: "Orta-Aşağı", tone: "bg-zone-red-bg/60 text-zone-red-text" },
-    { from: 60, to: 79, score: 3, label: "Orta", tone: "bg-zone-yellow-bg text-zone-yellow-text" },
-    { from: 80, to: 89, score: 4, label: "Yaxşı", tone: "bg-zone-green-bg/70 text-zone-green-text" },
-    { from: 90, to: 100, score: 5, label: "Çox Yaxşı", tone: "bg-zone-green-bg text-zone-green-text" },
-  ];
-  const isPct = unit === "%" || /faiz/i.test(unit) || !target;
-  return pcts.map(p => ({
-    ...p,
-    rangeText: isPct
-      ? `${p.from}% - ${p.to}${p.score === 5 ? "%+" : "%"}`
-      : `${fmtUnit((target * p.from) / 100, unit)} – ${fmtUnit((target * p.to) / 100, unit)}`,
-  }));
 };
 
 export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
