@@ -92,48 +92,13 @@ const nextRand = (seed: number) => {
 };
 
 export const seedReviewsForEmployee = (
-  revieweeId: string,
-  reviewerCount = 4,
-  cycleId: string = CURRENT_CYCLE_ID
+  _revieweeId: string,
+  _reviewerCount = 4,
+  _cycleId: string = CURRENT_CYCLE_ID
 ) => {
-  const all = read();
-  if (all.some((r) => r.revieweeId === revieweeId && r.cycleId === cycleId)) return;
-
-  const candidates = mockEmployees.filter((e) => e.id !== revieweeId);
-  let seed = seedHash(`${cycleId}-seed-${revieweeId}`);
-  const shuffled = [...candidates];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const r = nextRand(seed); seed = r.seed;
-    const j = Math.floor(r.value * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  const reviewers = shuffled.slice(0, Math.min(reviewerCount, shuffled.length));
-
-  const submissions: PeerSubmission[] = reviewers.map((rev) => {
-    const scores = {} as Record<CategoryKey, number>;
-    EVALUATION_CATEGORIES.forEach((c) => {
-      const r = nextRand(seed); seed = r.seed;
-      const raw = 3 + r.value * 2;
-      scores[c.key] = Math.round(raw * 2) / 2;
-    });
-    return {
-      cycleId,
-      reviewerId: `anon-${rev.id}`,
-      revieweeId,
-      scores,
-      comment: "",
-      submittedAt: Date.now(),
-    };
-  });
-
-  write([...all, ...submissions]);
+  // Demo seeding disabled: peer reviews only exist when real users submit them.
 };
 
-export const bootstrapDemoReviews = (revieweeIds: string[]) => {
-  if (localStorage.getItem(SEED_KEY) === "done") {
-    revieweeIds.forEach((id) => seedReviewsForEmployee(id));
-    return;
-  }
-  revieweeIds.forEach((id) => seedReviewsForEmployee(id));
-  localStorage.setItem(SEED_KEY, "done");
+export const bootstrapDemoReviews = (_revieweeIds: string[]) => {
+  // Demo seeding disabled.
 };

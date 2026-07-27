@@ -166,29 +166,11 @@ export const useCompanies = (): Company[] => {
   return list;
 };
 
-// ---------- Sample seed ----------
-
-const seedSamples = () => {
-  if (localStorage.getItem(SEED_FLAG)) return;
-  if (load().length > 0) {
-    localStorage.setItem(SEED_FLAG, "1");
-    return;
-  }
-  const samples = [
-    { name: "AzeriTech LLC", adminName: "Rauf Quliyev", color: "#3B82F6", initials: "AT" },
-    { name: "Caspian Logistics", adminName: "Lalə Hüseynova", color: "#10B981", initials: "CL" },
-    { name: "Bakı İnşaat MMC", adminName: "Elnur Məmmədov", color: "#F59E0B", initials: "Bİ" },
-  ];
-  for (const s of samples) {
-    const logo = makeFallbackLogo(s.initials, s.color);
-    createCompany(s.name, logo, s.adminName);
-  }
-  localStorage.setItem(SEED_FLAG, "1");
-};
-
 export const makeFallbackLogo = (initials: string, color: string): string => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" rx="24" fill="${color}"/><text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="48" font-weight="700" fill="white">${initials}</text></svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
-export const ensureCompanySeed = () => seedSamples();
+export const ensureCompanySeed = () => {
+  // Sample company seeding disabled.
+};
