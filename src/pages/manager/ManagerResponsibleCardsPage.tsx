@@ -41,14 +41,50 @@ const stableNum = (s: string): number => {
   return Math.abs(h);
 };
 
-const isEntryAssignedToSetter = (entry: KpiSetEntry, userName?: string, sharedCards: ReturnType<typeof useSharedKpiCards> = []) => {
+// İstifadəçinin real əməkdaş adı (login adı fərqli ola bilər) + id/email aliasları.
+const myAliases = (user: { name?: string; email?: string } | null | undefined): Set<string> => {
+  const set = new Set<string>();
+  const push = (v?: string | number | null) => {
+    const s = String(v ?? "").trim();
+    if (s) set.add(s.toLowerCase());
+  };
+  push(user?.name);
+  push(user?.email);
+  const emp = getEmployees().find(e => (e.email || "").toLowerCase() === String(user?.email || "").toLowerCase());
+  if (emp) {
+    push(`${emp.firstName} ${emp.lastName}`);
+    push(emp.id);
+    push(`e${emp.id}`);
+  }
+  return set;
+};
+
+const matchesMe = (value: string | undefined, aliases: Set<string>) => {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return false;
+  return aliases.has(raw) || aliases.has(stripPos(value).toLowerCase());
+};
+
+const resolveMyName = (user: { name?: string; email?: string } | null | undefined): string => {
+  const emp = getEmployees().find(e => (e.email || "").toLowerCase() === String(user?.email || "").toLowerCase());
+  return emp ? `${emp.firstName} ${emp.lastName}`.trim() : String(user?.name || "").trim();
+};
+
+const isEntryAssignedToSetter = (
+  entry: KpiSetEntry,
+  userName?: string,
+  sharedCards: ReturnType<typeof useSharedKpiCards> = [],
+  aliases: Set<string> = new Set([String(userName || "").trim().toLowerCase()]),
+) => {
   if (entry.ownerType !== "manager") return false;
-  if (stripPos(entry.assigneeName) !== stripPos(userName)) return false;
+  if (!matchesMe(entry.assigneeName, aliases)) return false;
   const shared = sharedCards.find(c => c.numericId === entry.cardId || c.name === entry.cardName);
   if (!shared) return true;
-  // Təyinedici (assigner) "Ad Soyad — Vəzifə" formatında saxlanılır — soyadı stripleyib müqayisə edirik.
-  return shared.targets.some(t => t.createdBy === "other" && stripPos(t.assigner) === stripPos(userName));
+  // Məsul olduğum kart hədəf təyininə düşməlidir — assigner uyğunluğu tapılmasa belə.
+  return shared.targets.some(t => t.createdBy === "other" && matchesMe(t.assigner, aliases))
+    || shared.targets.length === 0;
 };
+
 
 type View = "hub" | "assign" | "evaluate";
 
