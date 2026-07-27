@@ -1042,8 +1042,67 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     const extras = sharedCards
       .filter(s => !(s.numericId && existingNumIds.has(s.numericId)))
       .map(toKpiCard);
-    return [...kpiCards, ...extras];
+    // Stabil sıra — kartlar siyahıda öz yerini dəyişməsin (id-yə görə deterministik).
+    return [...kpiCards, ...extras].sort((a, b) => a.id - b.id);
   }, [kpiCards, sharedCards]);
+
+  /** Kartın tətbiq olunduğu (təyin edilmiş) əməkdaşların adları.
+   *  Mənbə: shared kart assigneeIds + KPI Set entry-ləri (hər ikisi bulud sinxronludur). */
+  const assigneesByCardId = useMemo(() => {
+    const norm = (s: string) => (s || "").split(" — ")[0].trim();
+    const employees = getEmployees();
+    const empByKey = new Map<string, any>();
+    employees.forEach((e: any) => {
+      const full = `${e.firstName} ${e.lastName}`.trim();
+      [String(e.id), `e${e.id}`, e.email, full, `${e.lastName} ${e.firstName}`.trim()]
+        .filter(Boolean)
+        .forEach(k => empByKey.set(String(k).toLowerCase(), e));
+    });
+    const resolve = (raw: string): string | null => {
+      const v = norm(raw);
+      if (!v) return null;
+      const e = empByKey.get(v.toLowerCase());
+      return e ? `${e.firstName} ${e.lastName}`.trim() : (/^e?\d+$/i.test(v) ? null : v);
+    };
+    const map = new Map<number, Set<string>>();
+    const add = (cardId: number, name: string | null) => {
+      if (!cardId || !name) return;
+      if (!map.has(cardId)) map.set(cardId, new Set());
+      map.get(cardId)!.add(name);
+    };
+    sharedCards.forEach(s => {
+      const numericId = s.numericId ?? Math.abs(hashStrLocal(s.id));
+      (s.assigneeIds || []).forEach(id => add(numericId, resolve(String(id))));
+    });
+    getKpiSetEntries().forEach((e: any) => {
+      if (e?.cardId != null) add(Number(e.cardId), resolve(String(e.assigneeName || "")));
+    });
+    Object.entries(cardDrafts).forEach(([id, d]: any) => {
+      const cardId = Number(id);
+      if (d?.mode === "individual") (d.individualEmployees || []).forEach((n: string) => add(cardId, resolve(n)));
+      else {
+        const bs = d?.bulkSelections;
+        (bs?.persons || []).forEach((n: string) => add(cardId, resolve(n)));
+        if (bs?.teams?.length) {
+          const allTeams = getTeams();
+          bs.teams.forEach((tn: string) => {
+            const t = allTeams.find(x => x.name === tn);
+            if (!t) return;
+            add(cardId, resolve(t.leader));
+            t.members.forEach(m => add(cardId, resolve(m.name)));
+          });
+        }
+      }
+    });
+    return map;
+  }, [sharedCards, cardDrafts, kpiSetVersion]);
+
+  /** Kart hansı əməkdaşlara tətbiq olunub — heç nə tapılmasa məsul şəxs. */
+  const getCardAssignees = (card: KpiCard): string[] => {
+    const set = assigneesByCardId.get(card.id);
+    const list = set ? Array.from(set) : [];
+    return list.length > 0 ? list : (card.responsible ? [card.responsible] : []);
+  };
 
   const filteredCards = mergedKpiCards.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchText.toLowerCase());
