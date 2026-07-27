@@ -14,6 +14,7 @@ import {
 import type { KpiCard } from "@/lib/kpiCardTypes";
 import type { KpiCardStatusRow, KpiCardStatus } from "@/lib/kpiCardStatusStore";
 import { STATUS_LABELS, STATUS_STYLES } from "@/lib/kpiCardStatusStore";
+import { getEmployeeDisplayName } from "@/data/mockExtras";
 
 import KpiExtraTabContent, { isExtraTab } from "./KpiExtraTabs";
 import BscScorecardTab from "./BscScorecardTab";
