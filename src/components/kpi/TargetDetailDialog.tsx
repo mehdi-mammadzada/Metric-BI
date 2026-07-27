@@ -1,9 +1,13 @@
-// Yalnız seçilmiş hədəfə aid detal — heç bir digər hədəf, KPI və ya
-// başqa məlumat qarışdırılmır.
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+// Yalnız seçilmiş hədəfə aid REAL detal — sağ tərəfdən açılan drawer.
+// Pop-up (dialog) açılmır. Heç bir mock şərh/tarixçə göstərilmir.
+import { useEffect, useMemo } from "react";
+import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import type { AccordionTarget } from "./KpiAccordionList";
+import { getKpiSetEntries } from "@/lib/kpiSetStore";
+import { getAllLifecycles, formatStagePeriod, type CardLifecycle } from "@/lib/kpiLifecycleStore";
+import { getSharedKpiCards } from "@/lib/kpiCardStore";
 
 interface Props {
   open: boolean;
@@ -27,82 +31,130 @@ const fmt = (v: number | string | undefined): string => {
   return new Intl.NumberFormat("az-AZ").format(n);
 };
 
+const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ").replace(/\s*kart[ıi]$/i, "");
+
 const TargetDetailDialog = ({ open, onOpenChange, kpiName, target, deadline, status }: Props) => {
-  if (!target) return null;
+  useEffect(() => {
+    if (!open) return;
+    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") onOpenChange(false); };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [open, onOpenChange]);
+
+  const limits = useMemo(() => {
+    if (!target) return null;
+    const entry = getKpiSetEntries().find(
+      e => normalize(e.subKpiName || "") === normalize(target.name) &&
+           (!kpiName || normalize(e.cardName || "") === normalize(kpiName)),
+    );
+    return entry?.limits ?? null;
+  }, [target, kpiName]);
+
+  const lifecycle: CardLifecycle | null = useMemo(() => {
+    if (!kpiName) return null;
+    const card = getSharedKpiCards().find(c => normalize(c.name) === normalize(kpiName));
+    const all = getAllLifecycles();
+    return (
+      all.find(l => (card?.numericId != null && l.cardId === card.numericId)) ||
+      all.find(l => normalize(l.cardName) === normalize(kpiName)) ||
+      null
+    );
+  }, [kpiName]);
+
+  if (!open || !target) return null;
   const plan = toNumber(target.plan);
   const fakt = toNumber(target.fakt);
   const pct = plan ? Math.round((fakt / plan) * 100) : 0;
   const unit = target.unit ? (target.unit === "AZN" ? " ₼" : ` ${target.unit}`) : "";
 
-  // Demo review/tarixçə/şərh yalnız bu hədəfə aiddir
-  const reviews = [
-    { id: "r1", date: "15.03.2026", author: "Rəşad Quliyev", note: "İcra dinamikası müsbətdir." },
-    { id: "r2", date: "01.04.2026", author: "Rəşad Quliyev", note: "Kampaniya nəticəsi gözləniləndən yüksəkdir." },
-  ];
-  const history = [
-    { id: "h1", date: "10.02.2026", from: `${fmt(fakt / 2)}${unit}`, to: `${fmt(fakt)}${unit}` },
-    { id: "h2", date: "05.01.2026", from: `0${unit}`, to: `${fmt(fakt / 2)}${unit}` },
-  ];
-  const comments = [
-    { id: "c1", author: "Aysel Məmmədova", date: "12.03.2026", text: "Hədəfin icrası planla uyğundur." },
-  ];
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="truncate">Hədəf: {target.name}</DialogTitle>
-          <p className="text-xs text-muted-foreground truncate">KPI: {kpiName}</p>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Stat label="Plan" value={`${fmt(target.plan)}${unit}`} />
-            <Stat label="Fakt" value={`${fmt(target.fakt)}${unit}`} />
-            <Stat label="İcra %" value={`${pct}%`} />
-            <Stat label="Deadline" value={deadline || "—"} />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-muted-foreground">İcra faizi</span>
-              {status && <Badge variant="outline">{status}</Badge>}
-            </div>
-            <Progress value={Math.min(pct, 100)} />
-          </div>
-
-          <Section title="Review-lər">
-            {reviews.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">Review qeydi yoxdur.</p>
-            ) : reviews.map(r => (
-              <div key={r.id} className="p-2.5 rounded-md border border-border bg-card text-xs">
-                <div className="flex justify-between text-muted-foreground mb-0.5"><span>{r.author}</span><span>{r.date}</span></div>
-                <p className="text-foreground">{r.note}</p>
-              </div>
-            ))}
-          </Section>
-
-          <Section title="Tarixçə">
-            {history.map(h => (
-              <div key={h.id} className="flex items-center justify-between text-xs p-2 rounded-md bg-secondary/40">
-                <span className="text-muted-foreground">{h.date}</span>
-                <span className="text-foreground"><span className="text-muted-foreground">{h.from}</span> → <strong>{h.to}</strong></span>
-              </div>
-            ))}
-          </Section>
-
-          <Section title="Şərhlər">
-            {comments.map(c => (
-              <div key={c.id} className="p-2.5 rounded-md border border-border bg-card text-xs">
-                <div className="flex justify-between text-muted-foreground mb-0.5"><span>{c.author}</span><span>{c.date}</span></div>
-                <p className="text-foreground">{c.text}</p>
-              </div>
-            ))}
-          </Section>
+    <aside className="fixed top-0 right-0 h-screen w-full sm:w-[560px] bg-card border-l border-border shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+      <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border">
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold text-foreground truncate">Hədəf: {target.name}</h3>
+          <p className="text-xs text-muted-foreground truncate">KPI: {kpiName || "—"}</p>
         </div>
-      </DialogContent>
-    </Dialog>
+        <button
+          onClick={() => onOpenChange(false)}
+          className="w-8 h-8 shrink-0 rounded-md hover:bg-secondary inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
+          aria-label="Bağla"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Stat label="Plan" value={`${fmt(target.plan)}${unit}`} />
+          <Stat label="Fakt" value={`${fmt(target.fakt)}${unit}`} />
+          <Stat label="İcra %" value={`${pct}%`} />
+          <Stat label="Deadline" value={deadline || "—"} />
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs text-muted-foreground">İcra faizi</span>
+            {status && <Badge variant="outline">{status}</Badge>}
+          </div>
+          <Progress value={Math.min(pct, 100)} />
+        </div>
+
+        <Section title="Balanced Scorecard — qiymət limitləri">
+          {!limits ? (
+            <p className="text-xs text-muted-foreground italic">Bu hədəf üçün qiymət limitləri təyin edilməyib.</p>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-secondary/40 text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-medium">Bal</th>
+                    <th className="text-right px-3 py-2 font-medium">Min dəyər</th>
+                    <th className="text-right px-3 py-2 font-medium">Max dəyər</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(["l1", "l2", "l3", "l4", "l5"] as const).map((tier, i) => {
+                    const r = (limits as any)[tier] || {};
+                    return (
+                      <tr key={tier} className="border-t border-border">
+                        <td className="px-3 py-2 text-foreground">{i + 1}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{r.min ?? "—"}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{r.max ?? "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Section>
+
+        <Section title="Lifecycle">
+          {!lifecycle ? (
+            <p className="text-xs text-muted-foreground italic">Bu KPI kartı üçün lifecycle təyin edilməyib.</p>
+          ) : (
+            <div className="space-y-1.5">
+              <LifeRow label="Təyinat" value={formatStagePeriod(lifecycle.assignment)} />
+              <LifeRow label="Qiymətləndirmə" value={formatStagePeriod(lifecycle.evaluation)} />
+              <LifeRow label="Bonus" value={formatStagePeriod(lifecycle.bonus)} />
+              <LifeRow
+                label="Reviewlar"
+                value={lifecycle.reviews?.length ? `${lifecycle.reviews.length} review` : "Review təyin edilməyib"}
+              />
+            </div>
+          )}
+        </Section>
+      </div>
+    </aside>
   );
 };
+
+const LifeRow = ({ label, value }: { label: string; value: string }) => (
+  <div className="flex items-center justify-between text-xs p-2 rounded-md bg-secondary/40">
+    <span className="text-muted-foreground">{label}</span>
+    <span className="text-foreground font-medium">{value || "—"}</span>
+  </div>
+);
 
 const Stat = ({ label, value }: { label: string; value: string }) => (
   <div className="p-2.5 rounded-lg border border-border bg-card">
