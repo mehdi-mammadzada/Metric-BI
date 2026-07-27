@@ -1129,10 +1129,10 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                         <MultiSelectDropdown options={positionOptions} selected={bs.positions}
                           onChange={(v) => setCat("positions", v)} placeholder="Vəzifə seçin" />
                       )}
-                      {bs.persons.length >= 2 && (
+                      {bulkTeamMembers.length >= 2 && (
                         <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
                           <p className="text-[11px] text-emerald-600 flex items-center gap-1">
-                            <Users className="w-3 h-3" /> Yadda saxladıqda bu {bs.persons.length} şəxs üçün avtomatik yeni komanda yaradılacaq.
+                            <Users className="w-3 h-3" /> Yadda saxladıqda bu {bulkTeamMembers.length} şəxs üçün avtomatik yeni komanda yaradılacaq.
                           </p>
                           <div>
                             <label className="text-xs font-medium text-foreground">
