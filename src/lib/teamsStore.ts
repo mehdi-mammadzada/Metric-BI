@@ -26,75 +26,7 @@ export interface Team {
 const TEAMS_KEY = "kpi_teams_v2";
 const PERIODS_KEY = "kpi_periods_v1";
 
-const initialTeams: Team[] = [
-  {
-    id: 1,
-    name: "Elite Satış Komandası",
-    leader: "Samir Həsənov",
-    leaderAvatar: "S",
-    kpiResult: 90,
-    branch: "Satış Departamenti",
-    activeKpi: 8,
-    completedKpi: 6,
-    totalKpi: 10,
-    createdAt: "2026-01-15",
-    members: [
-      { name: "Leyla Məmmədova", role: "Satış Mütəxəssisi", kpiScore: 88, avatar: "L" },
-      { name: "Rəşad Əliyev", role: "Satış Mütəxəssisi", kpiScore: 92, avatar: "R" },
-      { name: "Nigar Hüseynova", role: "Satış Meneceri", kpiScore: 85, avatar: "N" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Regional Satış Komandası",
-    leader: "Farid Həsənov",
-    leaderAvatar: "F",
-    kpiResult: 78,
-    branch: "Satış Departamenti",
-    activeKpi: 6,
-    completedKpi: 4,
-    totalKpi: 8,
-    createdAt: "2026-02-10",
-    members: [
-      { name: "Aysel Quliyeva", role: "Regional Menecer", kpiScore: 80, avatar: "A" },
-      { name: "Tural İsmayılov", role: "Satış Agenti", kpiScore: 75, avatar: "T" },
-    ],
-  },
-  {
-    id: 3,
-    name: "İpoteka Satış Komandası",
-    leader: "Emin Məmmədov",
-    leaderAvatar: "E",
-    kpiResult: 85,
-    branch: "Satış Departamenti",
-    activeKpi: 7,
-    completedKpi: 5,
-    totalKpi: 9,
-    createdAt: "2026-03-05",
-    members: [
-      { name: "Günel Əlizadə", role: "İpoteka Mütəxəssisi", kpiScore: 87, avatar: "G" },
-      { name: "Orxan Məmmədov", role: "İpoteka Mütəxəssisi", kpiScore: 83, avatar: "O" },
-    ],
-  },
-  {
-    id: 4,
-    name: "Marketinq Komandası",
-    leader: "Elvin Rəhimov",
-    leaderAvatar: "E",
-    kpiResult: 88,
-    branch: "Marketinq Departamenti",
-    activeKpi: 9,
-    completedKpi: 6,
-    totalKpi: 11,
-    createdAt: "2026-04-20",
-    members: [
-      { name: "Kamran Quliyev", role: "Rəqəmsal Marketinq Şöbə Müdiri", kpiScore: 92, avatar: "K" },
-      { name: "Aynur Cəfərova", role: "Brend Şöbə Müdiri", kpiScore: 85, avatar: "A" },
-      { name: "Orxan Bayramov", role: "Marketinq Mütəxəssisi", kpiScore: 82, avatar: "O" },
-      { name: "Aytac Kərimova", role: "Brend Mütəxəssisi", kpiScore: 87, avatar: "A" },
-    ],
-  },
-];
+const initialTeams: Team[] = [];
 
 export const getTeams = (): Team[] => {
   const saved = localStorage.getItem(TEAMS_KEY);
@@ -144,10 +76,7 @@ export interface KpiPeriod {
   endDate: string; // YYYY-MM-DD
 }
 
-const initialPeriods: KpiPeriod[] = [
-  { id: 1, durationLabel: "6 ay", startDate: "2026-06-16", endDate: "2026-12-16" },
-  { id: 2, durationLabel: "3 ay", startDate: "2026-01-01", endDate: "2026-03-31" },
-];
+const initialPeriods: KpiPeriod[] = [];
 
 export const getPeriods = (): KpiPeriod[] => {
   const saved = localStorage.getItem(PERIODS_KEY);

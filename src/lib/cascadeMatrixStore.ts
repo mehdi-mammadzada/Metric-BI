@@ -17,32 +17,7 @@ export interface CascadeMatrix {
 const KEY = "cascade_matrices_v2";
 const EVT = "cascade-matrix-updated";
 
-const seed: CascadeMatrix[] = [
-  {
-    id: "cm-1",
-    name: "Elite Satış Komandası Cascade",
-    scopeType: "team",
-    scopeName: "Elite Satış Komandası",
-    sharedPersons: ["Leyla Məmmədova", "Rəşad Əliyev", "Nigar Hüseynova"],
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "cm-2",
-    name: "Regional Satış Cascade",
-    scopeType: "team",
-    scopeName: "Regional Satış Komandası",
-    sharedPersons: ["Aysel Quliyeva", "Tural İsmayılov"],
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "cm-3",
-    name: "İpoteka Komandası Cascade",
-    scopeType: "team",
-    scopeName: "İpoteka Satış Komandası",
-    sharedPersons: ["Günel Əlizadə", "Orxan Məmmədov"],
-    updatedAt: new Date().toISOString(),
-  },
-];
+const seed: CascadeMatrix[] = [];
 
 const load = (): CascadeMatrix[] => {
   try {

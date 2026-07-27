@@ -14,20 +14,7 @@ export interface RoleEntry {
 const KEY = "kpi_roles_v1";
 const EVT = "kpi-roles-updated";
 
-const SEED: RoleEntry[] = [
-  {
-    id: 1, name: "USER", description: "Standart istifadəçi",
-    permissions: {
-      home: ["view"], kpi: ["view_own", "view_team"], approvals: ["view", "comment"],
-      reporting: ["view_own", "view_team"], teams: ["view_own", "view_compare"],
-      evaluation: ["view"], whistleblower: ["view", "submit"],
-    },
-    users: ["Samir Həsənov", "Leyla Məmmədova", "Rəşad Əliyev", "Farid Həsənov", "Emin Məmmədov"],
-  },
-  {
-    id: 2, name: "HR", description: "İnsan resursları admin", permissions: {}, users: ["Günel Əlizadə", "Nigar Hüseynova"],
-  },
-];
+const SEED: RoleEntry[] = [];
 
 export const loadRoles = (): RoleEntry[] | null => {
   try {
