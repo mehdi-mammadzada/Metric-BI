@@ -144,7 +144,7 @@ const en: Translation = {
     hero_subtitle: "Track the execution status of goals assigned per card and notify the related people",
     stats_assignments: "assignments",
     stats_done: "done",
-    stats_overdue: "overdue",
+    stats_overdue: "not achieved",
     search_placeholder: "Search by card, goal or person",
     empty: "No goal assignments to track.",
     main_goal_fallback: "Main goal",

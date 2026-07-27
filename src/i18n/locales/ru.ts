@@ -144,7 +144,7 @@ const ru: Translation = {
     hero_subtitle: "Отслеживайте статус выполнения целей по каждой карточке и отправляйте уведомления ответственным",
     stats_assignments: "назначений",
     stats_done: "выполнено",
-    stats_overdue: "просрочено",
+    stats_overdue: "цель не достигнута",
     search_placeholder: "Поиск по карточке, цели или сотруднику",
     empty: "Нет назначений целей для отслеживания.",
     main_goal_fallback: "Основная цель",

@@ -142,7 +142,7 @@ const az = {
     hero_subtitle: "Hər bir kart üzrə təyin olunmuş hədəflərin icra statusunu izləyin və əlaqədar şəxslərə bildiriş göndərin",
     stats_assignments: "təyinat",
     stats_done: "tamam",
-    stats_overdue: "gecikən",
+    stats_overdue: "hədəfə çatmayan",
     search_placeholder: "Kart, hədəf və ya şəxs üzrə axtarış",
     empty: "İzləniləcək hədəf təyinatı tapılmadı.",
     main_goal_fallback: "Ana hədəf",
