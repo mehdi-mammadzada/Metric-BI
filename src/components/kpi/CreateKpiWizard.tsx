@@ -161,6 +161,7 @@ export const emptyKpiWizardDraft = (): CreateKpiWizardDraft => ({
   mode: "individual",
   individualEmployees: [],
   bulkSelections: { teams: [], structures: [], positions: [], persons: [] },
+  bulkTeamLeader: "",
   frequency: "Aylıq",
   quarterYear: new Date().getFullYear(),
   quarter: 1,
