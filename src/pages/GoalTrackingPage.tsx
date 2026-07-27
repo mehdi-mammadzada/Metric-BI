@@ -14,11 +14,9 @@ import { TARGET_STATUS_BADGE, type TargetStatus } from "@/lib/targetStatus";
 // Sistem üzrə yalnız 3 hədəf statusu istifadə olunur.
 type ExecStatus = TargetStatus;
 
-const statusFor = (id: string): { status: ExecStatus; progress: number } => {
-  const hash = Array.from(id).reduce((a, c) => a + c.charCodeAt(0), 0);
-  const progress = 10 + (hash * 7) % 91;
-  const status: ExecStatus = progress >= 100 ? "achieved" : "in_progress";
-  return { status, progress };
+// Real fakt dəyəri hələ mövcud deyil — mock/generasiya edilmiş irəliləyiş göstərilmir.
+const statusFor = (_id: string): { status: ExecStatus; progress: number } => {
+  return { status: "in_progress", progress: 0 };
 };
 
 const STATUS_META: Record<ExecStatus, { labelKey: string; cls: string; icon: typeof CheckCircle2 }> = {
