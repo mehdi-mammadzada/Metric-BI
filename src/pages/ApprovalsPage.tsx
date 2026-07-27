@@ -12,10 +12,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useApprovals, decideApproval, type ApprovalItem } from "@/lib/approvalsStore";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
 import { getCurrentEmployeeId, getVisibleApprovals } from "@/lib/scope";
-import { getEnrichedEmployee } from "@/data/mockExtras";
+import { getEmployeeDisplayName, getEnrichedEmployee } from "@/data/mockExtras";
 import { toast } from "sonner";
 
-const empName = (id: string) => getEnrichedEmployee(id)?.fullName || id;
+const empName = (id: string) => getEmployeeDisplayName(id);
+
 const aliasesFor = (id: string | null | undefined) => id ? [id, id.startsWith("e") ? id.slice(1) : `e${id}`] : [];
 
 const ApprovalCard = ({

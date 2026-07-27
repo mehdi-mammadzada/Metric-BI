@@ -41,14 +41,50 @@ const stableNum = (s: string): number => {
   return Math.abs(h);
 };
 
-const isEntryAssignedToSetter = (entry: KpiSetEntry, userName?: string, sharedCards: ReturnType<typeof useSharedKpiCards> = []) => {
+// İstifadəçinin real əməkdaş adı (login adı fərqli ola bilər) + id/email aliasları.
+const myAliases = (user: { name?: string; email?: string } | null | undefined): Set<string> => {
+  const set = new Set<string>();
+  const push = (v?: string | number | null) => {
+    const s = String(v ?? "").trim();
+    if (s) set.add(s.toLowerCase());
+  };
+  push(user?.name);
+  push(user?.email);
+  const emp = getEmployees().find(e => (e.email || "").toLowerCase() === String(user?.email || "").toLowerCase());
+  if (emp) {
+    push(`${emp.firstName} ${emp.lastName}`);
+    push(emp.id);
+    push(`e${emp.id}`);
+  }
+  return set;
+};
+
+const matchesMe = (value: string | undefined, aliases: Set<string>) => {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return false;
+  return aliases.has(raw) || aliases.has(stripPos(value).toLowerCase());
+};
+
+const resolveMyName = (user: { name?: string; email?: string } | null | undefined): string => {
+  const emp = getEmployees().find(e => (e.email || "").toLowerCase() === String(user?.email || "").toLowerCase());
+  return emp ? `${emp.firstName} ${emp.lastName}`.trim() : String(user?.name || "").trim();
+};
+
+const isEntryAssignedToSetter = (
+  entry: KpiSetEntry,
+  userName?: string,
+  sharedCards: ReturnType<typeof useSharedKpiCards> = [],
+  aliases: Set<string> = new Set([String(userName || "").trim().toLowerCase()]),
+) => {
   if (entry.ownerType !== "manager") return false;
-  if (stripPos(entry.assigneeName) !== stripPos(userName)) return false;
+  if (!matchesMe(entry.assigneeName, aliases)) return false;
   const shared = sharedCards.find(c => c.numericId === entry.cardId || c.name === entry.cardName);
   if (!shared) return true;
-  // Təyinedici (assigner) "Ad Soyad — Vəzifə" formatında saxlanılır — soyadı stripleyib müqayisə edirik.
-  return shared.targets.some(t => t.createdBy === "other" && stripPos(t.assigner) === stripPos(userName));
+  // Məsul olduğum kart hədəf təyininə düşməlidir — assigner uyğunluğu tapılmasa belə.
+  return shared.targets.some(t => t.createdBy === "other" && matchesMe(t.assigner, aliases))
+    || shared.targets.length === 0;
 };
+
 
 type View = "hub" | "assign" | "evaluate";
 
@@ -62,6 +98,7 @@ const getSetterEntriesFromSharedCards = (
   sharedCards: ReturnType<typeof useSharedKpiCards>,
   userName?: string,
   localRows: KpiSetEntry[] = [],
+  aliases: Set<string> = new Set([String(userName || "").trim().toLowerCase()]),
 ): KpiSetEntry[] => {
   const me = stripPos(userName);
   if (!me) return [];
@@ -72,7 +109,7 @@ const getSetterEntriesFromSharedCards = (
   sharedCards.forEach(card => {
     const cardId = card.numericId ?? stableNum(card.id);
     (card.targets || []).forEach((target, index) => {
-      if (target.createdBy !== "other" || stripPos(target.assigner) !== me) return;
+      if (target.createdBy !== "other" || !matchesMe(target.assigner, aliases)) return;
       const targetName = String(target.name || `Hədəf ${index + 1}`).trim();
       const key = entryKey({ cardId, subKpiId: index + 1, subKpiName: targetName, assigneeName: me });
       if (existing.has(key)) return;
@@ -135,10 +172,12 @@ const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
   // Yalnız cari istifadəçiyə həvalə olunmuş target-setter entry-ləri
   const assignCount = useMemo(
     () => {
-      const derived = getSetterEntriesFromSharedCards(sharedCards, user?.name, rows);
-      return dedupeKpiSetEntries([...rows.filter(r => isEntryAssignedToSetter(r, user?.name, sharedCards)), ...derived]).length;
+      const aliases = myAliases(user);
+      const meName = resolveMyName(user);
+      const derived = getSetterEntriesFromSharedCards(sharedCards, meName, rows, aliases);
+      return dedupeKpiSetEntries([...rows.filter(r => isEntryAssignedToSetter(r, meName, sharedCards, aliases)), ...derived]).length;
     },
-    [rows, sharedCards, user?.name],
+    [rows, sharedCards, user],
   );
   const evalCount = evalItems.length;
 
@@ -210,13 +249,15 @@ const AssignView = () => {
   const [cascadeConfirm, setCascadeConfirm] = useState<{ entry: KpiSetEntry; value: number; unit: string } | null>(null);
 
   const assignRows = useMemo(() => {
-    const derived = getSetterEntriesFromSharedCards(sharedCards, user?.name, rows);
+    const aliases = myAliases(user);
+    const meName = resolveMyName(user);
+    const derived = getSetterEntriesFromSharedCards(sharedCards, meName, rows, aliases);
     const derivedCardAssignees = new Set(derived.map(d => `${d.cardId}::${stripPos(d.assigneeName)}`));
     const local = rows
-      .filter(r => isEntryAssignedToSetter(r, user?.name, sharedCards))
+      .filter(r => isEntryAssignedToSetter(r, meName, sharedCards, aliases))
       .filter(r => String(r.subKpiName || "").trim() || !derivedCardAssignees.has(`${r.cardId}::${stripPos(r.assigneeName)}`));
     return dedupeKpiSetEntries([...local, ...derived]);
-  }, [rows, sharedCards, user?.name]);
+  }, [rows, sharedCards, user]);
 
   const groups = useMemo<CardGroup[]>(() => {
     // Yalnız cari istifadəçi target-setter olan entry-lər

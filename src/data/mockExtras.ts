@@ -154,8 +154,30 @@ export const getEmployeeIdForEmail = (email?: string | null): string | null => {
 
 export const getEnrichedEmployee = (id: string | null | undefined): EnrichedEmployee | null => {
   if (!id) return null;
-  return snapshot.enriched.find(e => e.id === id) ?? null;
+  const key = String(id).replace(/^e/i, "");
+  return snapshot.enriched.find(e => e.id === String(id) || e.id === key) ?? null;
 };
+
+/**
+ * Human-readable name for any employee reference (local numeric id, "e<id>",
+ * email or a plain name). Never renders a raw numeric id back to the user.
+ */
+export const getEmployeeDisplayName = (
+  ref: string | null | undefined,
+  fallback = "Naməlum əməkdaş",
+): string => {
+  const raw = String(ref ?? "").trim();
+  if (!raw) return fallback;
+  const hit = getEnrichedEmployee(raw);
+  if (hit?.fullName) return hit.fullName;
+  const lower = raw.toLowerCase();
+  const byEmail = snapshot.enriched.find(e => (e.email || "").toLowerCase() === lower);
+  if (byEmail?.fullName) return byEmail.fullName;
+  // Looks like an internal id (numeric / uuid) → don't show it raw.
+  if (/^e?\d+$/i.test(raw) || /^[0-9a-f-]{20,}$/i.test(raw)) return fallback;
+  return raw;
+};
+
 
 export const getStructureById = (id?: string | null): MockStructure | null =>
   id ? snapshot.structures.find(s => s.id === id) ?? null : null;

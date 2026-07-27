@@ -51,6 +51,7 @@ import { createRootsForCardAssignees, getCascadeCandidateIds } from "@/lib/casca
 import CascadeDistributeDialog from "@/components/kpi/CascadeDistributeDialog";
 import CascadeLoadConfirmDialog from "@/components/kpi/CascadeLoadConfirmDialog";
 import { getCurrentEmployeeId } from "@/lib/scope";
+import { getEmployeeDisplayName } from "@/data/mockExtras";
 import { enqueueApproval, getApprovals } from "@/lib/approvalsStore";
 
 const STATUS_LABELS = {
@@ -1887,8 +1888,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
             );
             const employeeNameById = (id: string) => {
               const emp = getEmployees().find((e: any) => String(e.id) === String(id) || `e${e.id}` === String(id));
-              return emp ? `${emp.firstName} ${emp.lastName}` : id;
+              if (emp) return `${emp.firstName} ${emp.lastName}`.trim();
+              return getEmployeeDisplayName(id, "Təsdiqləyici");
             };
+
             const approvalRows = (() => {
               if (!approval) return [] as { role: string; name: string; tone?: "ok" | "wait" | "err" }[];
               const ids = approval.stepsChain?.length

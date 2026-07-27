@@ -14,6 +14,7 @@ import {
 import type { KpiCard } from "@/lib/kpiCardTypes";
 import type { KpiCardStatusRow, KpiCardStatus } from "@/lib/kpiCardStatusStore";
 import { STATUS_LABELS, STATUS_STYLES } from "@/lib/kpiCardStatusStore";
+import { getEmployeeDisplayName } from "@/data/mockExtras";
 
 import KpiExtraTabContent, { isExtraTab } from "./KpiExtraTabs";
 import BscScorecardTab from "./BscScorecardTab";
@@ -483,9 +484,10 @@ const KpiDetailView = ({
           type Member = { name: string; role: string; avatar: string; kind: "leader" | "assigner" | "evaluator" };
           const map = new Map<string, Member>();
           const upsert = (name: string, kind: Member["kind"], role: string) => {
-            if (!name || name === "—") return;
-            const key = `${name}::${kind}`;
-            if (!map.has(key)) map.set(key, { name, role, avatar: initials(name), kind });
+            const resolved = getEmployeeDisplayName(name, "");
+            if (!resolved || resolved === "—") return;
+            const key = `${resolved}::${kind}`;
+            if (!map.has(key)) map.set(key, { name: resolved, role, avatar: initials(resolved), kind });
           };
           upsert(selectedKpi.responsible || "Məsul şəxs", "leader", "Lider / Məsul");
           (selectedKpi.subKpis || []).forEach(sk => {
@@ -493,6 +495,7 @@ const KpiDetailView = ({
             const persons = (sk as any)?.evaluator?.persons || [];
             persons.forEach((p: any) => upsert(p?.name, "evaluator", "Qiymətləndirici"));
           });
+
           const members = Array.from(map.values());
           const badgeCls = (k: Member["kind"]) =>
             k === "leader" ? "bg-zone-green-bg text-zone-green-text"
