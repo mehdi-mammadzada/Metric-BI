@@ -444,6 +444,7 @@ export type Database = {
         Row: {
           assignee_ids: string[]
           assignees: Json
+          assignment_mode: string
           created_at: string
           created_by: string | null
           end_date: string | null
@@ -471,6 +472,7 @@ export type Database = {
         Insert: {
           assignee_ids?: string[]
           assignees?: Json
+          assignment_mode?: string
           created_at?: string
           created_by?: string | null
           end_date?: string | null
@@ -498,6 +500,7 @@ export type Database = {
         Update: {
           assignee_ids?: string[]
           assignees?: Json
+          assignment_mode?: string
           created_at?: string
           created_by?: string | null
           end_date?: string | null
