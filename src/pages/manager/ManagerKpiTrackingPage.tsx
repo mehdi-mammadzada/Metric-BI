@@ -20,6 +20,7 @@ import {
 
 import { useCascadeTree, type CascadeTreeNode } from "@/lib/cascadeTreeStore";
 import { useSharedKpiCards, type SharedKpiCard, type ExecutionStatus } from "@/lib/kpiCardStore";
+import { TARGET_STATUS_BADGE, TARGET_STATUS_LABEL, normalizeTargetStatus, type TargetStatus } from "@/lib/targetStatus";
 import { computeReviewStatus, setReviewOutcome, useKpiLifecycles, type CardLifecycle, type LifecycleReview, type ReviewComputedStatus } from "@/lib/kpiLifecycleStore";
 import CascadeDistributeDialog from "@/components/kpi/CascadeDistributeDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -39,7 +40,7 @@ import ReviewStatusChangeDialog, { type ReviewStatusValue } from "@/components/k
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
 
 type Stage = "assigned" | "evaluated" | "pending_assign";
-type KpiStatus = "in_progress" | "at_risk" | "completed" | "delayed";
+type KpiStatus = TargetStatus;
 interface Kpi {
   id: string; name: string; description: string; period: string;
   target: number; actual: number; unit: string; stage: Stage;
@@ -68,10 +69,9 @@ const pctOf = (k: Kpi) => k.target ? Math.round((k.actual / k.target) * 100) : 0
 const tone = (p: number) => p >= 100 ? "bg-zone-green-bg text-zone-green-text" : p >= 75 ? "bg-zone-yellow-bg text-zone-yellow-text" : "bg-zone-red-bg text-zone-red-text";
 
 const statusMeta: Record<KpiStatus, { label: string; cls: string }> = {
-  in_progress: { label: "İcradadır", cls: "bg-zone-yellow-bg text-zone-yellow-text hover:bg-zone-yellow-bg" },
-  at_risk:     { label: "Riskdə",    cls: "bg-zone-red-bg text-zone-red-text hover:bg-zone-red-bg" },
-  completed:   { label: "Tamamlandı", cls: "bg-zone-green-bg text-zone-green-text hover:bg-zone-green-bg" },
-  delayed:     { label: "Gecikir",   cls: "bg-zone-red-bg text-zone-red-text hover:bg-zone-red-bg" },
+  in_progress:  { label: TARGET_STATUS_LABEL.in_progress,  cls: TARGET_STATUS_BADGE.in_progress },
+  achieved:     { label: TARGET_STATUS_LABEL.achieved,     cls: TARGET_STATUS_BADGE.achieved },
+  not_achieved: { label: TARGET_STATUS_LABEL.not_achieved, cls: TARGET_STATUS_BADGE.not_achieved },
 };
 
 const targetsForKpi = (k: Kpi) => {
@@ -257,8 +257,8 @@ const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: stri
   const stats = useMemo(() => {
     const total = data.length;
     const avg = total ? Math.round(data.reduce((a, k) => a + pctOf(k), 0) / total) : 0;
-    const done = data.filter(k => k.status === "completed" || pctOf(k) >= 100).length;
-    const late = data.filter(k => k.status === "delayed" || k.status === "at_risk").length;
+    const done = data.filter(k => k.status === "achieved" || pctOf(k) >= 100).length;
+    const late = data.filter(k => k.status === "not_achieved").length;
     return { total, avg, done, late };
   }, [data]);
 
@@ -285,8 +285,8 @@ const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: stri
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
           <StatCard icon={Users} label="Ümumi KPI sayı" value={String(stats.total)} tone="indigo" />
           <StatCard icon={LineChart} label="Ortalama icra faizi" value={`${stats.avg}%`} tone="violet" />
-          <StatCard icon={Check} label="Tamamlananlar" value={String(stats.done)} tone="green" />
-          <StatCard icon={Clock} label="Gecikdirilənlər" value={String(stats.late)} tone="red" />
+          <StatCard icon={Check} label="Hədəfə çatanlar" value={String(stats.done)} tone="green" />
+          <StatCard icon={Clock} label="Hədəfə çatmayanlar" value={String(stats.late)} tone="red" />
         </div>
       </div>
 
@@ -299,10 +299,9 @@ const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: stri
               <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue placeholder="Bütün statuslar" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Bütün statuslar</SelectItem>
-                <SelectItem value="in_progress">İcradadır</SelectItem>
-                <SelectItem value="at_risk">Riskdə</SelectItem>
-                <SelectItem value="completed">Tamamlandı</SelectItem>
-                <SelectItem value="delayed">Gecikir</SelectItem>
+                <SelectItem value="in_progress">İcrada</SelectItem>
+                <SelectItem value="achieved">Hədəfə çatıb</SelectItem>
+                <SelectItem value="not_achieved">Hədəfə çatmayıb</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -737,8 +736,8 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
 
           {tab === "review" && (() => {
             const targets = buildCardTargets(kpi);
-            const completed = targets.filter(t => t.status === "completed").length;
-            const atRisk = targets.filter(t => t.status === "at_risk" || t.status === "delayed").length;
+            const completed = targets.filter(t => t.status === "achieved").length;
+            const atRisk = targets.filter(t => t.status === "not_achieved").length;
             const avgProg = targets.length ? Math.round(targets.reduce((s, t) => s + Math.round((t.fakt / t.plan) * 100), 0) / targets.length) : 0;
             return (
               <div className="space-y-4">
@@ -761,8 +760,8 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
                   <div className="text-sm font-semibold text-foreground mb-2">Review Xülasəsi</div>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                     <SummaryStat label="Ortalama Progress" value={`${avgProg}%`} tone="indigo" />
-                    <SummaryStat label="Tamamlanan KPI" value={`${completed} / ${targets.length}`} tone="green" />
-                    <SummaryStat label="Riskdə olan KPI" value={`${atRisk}`} tone="red" />
+                    <SummaryStat label="Hədəfə çatan KPI" value={`${completed} / ${targets.length}`} tone="green" />
+                    <SummaryStat label="Hədəfə çatmayan KPI" value={`${atRisk}`} tone="red" />
                     <SummaryStat label="Son qiymətləndirmə" value="—" tone="amber" />
                     <SummaryStat label="Növbəti Review" value={reviewMeta?.nextReview || "—"} tone="blue" />
                   </div>
@@ -864,8 +863,7 @@ interface TreeNode {
   employees: number;
   avgPct: number;
   completed: number;
-  atRisk: number;
-  delayed: number;
+  notAchieved: number;
   trend: "up" | "down" | "flat";
   position?: string;
   team?: string;
@@ -916,11 +914,10 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
       division: pathLabel || "—",
       employees: 1,
       avgPct,
-      completed: targets.filter(t => t.status === "completed").length,
-      atRisk: targets.filter(t => t.status === "not_achieved").length,
-      delayed: 0,
+      completed: targets.filter(t => normalizeTargetStatus(t.status) === "achieved").length,
+      notAchieved: targets.filter(t => normalizeTargetStatus(t.status) === "not_achieved").length,
       trend: "flat",
-      status: avgPct >= 100 ? "completed" : avgPct > 0 ? "in_progress" : undefined,
+      status: avgPct >= 100 ? "achieved" : "in_progress",
     };
   };
 
@@ -943,8 +940,7 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
       employees: empCount,
       avgPct: 0,
       completed: 0,
-      atRisk: 0,
-      delayed: 0,
+      notAchieved: 0,
       trend: "flat",
     });
     // Employees first (direct), then sub-structures
@@ -980,8 +976,7 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
     employees: rootEmpCount,
     avgPct: 0,
     completed: 0,
-    atRisk: 0,
-    delayed: 0,
+    notAchieved: 0,
     trend: "flat",
   });
   (empByPath.get("") ?? []).forEach(e => nodes.push(makeEmp(e, rootId, "Bütün şirkət")));
@@ -1110,10 +1105,9 @@ export const SubordinatesView = ({
     const sum = (k: keyof TreeNode) => roots.reduce((a, r) => a + (Number(r[k]) || 0), 0);
     const employees = sum("employees");
     const completed = sum("completed");
-    const atRisk = sum("atRisk");
-    const delayed = sum("delayed");
+    const notAchieved = sum("notAchieved");
     const avgPct = roots.length ? Math.round(roots.reduce((a, r) => a + r.avgPct, 0) / roots.length) : 0;
-    return { employees, avgPct, completed, atRisk, delayed } as TreeNode;
+    return { employees, avgPct, completed, notAchieved } as TreeNode;
   }, [tree]);
   const deptCount = tree.filter(n => n.kind === "department").length;
 
@@ -1135,9 +1129,8 @@ export const SubordinatesView = ({
           <SumCard icon={MapPin} label="Əhatə dairəsi" primary={`${deptCount} Departament`} secondary={`${tree.filter(n => n.kind === "division").length} Şöbə`} tone="indigo" />
           <SumCard icon={Users} label="Ümumi əməkdaş" primary={fmt(totals.employees)} tone="violet" />
           <SumCard icon={LineChart} label="Ortalama icra faizi" primary={`${totals.avgPct}%`} tone="blue" />
-          <SumCard icon={Check} label="Tamamlanan KPI" primary={fmt(totals.completed)} tone="green" />
-          <SumCard icon={AlertTriangle} label="Riskdə olan KPI" primary={fmt(totals.atRisk)} tone="amber" />
-          <SumCard icon={Clock} label="Gecikdirilən KPI" primary={fmt(totals.delayed)} tone="red" />
+          <SumCard icon={Check} label="Hədəfə çatan KPI" primary={fmt(totals.completed)} tone="green" />
+          <SumCard icon={AlertTriangle} label="Hədəfə çatmayan KPI" primary={fmt(totals.notAchieved)} tone="red" />
         </div>
 
         {/* Filter row */}
@@ -1159,9 +1152,8 @@ export const SubordinatesView = ({
               <SelectTrigger className="w-48 h-9 mt-0.5"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="avg">Ortalama icra faizi</SelectItem>
-                <SelectItem value="completed">Tamamlanan KPI</SelectItem>
-                <SelectItem value="risk">Riskdə olan KPI</SelectItem>
-                <SelectItem value="delayed">Gecikdirilən KPI</SelectItem>
+                <SelectItem value="completed">Hədəfə çatan KPI</SelectItem>
+                <SelectItem value="not_achieved">Hədəfə çatmayan KPI</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1171,10 +1163,9 @@ export const SubordinatesView = ({
               <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Bütün statuslar</SelectItem>
-                <SelectItem value="in_progress">İcradadır</SelectItem>
-                <SelectItem value="at_risk">Riskdə</SelectItem>
-                <SelectItem value="completed">Tamamlandı</SelectItem>
-                <SelectItem value="delayed">Gecikir</SelectItem>
+                <SelectItem value="in_progress">İcrada</SelectItem>
+                <SelectItem value="achieved">Hədəfə çatıb</SelectItem>
+                <SelectItem value="not_achieved">Hədəfə çatmayıb</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1195,9 +1186,8 @@ export const SubordinatesView = ({
                   <th className="text-left px-4 py-3 font-medium">Səviyyə</th>
                   <th className="text-right px-4 py-3 font-medium">Əhatə dairəsi</th>
                   <th className="text-left px-4 py-3 font-medium w-56">Ortalama icra faizi</th>
-                  <th className="text-center px-4 py-3 font-medium">Tamamlanan KPI</th>
-                  <th className="text-center px-4 py-3 font-medium">Riskdə olan KPI</th>
-                  <th className="text-center px-4 py-3 font-medium">Gecikdirilən KPI</th>
+                  <th className="text-center px-4 py-3 font-medium">Hədəfə çatan KPI</th>
+                  <th className="text-center px-4 py-3 font-medium">Hədəfə çatmayan KPI</th>
                   <th className="text-center px-4 py-3 font-medium">Trend</th>
                   <th className="text-right px-4 py-3 font-medium w-24">Əməliyyatlar</th>
                 </tr>
@@ -1244,8 +1234,7 @@ export const SubordinatesView = ({
                         </div>
                       </td>
                       <td className="px-4 py-2.5 text-center tabular-nums">{fmt(node.completed)}</td>
-                      <td className="px-4 py-2.5 text-center tabular-nums text-amber-600">{fmt(node.atRisk)}</td>
-                      <td className="px-4 py-2.5 text-center tabular-nums text-rose-600">{fmt(node.delayed)}</td>
+                      <td className="px-4 py-2.5 text-center tabular-nums text-rose-600">{fmt(node.notAchieved)}</td>
                       <td className="px-4 py-2.5 text-center">
                         {node.trend === "up" && <TrendingUp className="w-4 h-4 text-emerald-500 inline" />}
                         {node.trend === "down" && <TrendingDown className="w-4 h-4 text-rose-500 inline" />}
@@ -1282,7 +1271,7 @@ export const SubordinatesView = ({
             </table>
             </div>
           <div className="flex items-center justify-between px-4 py-3 border-t border-border text-xs text-muted-foreground">
-            <span>Cəmi: {fmt(totals.employees)} əməkdaş, {fmt(totals.completed + totals.atRisk + totals.delayed)} KPI</span>
+            <span>Cəmi: {fmt(totals.employees)} əməkdaş, {fmt(totals.completed + totals.notAchieved)} KPI</span>
             <span>Səhifə 1 / 1</span>
           </div>
         </div>
@@ -1469,7 +1458,7 @@ const SubDetailPanel = ({ node, tab, setTab, onClose }: {
   const isEmp = node.kind === "employee";
   const stampBadge = node.status ? statusMeta[node.status] : { label: kindLabel[node.kind], cls: "bg-secondary text-secondary-foreground" };
 
-  const riskLevel = node.delayed > 0 ? "high" : node.atRisk > 0 ? "med" : "low";
+  const riskLevel = node.notAchieved > 0 ? "high" : "low";
   const riskColor = riskLevel === "high" ? "bg-rose-500/10 text-rose-600 border-rose-500/30"
     : riskLevel === "med" ? "bg-amber-500/10 text-amber-600 border-amber-500/30"
     : "bg-emerald-500/10 text-emerald-600 border-emerald-500/30";
@@ -2079,10 +2068,10 @@ const progressFromExec = (e: ExecutionStatus | null): number => {
   }
 };
 const execLabel: Record<ExecutionStatus, { label: string; cls: string }> = {
-  baslanmayib: { label: "Başlanmayıb", cls: "bg-secondary text-secondary-foreground" },
-  icrada: { label: "İcradadır", cls: "bg-zone-yellow-bg text-zone-yellow-text" },
-  tamamlandi: { label: "Tamamlandı", cls: "bg-zone-green-bg text-zone-green-text" },
-  gecikme: { label: "Gecikir", cls: "bg-zone-red-bg text-zone-red-text" },
+  baslanmayib: { label: TARGET_STATUS_LABEL.in_progress, cls: TARGET_STATUS_BADGE.in_progress },
+  icrada: { label: TARGET_STATUS_LABEL.in_progress, cls: TARGET_STATUS_BADGE.in_progress },
+  tamamlandi: { label: TARGET_STATUS_LABEL.achieved, cls: TARGET_STATUS_BADGE.achieved },
+  gecikme: { label: TARGET_STATUS_LABEL.not_achieved, cls: TARGET_STATUS_BADGE.not_achieved },
 };
 
 const useReviewRows = (): ReviewRow[] => {
