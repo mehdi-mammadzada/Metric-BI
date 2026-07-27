@@ -10,12 +10,6 @@ import BonusPage, { type Employee } from "@/pages/BonusPage";
 import { useAuth } from "@/contexts/AuthContext";
 import { getEmployees, getStructures, getSubordinatesOfStarHolder, type OrgEmployee } from "@/lib/orgStore";
 
-const DEFAULT_KPIS = (evaluator: string) => [
-  { name: "Fərdi performans",   weight: 40, evaluator, score: 85 },
-  { name: "Komanda töhfəsi",     weight: 30, evaluator, score: 88 },
-  { name: "Layihə icrası",       weight: 30, evaluator: "Özü", score: 90 },
-];
-
 const toBonusEmployee = (e: OrgEmployee, evaluator: string): Employee => ({
   id: String(e.id),
   firstName: e.firstName,
@@ -25,7 +19,7 @@ const toBonusEmployee = (e: OrgEmployee, evaluator: string): Employee => ({
   position: e.positionName || "—",
   baseSalary: e.salary || 0,
   targetBonusPct: 20,
-  subKpis: DEFAULT_KPIS(evaluator),
+  subKpis: [],
 });
 
 type View = "hub" | "own" | "sub";

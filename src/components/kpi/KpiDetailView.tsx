@@ -209,27 +209,6 @@ const KpiDetailView = ({
                               const raw = localStorage.getItem(key);
                               if (raw) comments = JSON.parse(raw);
                             } catch {}
-                            if (comments.length === 0) {
-                              const emp1 = "Aynur Məmmədova";
-                              const emp2 = "Nizami Əliyev";
-                              const emp3 = "Rəşad Quliyev";
-                              comments = status === "completed"
-                                ? [
-                                    { author: reviewer, date: r.end || "", text: `Review #${i + 1} tamamlandı. Hədəflərin icrası ${selectedKpi.progress ?? 0}% səviyyəsindədir. Növbəti dövr üçün fokus saxlanılır.` },
-                                    { author: emp1, date: r.end || "", text: "Review qeydləri sistemə daxil edildi." },
-                                    { author: emp2, date: r.end || "", text: "Nəticələr planla uyğundur, davam etmək tövsiyə olunur." },
-                                    { author: reviewer, date: r.end || "", text: "Növbəti dövr üçün fokus sahələri müəyyənləşdirildi və komanda ilə paylaşıldı." },
-                                    { author: emp3, date: r.end || "", text: "Verilən rəy nəzərə alındı, tədbir planı hazırlanır." },
-                                  ]
-                                : status === "in_progress"
-                                ? [
-                                    { author: reviewer, date: r.start || "", text: `Review #${i + 1} davam edir — cari icra dinamikası müsbətdir.` },
-                                    { author: emp1, date: r.start || "", text: "Ara qeydlər sistemə daxil edildi, review davam etdirilir." },
-                                  ]
-                                : [
-                                    { author: emp2, date: r.start || "", text: `Review #${i + 1} planlaşdırılıb — başlama tarixindən sonra qeydlər əlavə oluna bilər.` },
-                                  ];
-                            }
                             const filter = reviewCommentFilters[r.id] || { author: "", date: "" };
                             const availableAuthors = Array.from(new Set(comments.map(c => c.author).filter(Boolean)));
                             const filteredComments = comments.filter(c => {
@@ -514,14 +493,7 @@ const KpiDetailView = ({
             const persons = (sk as any)?.evaluator?.persons || [];
             persons.forEach((p: any) => upsert(p?.name, "evaluator", "Qiymətləndirici"));
           });
-          let members = Array.from(map.values());
-          if (members.length <= 1) {
-            members = [
-              { name: selectedKpi.responsible || "Məsul şəxs", role: "Lider / Məsul", avatar: initials(selectedKpi.responsible || "MS"), kind: "leader" },
-              { name: "Nizami Əliyev", role: "Təyinedici", avatar: "NƏ", kind: "assigner" },
-              { name: "Aynur Məmmədova", role: "Qiymətləndirici", avatar: "AM", kind: "evaluator" },
-            ];
-          }
+          const members = Array.from(map.values());
           const badgeCls = (k: Member["kind"]) =>
             k === "leader" ? "bg-zone-green-bg text-zone-green-text"
             : k === "assigner" ? "bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30"

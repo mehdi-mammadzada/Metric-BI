@@ -38,12 +38,7 @@ const seedRows: Omit<UploadRowDetail, "no">[] = [];
 
 const seedDetails: UploadRowDetail[] = seedRows.map((r, i) => ({ no: i + 1, ...r }));
 
-// Nümunə uyğunsuz fayl — bir sətirdə FIN/əməkdaş kodu üst-üstə düşmür
-const mismatchRows: UploadRowDetail[] = [
-  { no: 1, firstName: "Aysel",   lastName: "Quliyeva", fatherName: "Vidadi", monthPay: 2100, totalPaid: 6300, avgMonthly: 2100, pctCurrent: 100, pct12m: 100, status: "Uyğunlaşdırıldı", qeyd: "FIN üzrə uyğunlaşdırıldı" },
-  { no: 2, firstName: "Tural",   lastName: "İsmayılov", fatherName: "Akif",  monthPay: 2300, totalPaid: 6900, avgMonthly: 2300, pctCurrent: 100, pct12m: 100, status: "Uyğunlaşdırıldı", qeyd: "FIN üzrə uyğunlaşdırıldı" },
-  { no: 3, firstName: "Vüsal",   lastName: "Hüseynli", fatherName: "Ramiz",  monthPay: 1950, totalPaid: 5850, avgMonthly: 1950, pctCurrent: 100, pct12m: 100, status: "Uyğunsuz", qeyd: "FIN və ya əməkdaş kodu sistemdə tapılmadı" },
-];
+const mismatchRows: UploadRowDetail[] = [];
 
 const seed: SalaryUpload[] = [];
 

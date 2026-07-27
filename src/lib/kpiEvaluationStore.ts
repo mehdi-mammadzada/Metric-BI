@@ -35,25 +35,21 @@ const KEY = "user_kpi_subkpis_v3";
 const EVT = "user-kpi-subkpis-updated";
 
 export const USER_KPI_CARD: KpiCardInfo = {
-  id: "card-2026q1-e4",
-  assigneeId: "e4",
-  name: "2026 Q1 — Satış və Müştəri Uğuru Kartı",
-  period: "2026 Q1",
+  id: "",
+  assigneeId: "",
+  name: "",
+  period: "",
 };
 
-// Manager (e8 — Kamran Rzayev) üçün bir neçə kart və hədəf.
-export const MANAGER_KPI_CARDS: KpiCardInfo[] = [
-  { id: "card-2026q1-e8-1", assigneeId: "e8", name: "Satış Departamenti — Rüblük Hədəflər", period: "2026 Q1" },
-  { id: "card-2026q1-e8-2", assigneeId: "e8", name: "Komanda İnkişafı və Effektivlik", period: "2026 Q1" },
-  { id: "card-2026q1-e8-3", assigneeId: "e8", name: "Marketinq Büdcə Hədəfi Kartı", period: "2026 Q1" },
-];
+export const MANAGER_KPI_CARDS: KpiCardInfo[] = [];
 
 export const getKpiCardsFor = (assigneeId: string): KpiCardInfo[] => {
-  if (assigneeId === USER_KPI_CARD.assigneeId) return [USER_KPI_CARD];
-  return MANAGER_KPI_CARDS.filter(c => c.assigneeId === assigneeId);
+  const byCard = new Map<string, KpiCardInfo>();
+  load().filter(k => k.assigneeId === assigneeId).forEach(k => {
+    if (!byCard.has(k.cardId)) byCard.set(k.cardId, { id: k.cardId, assigneeId, name: k.cardId, period: k.period });
+  });
+  return Array.from(byCard.values());
 };
-
-const NOW = Date.now();
 
 const SEED: SubKpi[] = [];
 

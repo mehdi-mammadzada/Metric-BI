@@ -60,6 +60,10 @@ const TEAM_KPIS: Kpi[] = [];
 const HIERARCHY: Person[] = [];
 
 const fmt = (n: number) => new Intl.NumberFormat("az-AZ").format(n);
+const parseNumber = (value: unknown): number => {
+  const n = parseFloat(String(value ?? "").replace(/[^\d.\-]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+};
 const pctOf = (k: Kpi) => k.target ? Math.round((k.actual / k.target) * 100) : 0;
 const tone = (p: number) => p >= 100 ? "bg-zone-green-bg text-zone-green-text" : p >= 75 ? "bg-zone-yellow-bg text-zone-yellow-text" : "bg-zone-red-bg text-zone-red-text";
 
@@ -68,35 +72,6 @@ const statusMeta: Record<KpiStatus, { label: string; cls: string }> = {
   at_risk:     { label: "Riskdə",    cls: "bg-zone-red-bg text-zone-red-text hover:bg-zone-red-bg" },
   completed:   { label: "Tamamlandı", cls: "bg-zone-green-bg text-zone-green-text hover:bg-zone-green-bg" },
   delayed:     { label: "Gecikir",   cls: "bg-zone-red-bg text-zone-red-text hover:bg-zone-red-bg" },
-};
-
-// Kart üçün hədəf breakdown-ı — seed və dinamik KPI-lar üçün ortaq adapter.
-const SEED_TARGETS: Record<string, { name: string; plan: number; fakt: number; unit: string; status: KpiStatus }[]> = {
-  "Satış Həcminin Artırılması": [
-    { name: "Yeni müştərilərin sayının artırılması", plan: 120, fakt: 98, unit: "ədəd", status: "in_progress" },
-    { name: "Mövcud müştərilərlə satışların artırılması", plan: 250_000, fakt: 120_000, unit: "AZN", status: "at_risk" },
-    { name: "Yeni məhsulun satışa çıxarılması", plan: 1, fakt: 0, unit: "ədəd", status: "delayed" },
-  ],
-  "Yeni Müştəri Qazanılması": [
-    { name: "B2B müqavilələr", plan: 70, fakt: 58, unit: "ədəd", status: "in_progress" },
-    { name: "B2C müqavilələr", plan: 50, fakt: 40, unit: "ədəd", status: "in_progress" },
-  ],
-  "Müştəri Məmnuniyyətinin Artırılması": [
-    { name: "CSAT anketi orta bal", plan: 90, fakt: 61, unit: "%", status: "in_progress" },
-    { name: "Şikayət cavab müddəti (saat)", plan: 24, fakt: 18, unit: "saat", status: "completed" },
-  ],
-  "Komanda satış həcmi (toplu)": [
-    { name: "Aylıq satış — Yanvar", plan: 500_000, fakt: 480_000, unit: "AZN", status: "in_progress" },
-    { name: "Aylıq satış — Fevral", plan: 500_000, fakt: 420_000, unit: "AZN", status: "at_risk" },
-    { name: "Aylıq satış — Mart", plan: 500_000, fakt: 220_000, unit: "AZN", status: "in_progress" },
-  ],
-  "Brand kampaniya reach (toplu)": [
-    { name: "Sosial media reach", plan: 300_000, fakt: 215_000, unit: "istifadəçi", status: "in_progress" },
-    { name: "Web reach", plan: 200_000, fakt: 127_000, unit: "istifadəçi", status: "in_progress" },
-  ],
-  "NPS orta bal (toplu)": [
-    { name: "Komanda üzrə orta NPS", plan: 70, fakt: 72, unit: "bal", status: "completed" },
-  ],
 };
 
 const targetsForKpi = (k: Kpi) => {
@@ -110,9 +85,7 @@ const targetsForKpi = (k: Kpi) => {
       status: t.status as AccordionKpiStatus,
     }));
   }
-  const key = k.name.replace(/\s+—.*$/, "");
-  const seed = SEED_TARGETS[key];
-  if (seed) return seed.map((t, i) => ({ id: `${k.id}-t${i + 1}`, ...t }));
+  if (!k.target && !k.actual) return [];
   return [{
     id: `${k.id}-t1`,
     name: k.method || k.name,
@@ -623,8 +596,6 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
             <div className="space-y-2">
               {[
                 { name: kpi.responsible.name, role: kpi.responsible.role, tag: "Məsul" },
-                { name: "Aysel İbrahimova", role: "Qiymətləndirici", tag: "Qiymətləndirici" },
-                { name: "Rəşad Quliyev", role: "Təsdiqləyən", tag: "Təsdiqləyən" },
               ].map((m, i) => (
                 <div key={i} className="flex items-center gap-3 rounded-lg border border-border p-3">
                   <div className="w-9 h-9 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold">
@@ -676,11 +647,9 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
 
           {tab === "status" && (
             <ol className="space-y-2">
-              {[
-                { role: "Şöbə Müdiri", name: "Abbas Əliyev", state: "ok" as const },
-                { role: "Departament Direktoru", name: "Aysel Məmmədova", state: "wait" as const },
-                { role: "HR Admin", name: "Super Adminov", state: "wait" as const },
-              ].map((r, i) => (
+              {([
+                { role: kpi.responsible.role, name: kpi.responsible.name, state: "wait" as const },
+              ] as { role: string; name: string; state: "ok" | "wait" }[]).map((r, i) => (
                 <li key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg border ${r.state === "ok" ? "border-emerald-500/30 bg-emerald-500/10" : "border-blue-500/30 bg-blue-500/10"}`}>
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-foreground truncate">{i + 1}. {r.name}</div>
@@ -714,7 +683,7 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
           )}
 
           {tab === "targets" && (() => {
-            const targets = buildCardTargets(kpi.id, kpi.target || 100, kpi.unit || "%");
+            const targets = buildCardTargets(kpi);
             return (
               <div className="rounded-xl border border-border overflow-hidden">
                 <table className="w-full text-xs">
@@ -768,11 +737,10 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
           })()}
 
           {tab === "review" && (() => {
-            const targets = buildCardTargets(kpi.id, kpi.target || 100, kpi.unit || "%");
+            const targets = buildCardTargets(kpi);
             const completed = targets.filter(t => t.status === "completed").length;
             const atRisk = targets.filter(t => t.status === "at_risk" || t.status === "delayed").length;
             const avgProg = targets.length ? Math.round(targets.reduce((s, t) => s + Math.round((t.fakt / t.plan) * 100), 0) / targets.length) : 0;
-            const reviewNotes = ["Plan üzrə irəliləyir.", "Bir qədər gecikmə var.", "Yaxşı nəticə göstərilir.", "Təkmilləşdirmə tələb olunur.", "Komanda fəaldır."];
             return (
               <div className="space-y-4">
                 {/* Review Status */}
@@ -796,8 +764,8 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
                     <SummaryStat label="Ortalama Progress" value={`${avgProg}%`} tone="indigo" />
                     <SummaryStat label="Tamamlanan KPI" value={`${completed} / ${targets.length}`} tone="green" />
                     <SummaryStat label="Riskdə olan KPI" value={`${atRisk}`} tone="red" />
-                    <SummaryStat label="Son qiymətləndirmə" value="4.6 / 5" tone="amber" />
-                    <SummaryStat label="Növbəti Review" value={reviewMeta?.nextReview || "22.06.2025"} tone="blue" />
+                    <SummaryStat label="Son qiymətləndirmə" value="—" tone="amber" />
+                    <SummaryStat label="Növbəti Review" value={reviewMeta?.nextReview || "—"} tone="blue" />
                   </div>
                 </div>
 
@@ -835,7 +803,7 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
                                 <Badge className={`${statusMeta[t.status].cls} text-[10px] px-1.5 py-0.5`}>{statusMeta[t.status].label}</Badge>
                               </td>
                               <td className="px-3 py-2.5 text-right tabular-nums">{(pct / 20).toFixed(1)} / 5</td>
-                              <td className="px-3 py-2.5 text-muted-foreground">{reviewNotes[i % reviewNotes.length]}</td>
+                              <td className="px-3 py-2.5 text-muted-foreground">—</td>
                               {onOpenTarget && (
                                 <td className="px-3 py-2.5 text-right">
                                   <button onClick={() => onOpenTarget(t)} className="w-7 h-7 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground" aria-label="Bax" title="Hədəf detalı">
@@ -935,9 +903,12 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
 
   const nodes: TreeNode[] = [];
 
-  const makeEmp = (e: (typeof emps)[number], parentId: string, pathLabel: string): TreeNode => {
-    const h = hashStr(`e${e.id}`);
-    const stats: KpiStatus[] = ["in_progress", "at_risk", "completed", "delayed"];
+    const makeEmp = (e: (typeof emps)[number], parentId: string, pathLabel: string): TreeNode => {
+    const realCards = getRealKpiCardsForEmployee(e.id);
+    const targets = realCards.flatMap(c => c.targets || []);
+    const avgPct = targets.length
+      ? Math.round(targets.reduce((sum, t) => sum + (t.plan ? Math.round((t.fakt / t.plan) * 100) : 0), 0) / targets.length)
+      : 0;
     return {
       id: `e${e.id}`, empId: e.id, kind: "employee", parent: parentId,
       name: `${e.firstName} ${e.lastName}`,
@@ -945,12 +916,12 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
       team: pathLabel.split(" › ").slice(-1)[0] || "—",
       division: pathLabel || "—",
       employees: 1,
-      avgPct: 55 + (h % 45),
-      completed: (h % 5) + 1,
-      atRisk: (h >> 3) % 3,
-      delayed: (h >> 6) % 2,
-      trend: (["up", "down", "flat"] as const)[h % 3],
-      status: stats[h % 4],
+      avgPct,
+      completed: targets.filter(t => t.status === "completed").length,
+      atRisk: targets.filter(t => t.status === "not_achieved").length,
+      delayed: 0,
+      trend: "flat",
+      status: avgPct >= 100 ? "completed" : avgPct > 0 ? "in_progress" : undefined,
     };
   };
 
@@ -963,7 +934,6 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
   const walk = (s: OrgStructure, parentPath: string, parentId: string) => {
     const path = parentPath ? `${parentPath} › ${s.name}` : s.name;
     const id = `s${s.id}`;
-    const h = hashStr(id);
     const t = s.type.toLowerCase();
     const kind: NodeKind = t.includes("depart") ? "department"
       : (t.includes("komanda") || t.includes("team")) ? "team"
@@ -972,11 +942,11 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
     nodes.push({
       id, name: s.name, kind, parent: parentId || undefined,
       employees: empCount,
-      avgPct: 60 + (h % 40),
-      completed: (h % 30) + 3,
-      atRisk: (h >> 3) % 10,
-      delayed: (h >> 6) % 5,
-      trend: (["up", "down", "flat"] as const)[h % 3],
+      avgPct: 0,
+      completed: 0,
+      atRisk: 0,
+      delayed: 0,
+      trend: "flat",
     });
     // Employees first (direct), then sub-structures
     (empByPath.get(path) ?? []).forEach(e => nodes.push(makeEmp(e, id, path)));
@@ -1006,15 +976,14 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
 
   const rootId = "all";
   const rootEmpCount = emps.length;
-  const rootH = hashStr(rootId);
   nodes.push({
     id: rootId, name: "Bütün şirkət", kind: "company",
     employees: rootEmpCount,
-    avgPct: 70 + (rootH % 20),
-    completed: Math.round(rootEmpCount * 0.6),
-    atRisk: Math.round(rootEmpCount * 0.12),
-    delayed: Math.round(rootEmpCount * 0.05),
-    trend: "up",
+    avgPct: 0,
+    completed: 0,
+    atRisk: 0,
+    delayed: 0,
+    trend: "flat",
   });
   (empByPath.get("") ?? []).forEach(e => nodes.push(makeEmp(e, rootId, "Bütün şirkət")));
   structs.forEach(s => walk(s, "", rootId));
@@ -1025,17 +994,7 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
 // Per-employee KPI list (deterministic subset of MY_KPIS variants)
 interface EmpKpi { id: string; name: string; desc: string; plan: number; fakt: number; unit: string; status: KpiStatus; }
 const BASE_KPIS: Omit<EmpKpi, "id" | "fakt" | "status">[] = [];
-const buildEmpKpis = (empId: number): EmpKpi[] => {
-  const h = hashStr(`ek${empId}`);
-  return BASE_KPIS.map((b, i) => {
-    const hh = hashStr(`ek${empId}-${i}`);
-    const ratio = 0.6 + ((hh % 45) / 100); // 0.60..1.05
-    const fakt = Math.round(b.plan * ratio);
-    const pct = Math.round((fakt / b.plan) * 100);
-    const status: KpiStatus = pct >= 100 ? "completed" : pct >= 90 ? "in_progress" : pct >= 75 ? "at_risk" : "delayed";
-    return { id: `${empId}-k${i}`, ...b, fakt, status };
-  }).filter((_, i) => (h >> i) & 1 || i < 3); // at least 3
-};
+const buildEmpKpis = (_empId: number): EmpKpi[] => [];
 
 interface SubordinatesViewProps {
   scopePath?: string | null;
@@ -1750,37 +1709,14 @@ interface CardTarget {
   status: KpiStatus;
 }
 
-const TARGET_NAMES = [
-  "Yeni müştəri qazanılması",
-  "Mövcud müştərilərin saxlanılması",
-  "Kross-satış həcmi",
-  "Kanallar üzrə satış",
-  "Kampaniya effektivliyi",
-];
-
-const buildCardTargets = (cardId: string, planTotal: number, unit: string): CardTarget[] => {
-  const h = hashStr(`ct-${cardId}`);
-  const count = 3 + (h % 2); // 3 or 4 targets
-  const weights: number[] = [];
-  let remaining = 100;
-  for (let i = 0; i < count; i++) {
-    const w = i === count - 1 ? remaining : Math.max(15, Math.round((remaining / (count - i)) + (((h >> (i * 3)) % 10) - 5)));
-    weights.push(w);
-    remaining -= w;
+const buildCardTargets = (card: Kpi | string, planTotal = 0, unit = ""): CardTarget[] => {
+  if (typeof card !== "string") {
+    if (card.realTargets?.length) return card.realTargets;
+    if (!card.target && !card.actual) return [];
+    return [{ id: `${card.id}-target`, name: card.method || card.name, plan: card.target, fakt: card.actual, unit: card.unit, weight: card.weight || 100, status: card.status }];
   }
-  return Array.from({ length: count }).map((_, i) => {
-    const hh = hashStr(`ct-${cardId}-${i}`);
-    const plan = Math.max(1, Math.round((planTotal * weights[i]) / 100));
-    const ratio = 0.55 + ((hh % 50) / 100);
-    const fakt = Math.round(plan * ratio);
-    const pct = Math.round((fakt / plan) * 100);
-    const status: KpiStatus = pct >= 100 ? "completed" : pct >= 90 ? "in_progress" : pct >= 75 ? "at_risk" : "delayed";
-    return {
-      id: `${cardId}-t${i}`,
-      name: TARGET_NAMES[(hh + i) % TARGET_NAMES.length],
-      plan, fakt, unit, weight: weights[i], status,
-    };
-  });
+  if (!planTotal) return [];
+  return [{ id: `${card}-target`, name: "Hədəf", plan: planTotal, fakt: 0, unit, weight: 100, status: "in_progress" }];
 };
 
 const CardTargetsDrawer = ({ data, onClose, onOpenTarget }: {
@@ -1790,7 +1726,7 @@ const CardTargetsDrawer = ({ data, onClose, onOpenTarget }: {
 }) => {
   if (!data) return null;
   const { card, employee } = data;
-  const targets = buildCardTargets(card.id, card.target, card.unit);
+  const targets = buildCardTargets(card);
   return (
     <>
       <div className="fixed inset-0 bg-black/30 z-30 animate-in fade-in" onClick={onClose} />
@@ -2037,26 +1973,14 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
                 <div>
                   <div className="text-xs font-semibold text-foreground mb-1.5">Review Timeline</div>
                   <ol className="relative border-l-2 border-border pl-4 space-y-3">
-                    {[
-                      { d: "01.06.2025 09:00", a: "Sistem", t: "Review yaradıldı" },
-                      { d: "05.06.2025 10:30", a: "Rəhbər", t: "Review başladı" },
-                      { d: "10.06.2025 14:20", a: "Rəhbər", t: "Qeyd əlavə etdi: Plan üzrə irəliləyir." },
-                      { d: "12.06.2025 11:15", a: "Əməkdaş", t: "Cavab verdi: Növbəti həftə əlavə plan hazırlanır." },
-                    ].map((x, i) => (
-                      <li key={i} className="relative">
-                        <span className="absolute -left-[9px] top-1 w-3 h-3 rounded-full bg-sky-500 ring-4 ring-sky-500/15" />
-                        <div className="text-[11px] text-muted-foreground">{x.d}</div>
-                        <div className="text-sm font-medium text-foreground">{x.a}</div>
-                        <div className="text-xs text-muted-foreground">{x.t}</div>
-                      </li>
-                    ))}
+                    <li className="relative text-xs text-muted-foreground">Review tarixçəsi qeyd edilməyib.</li>
                   </ol>
                 </div>
                 <div className="rounded-xl border border-border p-3 space-y-2 text-xs">
-                  <MetaRow label="Qiymətləndiricinin qeydi" value="Yeni müştəri hədəfi üzrə bir qədər gecikmə var. Növbəti həftə əlavə plan hazırlansın." />
-                  <MetaRow label="Əməkdaşın cavabı" value="Yeni kampaniyaya start verilib. Gələn həftə nəticələr yaxşılaşacaq." />
+                  <MetaRow label="Qiymətləndiricinin qeydi" value="—" />
+                  <MetaRow label="Əməkdaşın cavabı" value="—" />
                   <MetaRow label="Review qərarı" value={<Badge className="bg-sky-500/15 text-sky-700">Davam edir</Badge>} />
-                  <MetaRow label="Növbəti Review tarixi" value="22.06.2025" />
+                  <MetaRow label="Növbəti Review tarixi" value="—" />
                 </div>
               </TabsContent>
 
@@ -2086,32 +2010,16 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
                 <div>
                   <div className="text-xs font-semibold text-foreground mb-2">Dövr üzrə dinamika</div>
                   <div className="grid grid-cols-4 gap-1.5">
-                    {["Yan","Fev","Mar","Apr","May","İyn","İyl","Avq","Sen","Okt","Noy","Dek"].map((m, i) => {
-                      const v = Math.round(20 + ((pct + i * 7) % 80));
-                      const c = v >= 90 ? "bg-emerald-500" : v >= 70 ? "bg-amber-500" : "bg-rose-500";
-                      return (
-                        <div key={m} className="rounded-md border border-border p-2 text-center">
-                          <div className="text-[10px] text-muted-foreground">{m}</div>
-                          <div className="mt-1 h-1.5 rounded-full bg-secondary overflow-hidden"><div className={`h-full ${c}`} style={{ width: `${Math.min(v,100)}%` }} /></div>
-                          <div className="text-[10px] tabular-nums mt-1">{v}%</div>
-                        </div>
-                      );
-                    })}
+                    <div className="col-span-4 rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+                      Performans dinamikası qeyd edilməyib.
+                    </div>
                   </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="attachments" className="mt-0">
                 <ul className="space-y-2 text-xs">
-                  {["Review_Report.pdf", "Satış_Hesabatı.xlsx", "Bonus_Hesabatı.pdf"].map(f => (
-                    <li key={f} className="flex items-center justify-between px-3 py-2 rounded-lg border border-border hover:bg-secondary/30">
-                      <div className="flex items-center gap-2">
-                        <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-foreground">{f}</span>
-                      </div>
-                      <button className="text-primary hover:underline">Yüklə</button>
-                    </li>
-                  ))}
+                  <li className="px-3 py-4 rounded-lg border border-dashed border-border text-center text-muted-foreground">Əlavə fayl yoxdur.</li>
                 </ul>
               </TabsContent>
             </div>
@@ -2154,6 +2062,7 @@ type ReviewRow = {
   outcomeComment?: string;
   updatedAt: string;
   execution: ExecutionStatus | null;
+  targets: CardTarget[];
 };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -2212,6 +2121,18 @@ const useReviewRows = (): ReviewRow[] => {
         const execRaw: ExecutionStatus | null | undefined = sharedCard?.execution?.[aid];
         const exec: ExecutionStatus = execRaw || "baslanmayib";
         const progress = execRaw ? progressFromExec(exec) : 0;
+        const realTargets = (sharedCard?.targets || []).map((t, i) => {
+          const plan = parseNumber(t.targetValue ?? t.scoreLimit);
+          return {
+            id: `${sharedCard?.id || lc.cardId}-${t.id ?? i}`,
+            name: t.name || `Hədəf ${i + 1}`,
+            plan,
+            fakt: 0,
+            unit: t.unit || "",
+            weight: Number(t.weight) || 0,
+            status: "in_progress" as KpiStatus,
+          };
+        });
         rows.push({
           key: `${lc.cardId}-${aid}`,
           cardId: lc.cardId,
@@ -2231,6 +2152,7 @@ const useReviewRows = (): ReviewRow[] => {
           outcomeComment: active.outcomeComment,
           updatedAt: (lc.updatedAt || "").slice(0, 10) ? fmtDate((lc.updatedAt || "").slice(0, 10)) : fmtDate(active.start),
           execution: exec,
+          targets: realTargets,
         });
       });
     });
@@ -2277,26 +2199,18 @@ const ReviewsView = () => {
     s === "held" ? "held" : s === "deferred" ? "deferred" : s === "missed" ? "missed" : "in_progress";
 
   const buildOverviewData = (r: ReviewRow): ReviewOverviewData => {
-    const NOTES = ["Plan üzrə irəliləyir.", "Yaxşı nəticə göstərilir.", "Təkmilləşdirmə tələb olunur.", "Review dövrü bitib, lakin qiymətləndirmə aparılmayıb.", "Plan üzrə irəliləyir.", "Review təxirə salındı."];
-    const buckets = buildCardTargets(r.key, 100, "%");
-    const targets = buckets.map((t, i) => {
+    const targets = r.targets.map((t) => {
       const pct = Math.round((t.fakt / t.plan) * 100);
-      // Vary statuses across targets so the summary strip has meaningful numbers
-      const cycle: ReviewStatusValue[] = ["held", "in_progress", "held", "missed", "in_progress", "deferred"];
-      const st: ReviewStatusValue = pct >= 100 ? "held" : pct < 65 ? cycle[i % cycle.length] : cycle[(i + 1) % cycle.length];
-      return { name: t.name, progress: pct, status: st, lastScore: `${(pct / 20).toFixed(1)} / 5`, note: NOTES[i % NOTES.length] };
+      return { name: t.name, progress: Number.isFinite(pct) ? pct : 0, status: toOverviewStatus(r.reviewStatus), lastScore: "—", note: r.outcomeComment || "" };
     });
     return {
       reviewType: r.reviewLabel,
       planDate: r.reviewStart,
-      nextReviewDate: "22.06.2025",
-      updatedAt: `${r.updatedAt}   14:30`,
+      nextReviewDate: "—",
+      updatedAt: r.updatedAt,
       status: toOverviewStatus(r.reviewStatus),
       overallProgress: r.progress,
-      reviewers: [
-        { name: "Elvin Məmmədov", position: "Satış şöbəsinin rəhbəri", badge: "Birbaşa rəhbər" },
-        { name: "Aysel Məmmədova", position: "HR Business Partner", badge: "HR" },
-      ],
+      reviewers: [{ name: r.empName, position: r.position, badge: "İştirakçı" }],
       targets,
     };
   };
@@ -2411,7 +2325,7 @@ const ReviewsView = () => {
           data={overview.data}
           onChangeStatus={() => setStatusDialog({ row: overview.row })}
           onOpenTarget={(idx) => {
-            const t = buildCardTargets(overview.row.key, 100, "%")[idx];
+            const t = overview.row.targets[idx];
             if (t) setTargetDetail({ cardId: overview.row.key, cardName: overview.row.cardName, target: t });
           }}
         />

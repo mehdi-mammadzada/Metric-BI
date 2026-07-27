@@ -30,12 +30,8 @@ export const fullNameOf = (e: Pick<Employee, "firstName" | "lastName" | "fatherN
 export const DEFAULT_BONUS_EMPLOYEES: Employee[] = [];
 
 const MONTHS_AZ = ["Yanvar","Fevral","Mart","Aprel","May","İyun","İyul","Avqust","Sentyabr","Oktyabr","Noyabr","Dekabr"];
-const YEARS = [2023, 2024, 2025, 2026];
-const MISSING_BY_LABEL: Record<string, string[]> = {
-  "2025 Rüb 2": ["2"],
-  "Aprel 2025": ["2", "4"],
-  "2025 II yarımil": ["3"],
-};
+const YEARS = [2025, 2026];
+const MISSING_BY_LABEL: Record<string, string[]> = {};
 
 interface CalcRow { employee: Employee; achievement: number | null; bonus: number | null; }
 
@@ -59,7 +55,7 @@ const BonusPage = ({ employeesOverride, hideChrome, hideCalcButton, heroTitle, h
   // Default auto-calculated view — May 2026 (has full data)
   const defaultLabel = "May 2026";
   const defaultRows: CalcRow[] = employees.map(emp => {
-    const allScored = emp.subKpis.every(s => s.score !== null);
+    const allScored = emp.subKpis.length > 0 && emp.subKpis.every(s => s.score !== null);
     if (!allScored) return { employee: emp, achievement: null, bonus: null };
     const achievement = emp.subKpis.reduce((sum, sk) => sum + (sk.score! * sk.weight), 0) / 100;
     const bonus = (emp.baseSalary * emp.targetBonusPct * achievement) / 10000;
@@ -109,7 +105,7 @@ const BonusPage = ({ employeesOverride, hideChrome, hideCalcButton, heroTitle, h
       const subs = isMissing
         ? emp.subKpis.map((sk, i) => i === 0 ? { ...sk, score: force ? sk.score : null } : sk)
         : emp.subKpis;
-      const allScored = subs.every(s => s.score !== null);
+      const allScored = subs.length > 0 && subs.every(s => s.score !== null);
       if (!allScored) return { employee: emp, achievement: null, bonus: null };
       const achievement = subs.reduce((sum, sk) => sum + (sk.score! * sk.weight), 0) / 100;
       const bonus = (emp.baseSalary * emp.targetBonusPct * achievement) / 10000;

@@ -2356,13 +2356,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
               {detailTab === "team" && (() => {
                 const initials = (n: string) => n.split(" ").filter(Boolean).slice(0, 2).map(s => s[0]?.toUpperCase() || "").join("");
-                const team = (selectedKpi.team && selectedKpi.team.length > 0)
+                const team = selectedKpi.team && selectedKpi.team.length > 0
                   ? selectedKpi.team
-                  : [
-                      { name: selectedKpi.responsible || "Məsul şəxs", role: "Lider / Məsul", avatar: initials(selectedKpi.responsible || "MS") },
-                      { name: "Nizami Əliyev", role: "İcraçı", avatar: "NƏ" },
-                      { name: "Aynur Məmmədova", role: "Qiymətləndirici", avatar: "AM" },
-                    ];
+                  : (selectedKpi.responsible ? [{ name: selectedKpi.responsible, role: "Lider / Məsul", avatar: initials(selectedKpi.responsible) }] : []);
                 return (
                   <div className="bg-card rounded-lg border border-border p-4">
                     <h4 className="font-semibold text-foreground mb-4">KPI Üzvləri</h4>

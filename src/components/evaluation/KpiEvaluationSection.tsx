@@ -32,6 +32,14 @@ export const KpiEvaluationSection = ({ assigneeId }: Props) => {
   const items = useSubKpis(assigneeId);
   const [editing, setEditing] = useState<SubKpi | null>(null);
 
+  if (items.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+        Sizin KPI kartınızda hədəf yoxdur.
+      </div>
+    );
+  }
+
   const summary = useMemo(() => {
     const totalW = items.reduce((s, k) => s + k.weight, 0);
     const evaluated = items.filter(isEvaluated);
@@ -58,8 +66,8 @@ export const KpiEvaluationSection = ({ assigneeId }: Props) => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Sizin KPI Kartınız</p>
-              <h3 className="text-base font-semibold text-foreground">{USER_KPI_CARD.name}</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Dövr: {USER_KPI_CARD.period}</p>
+              <h3 className="text-base font-semibold text-foreground">{items[0]?.cardId || USER_KPI_CARD.name}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Dövr: {items[0]?.period || USER_KPI_CARD.period || "—"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
