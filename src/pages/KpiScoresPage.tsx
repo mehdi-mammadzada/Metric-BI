@@ -387,10 +387,10 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
 
         {/* Table */}
         <DataTable<ScoreRow>
-          rows={selectedCards.length === 0 || !resolvedPeriod ? [] : rows}
-          rowKey={(r) => `${r.empId}-${r.cardIdx}`}
+          rows={!resolvedPeriod ? [] : rows}
+          rowKey={(r) => `${r.empId}-${r.cardId}`}
           storageKey="kpi-scores-table"
-          emptyMessage={!resolvedPeriod ? "Cədvəli görmək üçün dövrü seçin" : selectedCards.length === 0 ? "Ən azı bir KPI kartı seçin" : "Nəticə tapılmadı"}
+          emptyMessage={!resolvedPeriod ? "Cədvəli görmək üçün dövrü seçin" : "Nəticə tapılmadı"}
           toolbarLeft={
             <div className="relative">
               <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -427,7 +427,7 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
             ) },
             { key: "op", label: "Əməliyyat", filterType: "none", align: "center", width: 100, render: (r) => (
               <button
-                onClick={() => setViewEmp({ id: r.empId, fullName: r.fullName, cardIdx: r.cardIdx, cardName: r.cardName })}
+                onClick={() => setViewEmp(r)}
                 title="Detallar"
                 className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
               >
@@ -441,8 +441,6 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
 
       <EmployeeKpiDialog
         emp={viewEmp}
-        year={resolvedPeriod?.yr ?? new Date().getFullYear()}
-        mIdx={resolvedPeriod?.mIdx ?? 0}
         periodLabel={resolvedPeriod?.label ?? ""}
         onClose={() => setViewEmp(null)}
       />
@@ -450,86 +448,19 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
   );
 };
 
-// ===== Card goals catalog (real system goals) =====
-const CARD_GOALS: Record<string, { name: string; target: number; unit: string; weight: number }[]> = {
-  "Satış Həcmi": [
-    { name: "Aylıq satış həcmi", target: 150000, unit: "AZN", weight: 45 },
-    { name: "Yeni müqavilə sayı", target: 12, unit: "ədəd", weight: 30 },
-    { name: "Ortalama sövdələşmə ölçüsü", target: 12500, unit: "AZN", weight: 25 },
-  ],
-  "Müştəri Məmnuniyyəti": [
-    { name: "CSAT balı", target: 90, unit: "%", weight: 40 },
-    { name: "NPS", target: 55, unit: "bal", weight: 35 },
-    { name: "Şikayət cavab müddəti", target: 24, unit: "saat", weight: 25 },
-  ],
-  "Komanda İşi": [
-    { name: "Komanda məmnuniyyət balı", target: 4.5, unit: "bal", weight: 40 },
-    { name: "Cross-functional layihə iştirakı", target: 3, unit: "ədəd", weight: 30 },
-    { name: "Peer review ortalaması", target: 4.3, unit: "bal", weight: 30 },
-  ],
-  "Vaxtında Tapşırıq Yerinə Yetirmə": [
-    { name: "Vaxtında bitirilmə faizi", target: 95, unit: "%", weight: 50 },
-    { name: "Gecikən tapşırıq sayı", target: 2, unit: "ədəd", weight: 25 },
-    { name: "SLA uyğunluğu", target: 98, unit: "%", weight: 25 },
-  ],
-  "Peşəkar İnkişaf": [
-    { name: "Tədris saatları", target: 20, unit: "saat", weight: 40 },
-    { name: "Tamamlanmış sertifikatlar", target: 2, unit: "ədəd", weight: 35 },
-    { name: "Daxili mentor saatları", target: 8, unit: "saat", weight: 25 },
-  ],
-  "Yeni Müştəri Cəlbi": [
-    { name: "Yeni aktiv müştəri", target: 20, unit: "ədəd", weight: 45 },
-    { name: "Lead-dən müştəriyə konversiya", target: 25, unit: "%", weight: 30 },
-    { name: "Outbound zəng sayı", target: 200, unit: "ədəd", weight: 25 },
-  ],
-};
-
-const isLowerBetter = (unit: string, name: string) =>
-  /saat|gün|day|hour|şikayət|gecik/i.test(`${unit} ${name}`);
-
-const goalScoreFor = (empId: number, cardIdx: number, goalIdx: number, year: number, mIdx: number) => {
-  const seed = (empId * 41 + cardIdx * 13 + goalIdx * 7 + year + mIdx * 5) % 100;
-  return Math.round((3 + (seed / 100) * 2) * 10) / 10; // 3.0..5.0
-};
-
-const actualFromScore = (target: number, score: number, lower: boolean) => {
-  // score 5 → 100%, 3 → 70%, 1 → 40% (təxmini)
-  const pct = 40 + (score / 5) * 60;
-  const val = lower ? target / (pct / 100) : target * (pct / 100);
-  const rounded = target >= 100 ? Math.round(val) : Math.round(val * 100) / 100;
-  return rounded;
-};
-
 const fmtNum = (n: number) => new Intl.NumberFormat("az-AZ").format(n);
 
 // ===== Employee detail dialog — bir KPI kartının daxili =====
 
-const initials = (fullName: string) =>
-  fullName.split(" ").filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase() ?? "").join("");
-
 const EmployeeKpiDialog = ({
-  emp, year, mIdx, periodLabel, onClose,
+  emp, periodLabel, onClose,
 }: {
-  emp: { id: number; fullName: string; cardIdx: number; cardName: string } | null;
-  year: number;
-  mIdx: number;
+  emp: ScoreRow | null;
   periodLabel: string;
   onClose: () => void;
 }) => {
-  const goals = emp ? (CARD_GOALS[emp.cardName] || []) : [];
-  // Hər hədəf üçün qiymətləndiriciləri götürürük və hədəfin balını
-  // Σ(çəki × bal) formulası ilə hesablayırıq (backend-dən real gələn məlumat kimi işlənir).
-  const rows = emp ? goals.map((g, gi) => {
-    const evaluators = evaluatorsFor(emp.id, emp.cardIdx * 10 + gi);
-    // Daxili hesablamada tam dəqiqlik saxlanılır, yuvarlaqlaşdırma yalnız göstərilən nəticələrdə.
-    const scoreRaw = evaluators.reduce((s, e) => s + (e.weight / 100) * e.score, 0);
-    const score = Math.round(scoreRaw * 100) / 100;
-    const lower = isLowerBetter(g.unit, g.name);
-    const actual = actualFromScore(g.target, score, lower);
-    return { ...g, score, scoreRaw, actual, lower, evaluators, weightedRaw: (g.weight / 100) * scoreRaw };
-  }) : [];
-  const totalRaw = rows.reduce((s, r) => s + r.weightedRaw, 0);
-  const total = Math.round(totalRaw * 100) / 100;
+  const rows = emp?.goals ?? [];
+  const total = emp?.score ?? 0;
 
   return (
     <Dialog open={!!emp} onOpenChange={(o) => !o && onClose()}>
@@ -539,7 +470,7 @@ const EmployeeKpiDialog = ({
             <UserIcon className="w-5 h-5 text-primary" />
             {emp?.fullName} — {emp ? withKartSuffix(emp.cardName) : ""}
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">Dövr: {periodLabel} · Hər hədəf üzrə qiymətləndiricilər və yekun hesablama</p>
+          <p className="text-xs text-muted-foreground">Dövr: {periodLabel} · Real qiymətləndirmə nəticələri</p>
         </DialogHeader>
 
         {emp && (
@@ -556,7 +487,7 @@ const EmployeeKpiDialog = ({
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div>
                         <div className="font-semibold text-foreground">{r.name}</div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5">{r.lower ? "Az yaxşıdır" : "Çox yaxşıdır"}</div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">{r.note || "Qiymətləndirmə qeydi yoxdur"}</div>
                       </div>
                       <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-md text-xs border font-semibold ${scoreColor(r.score)}`}>
                         {r.score.toFixed(2)} / 5
@@ -578,28 +509,12 @@ const EmployeeKpiDialog = ({
                     </div>
                   </div>
 
-                  {/* SAĞ: Qiymətləndirənlər paneli */}
+                  {/* SAĞ: Qiymətləndirmə paneli */}
                   <div className="p-4 bg-secondary/20">
-                    <div className="text-xs font-medium text-muted-foreground mb-2">Qiymətləndirənlər</div>
-                    <div className="space-y-2">
-                      {r.evaluators.map((ev, j) => (
-                        <div key={j} className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[11px] font-semibold shrink-0">
-                            {initials(ev.name)}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium text-foreground truncate">{ev.name}</div>
-                            <div className="text-[11px] text-muted-foreground truncate">{ev.role}</div>
-                          </div>
-                          <div className="text-xs tabular-nums text-foreground/80">
-                            <span className="font-medium">{ev.weight}%</span> × <span className="font-medium">{ev.score.toFixed(2)}</span>/5
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Qiymətləndirmə</div>
+                    <div className="text-sm text-foreground">Real nəticə: {r.score.toFixed(2)} / 5</div>
                     <div className="mt-3 rounded-md bg-background/70 border border-border px-3 py-2 text-[11px] font-mono text-muted-foreground">
-                      {r.evaluators.map(e => `(${e.weight}%×${e.score.toFixed(2)})`).join(" + ")}
-                      {" = "}
+                      ({r.weight}%×{r.score.toFixed(2)}) ={" "}
                       <span className="text-primary font-bold">{r.score.toFixed(2)} bal</span>
                     </div>
                   </div>
