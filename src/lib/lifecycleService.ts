@@ -18,22 +18,6 @@ const writeLocal = (key: string, value: unknown) => {
   try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* noop */ }
 };
 
-const newer = (a: any, b: any) => {
-  const at = Date.parse(a?.updatedAt || a?.updated_at || a?.createdAt || a?.created_at || "") || 0;
-  const bt = Date.parse(b?.updatedAt || b?.updated_at || b?.createdAt || b?.created_at || "") || 0;
-  return bt > at ? b : a;
-};
-
-const mergeBy = <T extends Record<string, any>>(localRows: T[], cloudRows: T[], keyOf: (row: T) => string): T[] => {
-  const map = new Map<string, T>();
-  localRows.forEach(row => map.set(keyOf(row), row));
-  cloudRows.forEach(row => {
-    const key = keyOf(row);
-    map.set(key, map.has(key) ? newer(map.get(key), row) : row);
-  });
-  return Array.from(map.values());
-};
-
 // ── HYDRATE ─────────────────────────────────────────────────────────────────
 export const hydrateLifecycleFromCloud = async (orgId: string): Promise<void> => {
   const [lcRes, tplRes] = await Promise.all([
@@ -42,7 +26,6 @@ export const hydrateLifecycleFromCloud = async (orgId: string): Promise<void> =>
   ]);
 
   if (!lcRes.error && lcRes.data) {
-    const localLifecycles = readLocal<any[]>(LIFECYCLE_KEY, []);
     const cloudLifecycles = lcRes.data.map(r => ({
       cardId: Number(r.card_local_id),
       cardName: r.card_name,
@@ -54,12 +37,10 @@ export const hydrateLifecycleFromCloud = async (orgId: string): Promise<void> =>
     }));
     writeLocal(
       LIFECYCLE_KEY,
-      mergeBy(localLifecycles, cloudLifecycles, row => String(row.cardId))
-        .sort((a, b) => String(a.cardName || "").localeCompare(String(b.cardName || ""))),
+      cloudLifecycles.sort((a, b) => String(a.cardName || "").localeCompare(String(b.cardName || ""))),
     );
   }
   if (!tplRes.error && tplRes.data) {
-    const localTemplates = readLocal<any[]>(TEMPLATES_KEY, []);
     const cloudTemplates = tplRes.data.map(r => ({
       id: r.local_id,
       name: r.name,
@@ -70,7 +51,7 @@ export const hydrateLifecycleFromCloud = async (orgId: string): Promise<void> =>
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     }));
-    writeLocal(TEMPLATES_KEY, mergeBy(localTemplates, cloudTemplates, row => String(row.id)));
+    writeLocal(TEMPLATES_KEY, cloudTemplates);
   }
 
   window.dispatchEvent(new Event(LIFECYCLE_EVT));
@@ -149,11 +130,12 @@ export const activateLifecycleSync = async (orgId: string) => {
   if (currentOrgId === orgId) return;
   currentOrgId = orgId;
   suppressFlush = true;
+  writeLocal(LIFECYCLE_KEY, []);
+  writeLocal(TEMPLATES_KEY, []);
   await hydrateLifecycleFromCloud(orgId);
   suppressFlush = false;
   window.addEventListener(LIFECYCLE_EVT, scheduleFlush);
   window.addEventListener(TEMPLATES_EVT, scheduleFlush);
-  await flushLifecycleToCloud();
 
   if (realtimeChannel) supabase.removeChannel(realtimeChannel);
   realtimeChannel = supabase

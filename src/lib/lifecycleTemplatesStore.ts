@@ -60,14 +60,7 @@ const load = (): LifecycleTemplate[] => {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      const list = JSON.parse(raw) as LifecycleTemplate[];
-      // Ensure standard template is always present
-      if (!list.some(t => t.id === STANDARD_ID)) {
-        const next = [buildStandardSeed(), ...list];
-        localStorage.setItem(KEY, JSON.stringify(next));
-        return next;
-      }
-      return list;
+      return JSON.parse(raw) as LifecycleTemplate[];
     }
     // Migrate legacy
     let legacy: LifecycleTemplate[] = [];
@@ -84,11 +77,10 @@ const load = (): LifecycleTemplate[] => {
         }
       }
     } catch {}
-    const seeded = [buildStandardSeed(), ...legacy];
-    localStorage.setItem(KEY, JSON.stringify(seeded));
-    return seeded;
+    localStorage.setItem(KEY, JSON.stringify(legacy));
+    return legacy;
   } catch {
-    return [buildStandardSeed()];
+    return [];
   }
 };
 

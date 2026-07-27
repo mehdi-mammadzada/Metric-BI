@@ -24,8 +24,6 @@ const writeLocal = (key: string, value: unknown) => {
 
 const isSeedQueueRow = (row: any) => typeof row?.id === "string" && row.id.startsWith("ap-seed-");
 
-const statusRank = (status?: string) => status && status !== "pending" ? 1 : 0;
-
 const decisionTime = (row: any) => {
   const decisionTimes = Object.values(row?.decisions || {})
     .map((d: any) => Date.parse(d?.at || "") || 0);
@@ -34,28 +32,6 @@ const decisionTime = (row: any) => {
     Date.parse(row?.createdAt || row?.created_at || "") || 0,
     ...decisionTimes,
   );
-};
-
-const newer = (a: any, b: any) => {
-  const ar = statusRank(a?.status);
-  const br = statusRank(b?.status);
-  if (ar !== br) return br > ar ? b : a;
-  const ad = decisionTime(a);
-  const bd = decisionTime(b);
-  if (ad !== bd) return bd > ad ? b : a;
-  const at = Date.parse(a?.updatedAt || a?.updated_at || a?.createdAt || a?.created_at || "") || 0;
-  const bt = Date.parse(b?.updatedAt || b?.updated_at || b?.createdAt || b?.created_at || "") || 0;
-  return bt > at ? b : a;
-};
-
-const mergeBy = <T extends Record<string, any>>(localRows: T[], cloudRows: T[], keyOf: (row: T) => string): T[] => {
-  const map = new Map<string, T>();
-  localRows.forEach(row => map.set(keyOf(row), row));
-  cloudRows.forEach(row => {
-    const key = keyOf(row);
-    map.set(key, map.has(key) ? newer(map.get(key), row) : row);
-  });
-  return Array.from(map.values());
 };
 
 // ── HYDRATE ─────────────────────────────────────────────────────────────────
@@ -67,7 +43,7 @@ export const hydrateApprovalsFromCloud = async (orgId: string): Promise<void> =>
     supabase.from("approval_queue").select("*").eq("organization_id", orgId).order("created_at", { ascending: false }),
   ]);
 
-  if (!amRes.error && amRes.data && amRes.data.length > 0) {
+  if (!amRes.error && amRes.data) {
     writeLocal(APPROVAL_KEY, amRes.data.map(r => ({
       id: r.local_id,
       name: r.name,
@@ -76,7 +52,7 @@ export const hydrateApprovalsFromCloud = async (orgId: string): Promise<void> =>
       updatedAt: r.updated_at,
     })));
   }
-  if (!dmRes.error && dmRes.data && dmRes.data.length > 0) {
+  if (!dmRes.error && dmRes.data) {
     writeLocal(DELETION_KEY, dmRes.data.map(r => ({
       id: r.local_id,
       name: r.name,
@@ -86,7 +62,7 @@ export const hydrateApprovalsFromCloud = async (orgId: string): Promise<void> =>
       updatedAt: r.updated_at,
     })));
   }
-  if (!cmRes.error && cmRes.data && cmRes.data.length > 0) {
+  if (!cmRes.error && cmRes.data) {
     writeLocal(CASCADE_KEY, cmRes.data.map(r => ({
       id: r.local_id,
       name: r.name,
@@ -97,7 +73,6 @@ export const hydrateApprovalsFromCloud = async (orgId: string): Promise<void> =>
     })));
   }
   if (!aqRes.error && aqRes.data) {
-    const localQueue = readLocal<any[]>(QUEUE_KEY, []).filter(row => !isSeedQueueRow(row));
     const cloudQueue = aqRes.data.map(r => ({
       id: r.local_id,
       kpiCardId: r.kpi_card_local_id,
@@ -112,9 +87,7 @@ export const hydrateApprovalsFromCloud = async (orgId: string): Promise<void> =>
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     }));
-    const mergedQueue = mergeBy(localQueue, cloudQueue, row => row.id)
-      .sort((a, b) => decisionTime(b) - decisionTime(a));
-    writeLocal(QUEUE_KEY, mergedQueue);
+    writeLocal(QUEUE_KEY, cloudQueue.sort((a, b) => decisionTime(b) - decisionTime(a)));
   }
 
   // Notify UI hooks to re-read. Suppress flush during rehydrate to avoid loop.
@@ -216,11 +189,16 @@ const scheduleRehydrate = () => {
 export const activateApprovalsSync = async (orgId: string) => {
   if (currentOrgId === orgId) return;
   currentOrgId = orgId;
+  suppressFlush = true;
+  writeLocal(APPROVAL_KEY, []);
+  writeLocal(DELETION_KEY, []);
+  writeLocal(CASCADE_KEY, []);
+  writeLocal(QUEUE_KEY, []);
+  suppressFlush = false;
   await hydrateApprovalsFromCloud(orgId);
   window.addEventListener(MATRIX_EVT, scheduleFlush);
   window.addEventListener(CASCADE_EVT, scheduleFlush);
   window.addEventListener(QUEUE_EVT, scheduleFlush);
-  await flushApprovalsToCloud();
 
   if (realtimeChannel) supabase.removeChannel(realtimeChannel);
   realtimeChannel = supabase

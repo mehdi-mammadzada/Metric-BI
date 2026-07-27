@@ -94,13 +94,18 @@ export const hydrateOrgFromCloud = async (orgId: string): Promise<void> => {
     window.dispatchEvent(new Event("org-logo-updated"));
   }
 
-  // If cloud is empty for this org, seed it from the current local snapshot.
+  // Empty backend means a brand-new organization. Never seed from the current
+  // browser cache, otherwise old data leaks into newly-created organizations.
   const cloudEmpty =
     (empRes.data?.length ?? 0) === 0 &&
     (structRes.data?.length ?? 0) === 0;
   if (cloudEmpty) {
-    await seedCloudFromLocal(orgId);
-    return; // seed writes local map + returns; local data is already correct.
+    saveMap(orgId, { toUuid: {}, toNum: {}, next: 1 });
+    suppressFlush = true;
+    setEmployees([]);
+    setStructures([]);
+    suppressFlush = false;
+    return;
   }
 
   const map = loadMap(orgId);
