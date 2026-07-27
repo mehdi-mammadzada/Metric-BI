@@ -142,7 +142,15 @@ export const enqueueApproval = (input: {
   flushSoon();
   // Sorğu dərhal backend-ə yazılsın ki, bütün cihazlarda görünsün.
   void import("./approvalsService")
-    .then(m => m.persistApprovalRowToCloud(item))
+    .then(async m => {
+      // Sorğu buluda yazılmasa, bütün brauzerlərdə görünməyəcək — 3 dəfə cəhd edirik.
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const ok = await m.persistApprovalRowToCloud(item);
+        if (ok) return;
+        await new Promise(r => setTimeout(r, 1500));
+      }
+      console.error("[approvals] sorğu buluda yazılmadı", item.id);
+    })
     .catch(() => undefined);
 
   firstStep.forEach(approverId => {
@@ -213,8 +221,7 @@ export const decideApproval = async (
 
   // SERVER-AUTHORITATIVE: qərar əvvəlcə backend-ə yazılır. Yazı alınmasa,
   // lokal vəziyyət dəyişmir — beləliklə bütün brauzer/cihazlarda eyni olur.
-  const { getApprovalsOrgId, persistApprovalRowToCloud } = await import("./approvalsService");
-  if (!getApprovalsOrgId()) throw new Error("Təşkilat konteksti yüklənməyib. Səhifəni yeniləyin.");
+  const { persistApprovalRowToCloud } = await import("./approvalsService");
   const ok = await persistApprovalRowToCloud(item);
   if (!ok) throw new Error("Qərar serverdə saxlanmadı. Yenidən cəhd edin.");
 

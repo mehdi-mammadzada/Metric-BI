@@ -176,6 +176,7 @@ export const flushApprovalsToCloud = async () => {
 let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 let rehydrateTimer: number | null = null;
 let onFocusHandler: (() => void) | null = null;
+let pollTimer: number | null = null;
 
 const scheduleRehydrate = () => {
   if (!currentOrgId) return;
@@ -211,6 +212,12 @@ export const activateApprovalsSync = async (orgId: string) => {
 
   onFocusHandler = () => scheduleRehydrate();
   window.addEventListener("focus", onFocusHandler);
+  document.addEventListener("visibilitychange", onFocusHandler);
+
+  // Polling fallback — bəzi brauzer/şəbəkələrdə (Safari, korporativ proxy)
+  // websocket bağlantısı kəsilir; 20 saniyəlik yoxlama sinxronluğu qoruyur.
+  if (pollTimer) window.clearInterval(pollTimer);
+  pollTimer = window.setInterval(() => scheduleRehydrate(), 20000);
 };
 
 export const deactivateApprovalsSync = () => {
@@ -221,7 +228,21 @@ export const deactivateApprovalsSync = () => {
   if (flushTimer) { window.clearTimeout(flushTimer); flushTimer = null; }
   if (rehydrateTimer) { window.clearTimeout(rehydrateTimer); rehydrateTimer = null; }
   if (realtimeChannel) { supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
-  if (onFocusHandler) { window.removeEventListener("focus", onFocusHandler); onFocusHandler = null; }
+  if (pollTimer) { window.clearInterval(pollTimer); pollTimer = null; }
+  if (onFocusHandler) {
+    window.removeEventListener("focus", onFocusHandler);
+    document.removeEventListener("visibilitychange", onFocusHandler);
+    onFocusHandler = null;
+  }
+};
+
+/** Org konteksti hazır olana qədər gözləyir (login/hydrate yarışını aradan qaldırır). */
+const waitForOrgId = async (timeoutMs = 15000): Promise<string | null> => {
+  const started = Date.now();
+  while (!currentOrgId && Date.now() - started < timeoutMs) {
+    await new Promise(r => setTimeout(r, 250));
+  }
+  return currentOrgId;
 };
 
 /** Aktiv təşkilat id-si (approval yazıları üçün). */
@@ -242,9 +263,13 @@ export const persistApprovalRowToCloud = async (a: {
   createdAt?: string;
   updatedAt?: string;
 }): Promise<boolean> => {
-  if (!currentOrgId) return false;
+  const orgId = await waitForOrgId();
+  if (!orgId) {
+    console.error("[approvals] org context yoxdur — sətir buluda yazılmadı", a.id);
+    return false;
+  }
   const payload = {
-    organization_id: currentOrgId,
+    organization_id: orgId,
     local_id: a.id,
     kpi_card_local_id: a.kpiCardId,
     kpi_name: a.kpiName,
@@ -264,7 +289,7 @@ export const persistApprovalRowToCloud = async (a: {
     const { data, error } = await supabase
       .from("approval_queue")
       .update(payload)
-      .eq("organization_id", currentOrgId)
+      .eq("organization_id", orgId)
       .eq("local_id", a.id)
       .select("local_id")
       .maybeSingle();

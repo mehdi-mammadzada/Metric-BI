@@ -12,12 +12,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useApprovals, decideApproval, type ApprovalItem } from "@/lib/approvalsStore";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
 import { getCurrentEmployeeId, getVisibleApprovals } from "@/lib/scope";
+import { getIdentityAliases, findMyRef } from "@/lib/identity";
 import { getEmployeeDisplayName, getEnrichedEmployee } from "@/data/mockExtras";
 import { toast } from "sonner";
 
 const empName = (id: string) => getEmployeeDisplayName(id);
 
-const aliasesFor = (id: string | null | undefined) => id ? [id, id.startsWith("e") ? id.slice(1) : `e${id}`] : [];
+
 
 const ApprovalCard = ({
   a, canAct, onView, onApprove, onReject,
@@ -109,6 +110,7 @@ const ApprovalsPage = () => {
   const all = useApprovals();
   const cards = useSharedKpiCards();
   const meId = getCurrentEmployeeId(user);
+  const myAliases = useMemo(() => getIdentityAliases(user), [user]);
   const visible = useMemo(() => getVisibleApprovals(user, all), [user, all]);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailNote, setDetailNote] = useState("");
@@ -122,7 +124,7 @@ const ApprovalsPage = () => {
 
   const handleApproveInDetail = async () => {
     if (!detail || !meId) return;
-    const approverId = detail.approverIds.find(id => aliasesFor(meId).includes(id)) || meId;
+    const approverId = findMyRef(myAliases, detail.approverIds ?? []) || meId;
     try {
       await decideApproval(detail.id, approverId, "approved", detailNote || undefined);
       toast.success("KPI təsdiqləndi");
@@ -137,7 +139,7 @@ const ApprovalsPage = () => {
       toast.error("İmtina üçün rəy yazın");
       return;
     }
-    const approverId = detail.approverIds.find(id => aliasesFor(meId).includes(id)) || meId;
+    const approverId = findMyRef(myAliases, detail.approverIds ?? []) || meId;
     try {
       await decideApproval(detail.id, approverId, "rejected", detailNote);
       toast.success("İmtina qeyd olundu");
@@ -193,7 +195,7 @@ const ApprovalsPage = () => {
                     <div className="text-center text-xs text-muted-foreground py-10">Boş</div>
                   )}
                   {items.map(a => {
-                    const actionApproverId = a.approverIds.find(id => aliasesFor(meId).includes(id)) || null;
+                    const actionApproverId = findMyRef(myAliases, a.approverIds ?? []);
                     const myDecision = actionApproverId ? a.decisions[actionApproverId]?.decision : undefined;
                     const canActMe = !!actionApproverId && a.status === "pending" && myDecision === "pending";
                     const liveName = cardOf(a.kpiCardId)?.name || a.kpiName;
@@ -219,7 +221,7 @@ const ApprovalsPage = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {detail && (() => {
             const c = cardOf(detail.kpiCardId);
-            const actionApproverId = detail.approverIds.find(id => aliasesFor(meId).includes(id)) || null;
+            const actionApproverId = findMyRef(myAliases, detail.approverIds ?? []);
             const myDecision = actionApproverId ? detail.decisions[actionApproverId]?.decision : undefined;
             const canAct = !!actionApproverId && detail.status === "pending" && myDecision === "pending";
             const statusBadge = detail.status === "pending"
