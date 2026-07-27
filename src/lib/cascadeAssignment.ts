@@ -39,6 +39,19 @@ export const getCardAssigneeEmployees = (opts: { cardId?: number; cardName?: str
   }
 };
 
+/** Toplu (bulk) təyinatlı kartlar üçün kaskad ağacı/yükü YARANMIR — yalnız fərdi kartlar kaskadlanır. */
+export const isBulkAssignedCard = (opts: { cardId?: number; cardName?: string }): boolean => {
+  try {
+    const cards = getSharedKpiCards();
+    const card =
+      (opts.cardId != null ? cards.find(c => c.numericId === opts.cardId) : undefined) ||
+      (opts.cardName ? cards.find(c => c.name === opts.cardName) : undefined);
+    return !!card && (card as any).assignmentMode === "bulk";
+  } catch {
+    return false;
+  }
+};
+
 /** Əməkdaşın ştat slotuna görə aid olduğu struktur vahidini tapır. */
 const findUnitIdOfEmployee = (employeeId: number): number | null => {
   const walk = (list: any[]): number | null => {
