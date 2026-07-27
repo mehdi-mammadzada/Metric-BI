@@ -11,22 +11,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { KpiCard } from "@/lib/kpiCardTypes";
 import { getEntriesForCard } from "@/lib/kpiSetStore";
+import { TARGET_STATUS_LABEL, type TargetStatus } from "@/lib/targetStatus";
 
 // ── Status helpers ────────────────────────────────────────────────────────────
-type DayStatus = "normal" | "risk" | "critical" | "completed" | "no_data";
+// Hədəf statusları sistem üzrə yalnız 3-dür.
+type DayStatus = TargetStatus;
 const STATUS_META: Record<DayStatus, { label: string; dot: string; text: string; bg: string; }> = {
-  normal:    { label: "Normal",    dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
-  risk:      { label: "Risk",      dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-300",     bg: "bg-amber-50 dark:bg-amber-500/10" },
-  critical:  { label: "Critical",  dot: "bg-rose-500",    text: "text-rose-700 dark:text-rose-300",       bg: "bg-rose-50 dark:bg-rose-500/10" },
-  completed: { label: "Completed", dot: "bg-blue-500",    text: "text-blue-700 dark:text-blue-300",       bg: "bg-blue-50 dark:bg-blue-500/10" },
-  no_data:   { label: "No Data",   dot: "bg-slate-400",   text: "text-muted-foreground",                  bg: "bg-secondary/40" },
+  in_progress:  { label: TARGET_STATUS_LABEL.in_progress,  dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-300",     bg: "bg-amber-50 dark:bg-amber-500/10" },
+  achieved:     { label: TARGET_STATUS_LABEL.achieved,     dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
+  not_achieved: { label: TARGET_STATUS_LABEL.not_achieved, dot: "bg-rose-500",    text: "text-rose-700 dark:text-rose-300",       bg: "bg-rose-50 dark:bg-rose-500/10" },
 };
-const statusFromPct = (p: number): DayStatus => {
-  if (p >= 100) return "completed";
-  if (p >= 80) return "normal";
-  if (p >= 60) return "risk";
-  return "critical";
-};
+const statusFromPct = (p: number): DayStatus => (p >= 100 ? "achieved" : "in_progress");
 
 // ── Deterministic pseudo-random (seed-based) ─────────────────────────────────
 const seedRand = (seed: number) => {

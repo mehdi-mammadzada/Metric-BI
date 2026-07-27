@@ -5,9 +5,10 @@ import { CalendarDays, Flag, ChevronDown, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { withKartSuffix } from "@/lib/utils";
 import TargetDetailDialog from "./TargetDetailDialog";
+import { TARGET_STATUS_BADGE, TARGET_STATUS_BAR, TARGET_STATUS_LABEL, inferTargetStatus, normalizeTargetStatus, type TargetStatus } from "@/lib/targetStatus";
 
-// Sistem üzrə yalnız 3 status: İcrada, Tamamlandı, Tamamlanmadı
-export type AccordionKpiStatus = "in_progress" | "completed" | "not_achieved" | "at_risk" | "delayed";
+// Sistem üzrə yalnız 3 status: İcrada, Hədəfə çatıb, Hədəfə çatmayıb
+export type AccordionKpiStatus = "in_progress" | "achieved" | "not_achieved";
 export type AccordionAction = "view" | "history" | "comments" | "reminders";
 
 export interface AccordionTarget {
@@ -28,18 +29,14 @@ export interface AccordionKpi {
   targets: AccordionTarget[];
 }
 
-type NormalizedStatus = "in_progress" | "completed" | "not_achieved";
+type NormalizedStatus = TargetStatus;
 
-const normalize = (s?: AccordionKpiStatus): NormalizedStatus => {
-  if (s === "completed") return "completed";
-  if (s === "not_achieved" || s === "delayed") return "not_achieved";
-  return "in_progress";
-};
+const normalize = (s?: AccordionKpiStatus): NormalizedStatus => normalizeTargetStatus(s);
 
 const STATUS: Record<NormalizedStatus, { label: string; cls: string; bar: string }> = {
-  in_progress: { label: "İcrada",       cls: "bg-amber-100 text-amber-700 hover:bg-amber-100 border border-amber-200", bar: "bg-amber-500" },
-  completed:   { label: "Tamamlandı",   cls: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border border-emerald-200", bar: "bg-emerald-500" },
-  not_achieved:{ label: "Tamamlanmadı", cls: "bg-rose-100 text-rose-700 hover:bg-rose-100 border border-rose-200", bar: "bg-rose-500" },
+  in_progress: { label: TARGET_STATUS_LABEL.in_progress, cls: TARGET_STATUS_BADGE.in_progress, bar: TARGET_STATUS_BAR.in_progress },
+  achieved: { label: TARGET_STATUS_LABEL.achieved, cls: TARGET_STATUS_BADGE.achieved, bar: TARGET_STATUS_BAR.achieved },
+  not_achieved: { label: TARGET_STATUS_LABEL.not_achieved, cls: TARGET_STATUS_BADGE.not_achieved, bar: TARGET_STATUS_BAR.not_achieved },
 };
 
 const toNumber = (v: number | string): number => {
@@ -57,24 +54,6 @@ const pctOf = (plan: number | string, fakt: number | string): number => {
   return p ? Math.round((f / p) * 100) : 0;
 };
 
-const isPastDeadline = (deadline?: string): boolean => {
-  if (!deadline || deadline === "—") return false;
-  // DD.MM.YYYY və ya YYYY-MM-DD
-  let d: Date | null = null;
-  const m1 = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(deadline);
-  if (m1) d = new Date(+m1[3], +m1[2] - 1, +m1[1]);
-  const m2 = /^(\d{4})-(\d{2})-(\d{2})$/.exec(deadline);
-  if (m2) d = new Date(+m2[1], +m2[2] - 1, +m2[3]);
-  if (!d) return false;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return d < today;
-};
-
-const inferStatus = (pct: number, deadline?: string): NormalizedStatus => {
-  if (pct >= 100) return "completed";
-  if (isPastDeadline(deadline)) return "not_achieved";
-  return "in_progress";
-};
 
 interface Props {
   items: AccordionKpi[];
@@ -155,7 +134,7 @@ const KpiAccordionList = ({ items, defaultExpandFirst = true, emptyLabel = "KPI 
                         const p = pctOf(t.plan, t.fakt);
                         const normStatus: NormalizedStatus = t.status
                           ? normalize(t.status)
-                          : inferStatus(p, kpi.deadline);
+                          : inferTargetStatus(p, kpi.deadline);
                         const s = STATUS[normStatus];
                         const unit = t.unit ? (t.unit === "AZN" ? " ₼" : ` ${t.unit}`) : "";
                         return (

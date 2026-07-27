@@ -9,25 +9,22 @@ import { toast } from "sonner";
 import { useCascadeAssignments, emptyLimits, type CascadeSlice, type CascadeAssignment } from "@/lib/cascadingStore";
 import { useCascadeTree } from "@/lib/cascadeTreeStore";
 import { withKartSuffix } from "@/lib/utils";
+import { TARGET_STATUS_BADGE, type TargetStatus } from "@/lib/targetStatus";
 
-type ExecStatus = "completed" | "in_progress" | "pending" | "overdue";
+// Sistem üzrə yalnız 3 hədəf statusu istifadə olunur.
+type ExecStatus = TargetStatus;
 
-// Deterministic mock execution status per slice id.
 const statusFor = (id: string): { status: ExecStatus; progress: number } => {
   const hash = Array.from(id).reduce((a, c) => a + c.charCodeAt(0), 0);
   const progress = 10 + (hash * 7) % 91;
-  let status: ExecStatus = "in_progress";
-  if (progress >= 95) status = "completed";
-  else if (progress < 25) status = "overdue";
-  else if (progress < 45) status = "pending";
+  const status: ExecStatus = progress >= 100 ? "achieved" : "in_progress";
   return { status, progress };
 };
 
 const STATUS_META: Record<ExecStatus, { labelKey: string; cls: string; icon: typeof CheckCircle2 }> = {
-  completed:   { labelKey: "goal_tracking.status_completed",  cls: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30", icon: CheckCircle2 },
-  in_progress: { labelKey: "goal_tracking.status_in_progress", cls: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30", icon: Clock },
-  pending:     { labelKey: "goal_tracking.status_pending",    cls: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30", icon: Clock },
-  overdue:     { labelKey: "goal_tracking.status_overdue",    cls: "bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30", icon: AlertTriangle },
+  achieved:     { labelKey: "goal_tracking.status_achieved",     cls: TARGET_STATUS_BADGE.achieved, icon: CheckCircle2 },
+  in_progress:  { labelKey: "goal_tracking.status_in_progress",  cls: TARGET_STATUS_BADGE.in_progress, icon: Clock },
+  not_achieved: { labelKey: "goal_tracking.status_not_achieved", cls: TARGET_STATUS_BADGE.not_achieved, icon: AlertTriangle },
 };
 
 const GoalTrackingPage = () => {
@@ -77,8 +74,8 @@ const GoalTrackingPage = () => {
     assignments.forEach(a => a.slices.forEach(s => {
       total++;
       const st = statusFor(s.id).status;
-      if (st === "completed") done++;
-      if (st === "overdue") overdue++;
+      if (st === "achieved") done++;
+      if (st === "not_achieved") overdue++;
     }));
     return { total, done, overdue };
   }, [assignments]);
@@ -184,9 +181,8 @@ const GoalTrackingPage = () => {
                               <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
                                 <div
                                   className={`h-full rounded-full transition-all ${
-                                    status === "completed" ? "bg-emerald-500" :
-                                    status === "overdue" ? "bg-red-500" :
-                                    status === "pending" ? "bg-amber-500" : "bg-blue-500"
+                                    status === "achieved" ? "bg-emerald-500" :
+                                    status === "not_achieved" ? "bg-rose-500" : "bg-amber-500"
                                   }`}
                                   style={{ width: `${progress}%` }}
                                 />

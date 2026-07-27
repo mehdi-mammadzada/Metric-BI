@@ -6,7 +6,9 @@ import { useEffect, useState } from "react";
 import type { CreateKpiWizardDraft } from "@/components/kpi/CreateKpiWizard";
 
 export type SharedKpiStatus = "qaralama" | "natamam" | "tesdiq_gozlenilir" | "imtina" | "aktiv" | "silindi" | "legv_olundu";
-export type ExecutionStatus = "baslanmayib" | "icrada" | "tamamlandi" | "gecikme";
+// Hədəf icra statusu — sistem üzrə yalnız 3 status:
+// icrada = İcrada · tamamlandi = Hədəfə çatıb · gecikme = Hədəfə çatmayıb
+export type ExecutionStatus = "icrada" | "tamamlandi" | "gecikme";
 
 export interface SharedKpiCard {
   id: string;
