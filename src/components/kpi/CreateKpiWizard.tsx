@@ -2054,23 +2054,71 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
     }));
   };
 
+  // Hədəf dəyərindən ardıcıl, kəsişməyən intervallar hesablayır (son interval hədəfdə bitir).
+  const targetNumber = useMemo(() => {
+    const raw = String(target.targetValue ?? "").replace(/[^0-9.,-]/g, "").replace(/\s/g, "").replace(",", ".");
+    const n = Number(raw);
+    return isFinite(n) && n > 0 ? n : null;
+  }, [target.targetValue]);
+
+  const autoFill = () => {
+    if (!needsMinMax) return;
+    if (targetNumber === null) {
+      toast.error("Əvvəlcə hədəf dəyərini daxil edin");
+      return;
+    }
+    const count = ordered.length || max;
+    const bounds: number[] = [];
+    for (let i = 1; i <= count; i++) {
+      let b = Math.round((targetNumber * i) / count);
+      const prev = i === 1 ? -1 : bounds[i - 2];
+      if (b <= prev) b = prev + 1;
+      bounds.push(b);
+    }
+    bounds[count - 1] = Math.max(targetNumber, bounds[count - 2] ?? 0 + 1);
+    const byScore = new Map<string, { mn: number; mx: number }>();
+    ordered.forEach((r, i) => {
+      const mn = i === 0 ? 0 : bounds[i - 1] + 1;
+      const mx = Math.max(bounds[i], mn);
+      byScore.set(r.id, { mn, mx });
+    });
+    setRows(rows.map(x => {
+      const v = byScore.get(x.id);
+      return v ? { ...x, description: `${v.mn}-${v.mx}` } : x;
+    }));
+    toast.success("Bal intervalları hədəf dəyərinə uyğun dolduruldu");
+  };
+
   const inputCls = "w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30";
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <Star className="w-5 h-5 text-amber-500" />
-            "{target.name || "Hədəf"}" üçün bal intervalları (1–{max})
-          </DialogTitle>
+          <div className="flex items-start justify-between gap-3">
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Star className="w-5 h-5 text-amber-500" />
+              "{target.name || "Hədəf"}" üçün bal intervalları (1–{max})
+            </DialogTitle>
+            {needsMinMax && (
+              <button
+                type="button"
+                onClick={autoFill}
+                className="shrink-0 mr-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card shadow-sm text-xs font-semibold text-foreground hover:bg-secondary transition-colors"
+                title="Hədəf dəyərinə əsasən intervalları avtomatik hesabla"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-primary" /> Avtomatik
+              </button>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1">
             <Info className="w-3.5 h-3.5 text-primary shrink-0" />
             {needsMinMax
-              ? "Minimum bal yalnız bir qiymət üçün seçilə bilər."
+              ? "Minimum bal yalnız bir qiymət üçün seçilə bilər. \"Avtomatik\" hədəf dəyərinə əsasən intervalları doldurur — sonradan əl ilə dəyişə bilərsiniz."
               : `${max === 10 ? "10 və 4" : `${max} və 2`} ballarının ${isTime ? "zaman aralığı" : "izahı"} məcburidir.`}
           </p>
         </DialogHeader>
+
 
         <div className="rounded-lg border border-border overflow-hidden">
           <div className="grid grid-cols-12 gap-3 px-4 py-2.5 bg-secondary/50 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
