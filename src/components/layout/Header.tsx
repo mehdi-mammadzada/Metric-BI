@@ -1,5 +1,6 @@
 import { Search, Bell, Moon, Sun, LogOut, Mail, Building2, Users as UsersIcon, CheckCircle2, AlertCircle, Clock, Globe, Shield } from "lucide-react";
 import { useEffect, useMemo, useState, useRef } from "react";
+import { applyTheme, getStoredTheme } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useNotificationsFor, markAllRead } from "@/lib/notificationsStore";
@@ -26,7 +27,7 @@ const Header = ({ title, showVersion = true }: HeaderProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  const [dark, setDark] = useState(() => getStoredTheme() === "dark");
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showLang, setShowLang] = useState(false);
@@ -62,8 +63,7 @@ const Header = ({ title, showVersion = true }: HeaderProps) => {
 
 
   useEffect(() => {
-    if (dark) document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
+    applyTheme(dark ? "dark" : "light");
   }, [dark]);
 
   // Close dropdowns on outside click
