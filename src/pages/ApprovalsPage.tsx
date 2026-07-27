@@ -194,7 +194,7 @@ const ApprovalsPage = () => {
                   {items.map(a => {
                     const actionApproverId = a.approverIds.find(id => aliasesFor(meId).includes(id)) || null;
                     const myDecision = actionApproverId ? a.decisions[actionApproverId]?.decision : undefined;
-                    const canActMe = isManagerActor && a.status === "pending" && myDecision === "pending";
+                    const canActMe = !!actionApproverId && a.status === "pending" && myDecision === "pending";
                     const liveName = cardOf(a.kpiCardId)?.name || a.kpiName;
                     return (
                       <ApprovalCard
@@ -220,7 +220,7 @@ const ApprovalsPage = () => {
             const c = cardOf(detail.kpiCardId);
             const actionApproverId = detail.approverIds.find(id => aliasesFor(meId).includes(id)) || null;
             const myDecision = actionApproverId ? detail.decisions[actionApproverId]?.decision : undefined;
-            const canAct = isManagerActor && detail.status === "pending" && myDecision === "pending";
+            const canAct = !!actionApproverId && detail.status === "pending" && myDecision === "pending";
             const statusBadge = detail.status === "pending"
               ? { text: "Təsdiq gözləyir", cls: "bg-amber-100 text-amber-800 border-amber-300" }
               : detail.status === "approved"
