@@ -47,9 +47,34 @@ export const periodCategories = (p: PeriodValue): string[] => {
   return Array.from({ length: days }, (_, i) => String(i + 1).padStart(2, "0"));
 };
 
+/**
+ * Gələcək tarixlər üçün qrafik nöqtəsi formalaşdırılmır — kateqoriyalar yalnız
+ * cari tarixə qədər kəsilir (keçmiş dövrlər tam, gələcək dövrlər boş).
+ */
+export const periodCategoriesToDate = (p: PeriodValue): string[] => {
+  const all = periodCategories(p);
+  const now = new Date();
+  const y = now.getFullYear();
+  if (p.year > y) return [];
+  if (p.year < y) return all;
+
+  if (p.mode === "year") return all.slice(0, now.getMonth() + 1);
+  if (p.mode === "quarter") {
+    const q = p.quarter ?? 1;
+    const curQ = Math.floor(now.getMonth() / 3) + 1;
+    if (q > curQ) return [];
+    if (q < curQ) return all;
+    return all.slice(0, (now.getMonth() % 3) + 1);
+  }
+  const m = p.month ?? 0;
+  if (m > now.getMonth()) return [];
+  if (m < now.getMonth()) return all;
+  return all.slice(0, now.getDate());
+};
+
 /** Empty series scaffold — real values come from the database, never demo noise. */
 export const buildDemoSeries = (p: PeriodValue, _baseline = 75): { name: string; value: number }[] =>
-  periodCategories(p).map((name) => ({ name, value: 0 }));
+  periodCategoriesToDate(p).map((name) => ({ name, value: 0 }));
 
 interface Props {
   value: PeriodValue;

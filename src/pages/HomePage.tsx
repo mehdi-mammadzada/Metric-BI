@@ -5,7 +5,7 @@ import { TrendingUp, Target, CheckCircle, AlertTriangle, Sparkles } from "lucide
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { PageHero, FancyStatCard, FancyCard } from "@/components/ui/page-hero";
 import { AIChatSection } from "@/components/ai/AIChatSection";
-import PeriodPicker, { currentPeriod, periodLabel, type PeriodValue } from "@/components/common/PeriodPicker";
+import PeriodPicker, { buildDemoSeries, currentPeriod, periodLabel, type PeriodValue } from "@/components/common/PeriodPicker";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
 
@@ -30,10 +30,7 @@ const HomePage = () => {
   const { user } = useAuth();
   const cards = useSharedKpiCards();
   const [period, setPeriod] = useState<PeriodValue>(() => currentPeriod("year"));
-  const chartData = useMemo(() => {
-    const points = period.mode === "year" ? 12 : period.mode === "quarter" ? 3 : 31;
-    return Array.from({ length: points }, (_, i) => ({ name: String(i + 1), value: 0 }));
-  }, [period]);
+  const chartData = useMemo(() => buildDemoSeries(period), [period]);
   const subtitle = periodLabel(period);
 
   const suffix = kartiSuffix(i18n.language);

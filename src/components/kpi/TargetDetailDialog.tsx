@@ -68,7 +68,7 @@ const TargetDetailDialog = ({ open, onOpenChange, kpiName, target, deadline, sta
   const unit = target.unit ? (target.unit === "AZN" ? " ₼" : ` ${target.unit}`) : "";
 
   return (
-    <aside className="fixed top-0 right-0 h-screen w-full sm:w-[560px] bg-card border-l border-border shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+    <aside className="fixed top-0 right-0 h-screen w-full sm:w-[560px] bg-card border-l border-border shadow-2xl z-[90] flex flex-col animate-in slide-in-from-right duration-300">
       <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border">
         <div className="min-w-0">
           <h3 className="text-base font-semibold text-foreground truncate">Hədəf: {target.name}</h3>
