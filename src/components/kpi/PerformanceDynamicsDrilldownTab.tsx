@@ -6,15 +6,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import type { KpiCard } from "@/lib/kpiCardTypes";
 import { getEntriesForCard } from "@/lib/kpiSetStore";
 import { cn } from "@/lib/utils";
+import { TARGET_STATUS_BADGE, TARGET_STATUS_BAR, TARGET_STATUS_LABEL, type TargetStatus } from "@/lib/targetStatus";
 
-type DayStatus = "normal" | "risk" | "critical" | "completed" | "no_data";
+// Hədəf statusları sistem üzrə yalnız 3-dür.
+type DayStatus = TargetStatus;
 
 const STATUS_META: Record<DayStatus, { label: string; badge: string; dot: string; bar: string }> = {
-  normal: { label: "Normal", badge: "bg-success/10 text-success border-success/20", dot: "bg-success", bar: "[&>div]:bg-success" },
-  risk: { label: "Risk", badge: "bg-warning/10 text-warning border-warning/20", dot: "bg-warning", bar: "[&>div]:bg-warning" },
-  critical: { label: "Kritik", badge: "bg-destructive/10 text-destructive border-destructive/20", dot: "bg-destructive", bar: "[&>div]:bg-destructive" },
-  completed: { label: "Tamamlanıb", badge: "bg-info/10 text-info border-info/20", dot: "bg-info", bar: "[&>div]:bg-info" },
-  no_data: { label: "Məlumat yoxdur", badge: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground", bar: "[&>div]:bg-muted-foreground" },
+  in_progress: { label: TARGET_STATUS_LABEL.in_progress, badge: TARGET_STATUS_BADGE.in_progress, dot: TARGET_STATUS_BAR.in_progress, bar: "[&>div]:bg-amber-500" },
+  achieved: { label: TARGET_STATUS_LABEL.achieved, badge: TARGET_STATUS_BADGE.achieved, dot: TARGET_STATUS_BAR.achieved, bar: "[&>div]:bg-emerald-500" },
+  not_achieved: { label: TARGET_STATUS_LABEL.not_achieved, badge: TARGET_STATUS_BADGE.not_achieved, dot: TARGET_STATUS_BAR.not_achieved, bar: "[&>div]:bg-rose-500" },
 };
 
 const MONTHS_AZ = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "İyun", "İyul", "Avqust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
@@ -38,11 +38,8 @@ const seedRand = (seed: number) => {
 };
 
 const statusFromPct = (pct: number): DayStatus => {
-  if (pct <= 0) return "no_data";
-  if (pct >= 100) return "completed";
-  if (pct >= 80) return "normal";
-  if (pct >= 60) return "risk";
-  return "critical";
+  if (pct >= 100) return "achieved";
+  return "in_progress";
 };
 
 const parseTargetNumber = (value?: string) => {
