@@ -2328,6 +2328,15 @@ const ReviewsCount = () => {
   return <>{rows.length}</>;
 };
 
+const SubordinatesCount = ({ scopePath }: { scopePath?: string | null }) => {
+  const count = useMemo(
+    () => buildOrgTree(scopePath).filter(n => n.kind === "employee").length,
+    [scopePath],
+  );
+  return <>{count}</>;
+};
+
+
 const ReviewsView = () => {
   const rows = useReviewRows();
   const { user } = useAuth();
