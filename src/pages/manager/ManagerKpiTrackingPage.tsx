@@ -647,9 +647,9 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
 
           {tab === "status" && (
             <ol className="space-y-2">
-              {[
+              {([
                 { role: kpi.responsible.role, name: kpi.responsible.name, state: "wait" as const },
-              ].map((r, i) => (
+              ] as { role: string; name: string; state: "ok" | "wait" }[]).map((r, i) => (
                 <li key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg border ${r.state === "ok" ? "border-emerald-500/30 bg-emerald-500/10" : "border-blue-500/30 bg-blue-500/10"}`}>
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-foreground truncate">{i + 1}. {r.name}</div>
@@ -918,7 +918,7 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
       employees: 1,
       avgPct,
       completed: targets.filter(t => t.status === "completed").length,
-      atRisk: targets.filter(t => t.status === "at_risk" || t.status === "delayed").length,
+      atRisk: targets.filter(t => t.status === "not_achieved").length,
       delayed: 0,
       trend: "flat",
       status: avgPct >= 100 ? "completed" : avgPct > 0 ? "in_progress" : undefined,
