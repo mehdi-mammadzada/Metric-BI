@@ -508,7 +508,9 @@ const AssignView = () => {
             defaultSliceValue: assignedValue,
             subKpiName: saved?.name || entry.subKpiName,
           } as KpiSetEntry;
-          if (incoming?.nodeId && value > 0) {
+          if (isBulkAssignedCard({ cardId: refreshed.cardId, cardName: refreshed.cardName })) {
+            // Toplu kartlar üçün kaskad yükü/ağacı yaradılmır.
+          } else if (incoming?.nodeId && value > 0) {
             setCascadeConfirm({ entry: refreshed, value, unit });
           } else {
             createIndependentCascadeRoot(refreshed);
