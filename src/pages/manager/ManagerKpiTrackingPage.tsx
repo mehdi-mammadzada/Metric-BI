@@ -2259,13 +2259,8 @@ const useReviewRows = (): ReviewRow[] => {
 
     const isActive = (r: LifecycleReview) => r.start && r.end && r.start <= today && today <= r.end;
 
-    // Deterministic fallbacks (demo data) when structure or execution is missing
-    const DEPARTMENTS = ["Satış Departamenti", "Marketinq Departamenti", "Maliyyə Departamenti", "İnsan Resursları", "Əməliyyat Departamenti"];
-    const DIVISIONS = ["Korporativ Satış", "Rəqəmsal Marketinq", "Büdcə və Analiz", "İşə qəbul", "Logistika"];
-    const POSITIONS = ["Baş mütəxəssis", "Aparıcı mütəxəssis", "Menecer", "Koordinator", "Mütəxəssis"];
-    const PROGRESSES = [42, 58, 65, 73, 81, 35, 90, 55, 47, 68];
-    const EXECS: ExecutionStatus[] = ["icrada", "icrada", "gecikme", "tamamlandi", "icrada"];
-    const pick = <T,>(arr: T[], seed: number) => arr[Math.abs(seed) % arr.length];
+
+
 
     lifecycles.forEach((lc: CardLifecycle) => {
       if (!lc.reviews || lc.reviews.length === 0) return;
