@@ -163,6 +163,14 @@ const targetsForKpi = (k: Kpi) => {
   return [{
     id: `${k.id}-t1`,
     name: k.method || k.name,
+    plan: k.target,
+    fakt: k.actual,
+    unit: k.unit,
+    status: k.status as AccordionKpiStatus,
+  }];
+};
+
+
 
 
 const dedupeKpis = <T extends Kpi>(rows: T[]): T[] => {
