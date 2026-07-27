@@ -34,13 +34,7 @@ interface PlanRow {
   reminderDays: number;
 }
 
-const initialPlans: PlanRow[] = [
-  { id: "1", name: "2026 KPI Qiymətləndirmə Planı", startDate: "2026-01-01", endDate: "2026-12-31", evalType: "Yarımillik", periodCount: 2, status: "Aktiv", lastEditDate: "2026-06-01", createdBy: "Admin", department: "Bütün departamentlər", approvalMatrix: "Standart KPI Təsdiqi", reminderDays: 7 },
-  { id: "2", name: "2025 KPI Qiymətləndirmə Planı", startDate: "2025-01-01", endDate: "2025-12-31", evalType: "İllik", periodCount: 1, status: "Tamamlandı", lastEditDate: "2025-12-31", createdBy: "Admin", department: "Bütün departamentlər", approvalMatrix: "Standart KPI Təsdiqi", reminderDays: 7 },
-  { id: "3", name: "2024 KPI Qiymətləndirmə Planı", startDate: "2024-01-01", endDate: "2024-12-31", evalType: "Yarımillik", periodCount: 2, status: "Tamamlandı", lastEditDate: "2024-12-31", createdBy: "Admin", department: "Satış Departamenti", approvalMatrix: "Standart KPI Təsdiqi", reminderDays: 14 },
-  { id: "4", name: "2023 KPI Qiymətləndirmə Planı", startDate: "2023-01-01", endDate: "2023-12-31", evalType: "İllik", periodCount: 1, status: "Arxivləşdirilib", lastEditDate: "2024-01-15", createdBy: "Admin", department: "Maliyyə Departamenti", approvalMatrix: "Maliyyə KPI Təsdiqi", reminderDays: 7 },
-  { id: "5", name: "2022 KPI Qiymətləndirmə Planı", startDate: "2022-07-01", endDate: "2023-06-30", evalType: "Yarımillik", periodCount: 2, status: "Arxivləşdirilib", lastEditDate: "2023-06-30", createdBy: "Admin", department: "Bütün departamentlər", approvalMatrix: "Standart KPI Təsdiqi", reminderDays: 30 },
-];
+const initialPlans: PlanRow[] = [];
 
 const fmt = (d: string) => {
   if (!d) return "—";
