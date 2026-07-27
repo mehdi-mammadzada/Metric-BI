@@ -740,8 +740,12 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
         const lifecycleOk = !!lc.assignmentStart && !!lc.assignmentEnd
           && !!lc.evaluationStart && !!lc.evaluationEnd
           && !!lc.bonusStart && !!lc.bonusEnd;
+        // Toplu + 2+ şəxs → avtomatik komanda yaranır, lider məcburidir
+        const bulkPersons = draft.mode === "bulk" ? draft.bulkSelections.persons : [];
+        const leaderOk = bulkPersons.length < 2
+          || (!!draft.bulkTeamLeader && bulkPersons.includes(draft.bulkTeamLeader));
         return !!draft.name.trim() && !!draft.frequency && !!draft.startDate && !!draft.endDate
-          && draft.endDate >= draft.startDate && !!draft.scoringSystem && lifecycleOk;
+          && draft.endDate >= draft.startDate && !!draft.scoringSystem && lifecycleOk && leaderOk;
       }
       case 2: {
         const hasOther = draft.targets.some(t => t.createdBy === "other");
