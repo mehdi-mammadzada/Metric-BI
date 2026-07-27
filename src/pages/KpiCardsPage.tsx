@@ -51,6 +51,7 @@ import { createRootsForCardAssignees, getCascadeCandidateIds } from "@/lib/casca
 import CascadeDistributeDialog from "@/components/kpi/CascadeDistributeDialog";
 import CascadeLoadConfirmDialog from "@/components/kpi/CascadeLoadConfirmDialog";
 import { getCurrentEmployeeId } from "@/lib/scope";
+import { getEmployeeDisplayName } from "@/data/mockExtras";
 import { enqueueApproval, getApprovals } from "@/lib/approvalsStore";
 
 const STATUS_LABELS = {
