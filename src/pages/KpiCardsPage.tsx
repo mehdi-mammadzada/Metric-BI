@@ -1630,7 +1630,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
                   {kart2SubView === "structure" ? (
                     <EmployeesTreeView
-                      cards={filteredCards.map(c => ({ responsible: c.responsible, progress: c.progress }))}
+                      cards={filteredCards.flatMap(c => getCardAssignees(c).map(nm => ({ responsible: nm })))}
                       onOpenEmployee={(name) => setEmployeeDrilldown(name)}
                     />
                   ) : (
