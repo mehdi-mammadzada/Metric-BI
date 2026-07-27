@@ -14,12 +14,7 @@ export const getOperationsLog = (): OperationLogEntry[] => {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) return JSON.parse(raw);
-    const seed: OperationLogEntry[] = [
-      { id: crypto.randomUUID(), kpiName: "Aylıq Satış Hədəfi", team: "Satış Komandası", period: "01.01.2026 – 31.03.2026", status: "approved", at: new Date(Date.now() - 86400000 * 2).toISOString() },
-      { id: crypto.randomUUID(), kpiName: "Müştəri Məmnuniyyəti", team: "CRM Komandası", period: "01.01.2026 – 30.06.2026", status: "approved", at: new Date(Date.now() - 86400000 * 5).toISOString() },
-      { id: crypto.randomUUID(), kpiName: "Köhnə Onlayn Kampaniya", team: "Marketinq", period: "01.07.2025 – 31.12.2025", status: "deleted", at: new Date(Date.now() - 86400000 * 10).toISOString() },
-      { id: crypto.randomUUID(), kpiName: "Çağrı Mərkəzi Cavab Müddəti", team: "Operasiyalar", period: "01.04.2026 – 30.06.2026", status: "approved", at: new Date(Date.now() - 86400000 * 1).toISOString() },
-    ];
+    const seed: OperationLogEntry[] = [];
     localStorage.setItem(KEY, JSON.stringify(seed));
     return seed;
   } catch { return []; }

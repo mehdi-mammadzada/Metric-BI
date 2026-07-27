@@ -21,10 +21,7 @@ import { getEmployees as getLiveEmployees } from "@/lib/orgStore";
 
 const POSITION_ROLE_DEFAULTS = ["Departament Rəhbəri", "Şöbə Müdiri", "Departament Direktoru", "Komanda Lideri", "HR Direktoru", "CFO", "CEO", "Kurator"];
 
-const LEGACY_DEMO_USERS = [
-  "Günel Əlizadə", "Samir Həsənov", "Leyla Məmmədova", "Rəşad Əliyev", "Nigar Hüseynova",
-  "Farid Həsənov", "Emin Məmmədov", "Leyla Həsənova", "Kamran Quliyev", "Aysu Quliyeva",
-];
+const LEGACY_DEMO_USERS = [];
 
 // DB-synced live employee names unioned with legacy demo names so the
 // approval / deletion matrix picker always shows the latest staff.

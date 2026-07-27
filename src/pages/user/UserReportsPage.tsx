@@ -21,7 +21,7 @@ type TabKey = "mine" | "team";
 
 
 // --- Mock individual KPI assignments (which users appear on individual KPIs) ---
-const individualKpiAssignees = ["Samir Həsənov", "Leyla Məmmədova", "Rəşad Əliyev", "Günel Əlizadə"];
+const individualKpiAssignees = [];
 
 const TAB_DEFS: { key: TabKey; label: string; icon: any; gradient: string }[] = [
   { key: "mine", label: "Mənim Hesabatım", icon: UserIcon, gradient: "from-primary to-primary/60" },
@@ -218,12 +218,7 @@ const MyReport = ({ userName }: { userName: string }) => {
         {/* KPI list mini */}
         <ChartCard title="Aktiv KPI-lar" subtitle="Sizə təyin edilmiş">
           <div className="space-y-3 mt-2">
-            {[
-              { name: "Aylıq Satış Hədəfi", v: 84 },
-              { name: "Müştəri Əldə Etmə", v: 97 },
-              { name: "İnnovasiya İndeksi", v: 65 },
-              { name: "Çapraz Satış", v: 58 },
-            ].map(k => (
+            {([] as { name: string; v: number }[]).map(k => (
               <div key={k.name}>
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-foreground font-medium">{k.name}</span>

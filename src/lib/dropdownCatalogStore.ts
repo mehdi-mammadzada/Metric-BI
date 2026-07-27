@@ -45,7 +45,7 @@ export interface DropdownCatalog {
 
 const KEY = "kpi_dropdown_catalogs_v6";
 
-const SEED: DropdownCatalog[] = [
+const RAW_SEED: DropdownCatalog[] = [
   // Hədəf Tipləri (strukturlaşdırılmış)
   {
     id: "kpi_types",
@@ -145,6 +145,9 @@ const SEED: DropdownCatalog[] = [
     "1-3 Bal Sistemi", "1-5 Bal Sistemi", "1-10 Bal Sistemi", "Faiz (0-100)",
   ]},
 ];
+
+// New tenants start with empty catalogs — only the catalog definitions remain.
+const SEED: DropdownCatalog[] = RAW_SEED.map(c => ({ ...c, rows: [], values: [] }));
 
 // Strukturlaşdırılmış kataloqlarda values array-ı rows.name-dən avtomatik sinxronlaşdırılır
 const syncValues = (cat: DropdownCatalog): DropdownCatalog => {

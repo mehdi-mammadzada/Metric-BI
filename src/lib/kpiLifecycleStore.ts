@@ -43,40 +43,7 @@ export interface CardLifecycle {
 const KEY = "kpi_lifecycle_v2";
 const EVT = "kpi-lifecycle-updated";
 
-const SEED: CardLifecycle[] = [
-  {
-    cardId: 1,
-    cardName: "Aylıq Satış Hədəfi",
-    assignment: { period: "Aylıq", start: "2026-01-01", end: "2026-01-05" },
-    evaluation: { period: "Aylıq", start: "2026-01-25", end: "2026-01-31" },
-    bonus: { period: "Aylıq", start: "2026-02-01", end: "2026-02-05" },
-    reviews: [
-      { id: "r1", period: "Həftəlik", start: "2026-01-08", end: "2026-01-08" },
-      { id: "r2", period: "Həftəlik", start: "2026-01-15", end: "2026-01-15" },
-    ],
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    cardId: 3,
-    cardName: "Müştəri Əldə Etmə",
-    assignment: { period: "Aylıq", start: "2026-03-01", end: "2026-03-03" },
-    evaluation: { period: "Aylıq", start: "2026-03-25", end: "2026-03-31" },
-    bonus: { period: "Rüblük", start: "2026-04-01", end: "2026-04-05" },
-    reviews: [
-      { id: "r1", period: "Aylıq", start: "2026-03-15", end: "2026-03-15" },
-    ],
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    cardId: 4,
-    cardName: "Müştəri Saxlama Nisbəti",
-    assignment: { period: "Rüblük", start: "2026-01-01", end: "2026-01-10" },
-    evaluation: { period: "Rüblük", start: "2026-03-20", end: "2026-03-31" },
-    bonus: { period: "Rüblük", start: "2026-04-01", end: "2026-04-10" },
-    reviews: [],
-    updatedAt: new Date().toISOString(),
-  },
-];
+const SEED: CardLifecycle[] = [];
 
 const load = (): CardLifecycle[] => {
   try {

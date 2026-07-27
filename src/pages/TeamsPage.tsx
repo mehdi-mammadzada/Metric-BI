@@ -17,23 +17,7 @@ import PeriodPicker, { currentPeriod, periodLabel, type PeriodValue } from "@/co
 // Legacy demo people — kept so an empty-tenant demo still has enough names
 // to render. Live DB employees are unioned in at render time inside the
 // component (see `allPeople` below).
-const demoStaticPeople: TeamMember[] = [
-  { name: "Samir Həsənov", role: "Komanda Lideri", kpiScore: 90, avatar: "S" },
-  { name: "Emin Məmmədov", role: "İpoteka Meneceri", kpiScore: 85, avatar: "E" },
-  { name: "Ülviyyə Əliyeva", role: "HR Menecer", kpiScore: 82, avatar: "Ü" },
-  { name: "Leyla Məmmədova", role: "Satış Mütəxəssisi", kpiScore: 88, avatar: "L" },
-  { name: "Rəşad Əliyev", role: "Satış Mütəxəssisi", kpiScore: 92, avatar: "R" },
-  { name: "Nigar Hüseynova", role: "Junior Satış", kpiScore: 85, avatar: "N" },
-  { name: "Kamran Quliyev", role: "Regional Menecer", kpiScore: 80, avatar: "K" },
-  { name: "Səbinə Rzayeva", role: "Satış Nümayəndəsi", kpiScore: 78, avatar: "S" },
-  { name: "Aysel İbrahimova", role: "İpoteka Mütəxəssisi", kpiScore: 87, avatar: "A" },
-  { name: "Tural Nəsirov", role: "İpoteka Konsultantı", kpiScore: 83, avatar: "T" },
-  { name: "Farid Həsənov", role: "Regional Menecer", kpiScore: 78, avatar: "F" },
-  { name: "Aysel Quliyeva", role: "Regional Menecer", kpiScore: 80, avatar: "A" },
-  { name: "Tural İsmayılov", role: "Satış Agenti", kpiScore: 75, avatar: "T" },
-  { name: "Günel Əlizadə", role: "İpoteka Mütəxəssisi", kpiScore: 87, avatar: "G" },
-  { name: "Orxan Məmmədov", role: "İpoteka Mütəxəssisi", kpiScore: 83, avatar: "O" },
-];
+const demoStaticPeople: TeamMember[] = [];
 
 const liveOrgPeople = (_structures: OrgStructure[]): TeamMember[] => {
   const emps = getLiveEmployees();

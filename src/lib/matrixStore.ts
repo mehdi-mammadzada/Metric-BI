@@ -31,35 +31,10 @@ const APPROVAL_KEY = "kpi_approval_matrices_v3";
 const DELETION_KEY = "kpi_deletion_matrices_v3";
 
 // ---- Role → users mapping (demo). Used to display "Rol (Şəxs)" combined labels.
-export const roleUserMap: Record<string, string[]> = {
-  "HR Direktoru": ["Günel Əlizadə"],
-  "Departament Rəhbəri": ["Farid Həsənov", "Emin Məmmədov"],
-  "Komanda Lideri": ["Samir Həsənov"],
-  "Mütəxəssis": ["Leyla Məmmədova", "Rəşad Əliyev"],
-  "CEO": ["Kamran Quliyev"],
-  "CFO": ["Nigar Hüseynova"],
-  "Şöbə Müdiri": ["Kamran Quliyev"],
-  "Departament Direktoru": ["Farid Həsənov"],
-  "Kurator": ["Emin Məmmədov"],
-  "HR": ["Günel Əlizadə"],
-};
+export const roleUserMap: Record<string, string[]> = {};
 
 // User → primary role mapping (demo). Used to display "Şəxs (Rol)" labels.
-export const userRoleMap: Record<string, string> = {
-  "Günel Əlizadə": "HR Direktoru",
-  "Samir Həsənov": "Komanda Lideri",
-  "Leyla Məmmədova": "Satış Mütəxəssisi",
-  "Rəşad Əliyev": "Satış Mütəxəssisi",
-  "Nigar Hüseynova": "CFO",
-  "Farid Həsənov": "Departament Direktoru",
-  "Emin Məmmədov": "Kurator",
-  "Leyla Həsənova": "CRM Meneceri",
-  "Kamran Quliyev": "Şöbə Müdiri",
-  "Aysu Quliyeva": "Mütəxəssis",
-  "Aysel Quliyeva": "Regional Menecer",
-  "Tural İsmayılov": "Proses Analitik",
-  "Orxan Məmmədov": "Kontent Menecer",
-};
+export const userRoleMap: Record<string, string> = {};
 
 // Returns "Şəxs (Rol)" for users or "Rol (Şəxs1, Şəxs2)" for roles.
 export const formatAssignee = (a: { type: "user" | "role"; name: string }): string => {
@@ -89,19 +64,7 @@ export const getApprovalMatrices = (): ApprovalMatrix[] => {
     const raw = localStorage.getItem(APPROVAL_KEY);
     if (raw) return JSON.parse(raw);
     // seed demo matrix so module is never empty
-    const seed: ApprovalMatrix[] = [
-      {
-        id: "matrix-standard",
-        name: "Standart KPI Təsdiqi",
-        mode: "position",
-        steps: [
-          { id: crypto.randomUUID(), label: "Komanda Lideri", assignees: [{ type: "role", name: "Komanda Lideri" }], minApprovals: 1 },
-          { id: crypto.randomUUID(), label: "Departament Rəhbəri", assignees: [{ type: "role", name: "Departament Rəhbəri" }], minApprovals: 1 },
-          { id: crypto.randomUUID(), label: "HR Direktoru", assignees: [{ type: "role", name: "HR Direktoru" }], minApprovals: 1 },
-        ],
-        updatedAt: new Date().toISOString(),
-      },
-    ];
+    const seed: ApprovalMatrix[] = [];
     localStorage.setItem(APPROVAL_KEY, JSON.stringify(seed));
     return seed;
   } catch { return []; }
@@ -144,16 +107,7 @@ export const getDeletionMatrices = (): DeletionMatrix[] => {
   try {
     const raw = localStorage.getItem(DELETION_KEY);
     if (raw) return JSON.parse(raw);
-    const seed: DeletionMatrix[] = [
-      {
-        id: crypto.randomUUID(),
-        name: "KPI Silinmə",
-        mode: "position",
-        approver: { type: "role", name: "HR" },
-        minApprovals: 1,
-        updatedAt: new Date().toISOString(),
-      },
-    ];
+    const seed: DeletionMatrix[] = [];
     localStorage.setItem(DELETION_KEY, JSON.stringify(seed));
     return seed;
   } catch { return []; }
@@ -195,24 +149,7 @@ export const getDeletionRequests = (): DeletionRequest[] => {
   try {
     const raw = localStorage.getItem(REQUESTS_KEY);
     if (raw) return JSON.parse(raw);
-    const seed: DeletionRequest[] = [
-      {
-        id: crypto.randomUUID(),
-        kpiId: 1001,
-        kpiName: "Aylıq Satış Hədəfi",
-        requestedBy: "Samir Həsənov",
-        requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-        status: "pending",
-      },
-      {
-        id: crypto.randomUUID(),
-        kpiId: 1002,
-        kpiName: "Müştəri Məmnuniyyəti",
-        requestedBy: "Leyla Həsənova",
-        requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
-        status: "pending",
-      },
-    ];
+    const seed: DeletionRequest[] = [];
     localStorage.setItem(REQUESTS_KEY, JSON.stringify(seed));
     return seed;
   } catch { return []; }

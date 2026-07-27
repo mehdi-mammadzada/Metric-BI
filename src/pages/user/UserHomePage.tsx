@@ -8,11 +8,7 @@ import { AIChatSection } from "@/components/ai/AIChatSection";
 import SharedKpiPanel from "@/components/kpi/SharedKpiPanel";
 import PeriodPicker, { currentPeriod, periodLabel, buildDemoSeries, type PeriodValue } from "@/components/common/PeriodPicker";
 
-const myKpis = [
-  { name: "Aylıq Satış Hədəfi", target: "5M AZN", current: "4.2M AZN", progress: 84, zone: "green", status: "approved" },
-  { name: "Müştəri Əldə Etmə", target: "500", current: "485", progress: 97, zone: "green", status: "approved" },
-  { name: "İnnovasiya İndeksi", target: "80%", current: "72%", progress: 65, zone: "yellow", status: "pending" },
-];
+const myKpis = [];
 
 const UserHomePage = () => {
   const { user } = useAuth();

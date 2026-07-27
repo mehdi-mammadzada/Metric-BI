@@ -42,16 +42,7 @@ const buildPeriods = (baseId: number, salary: number, includeWorkedJitter = true
   return periods;
 };
 
-const seed: SalaryRecord[] = [
-  { id: 1, employeeId: 1, operator: "Admin",       periods: buildPeriods(10000, 4200), createdAt: new Date().toISOString() },
-  { id: 2, employeeId: 3, operator: "HR Operator", periods: buildPeriods(20000, 2800), createdAt: new Date().toISOString() },
-  { id: 3, employeeId: 4, operator: "Admin",       periods: buildPeriods(30000, 1800), createdAt: new Date().toISOString() },
-  { id: 4, employeeId: 5, operator: "Admin",       periods: buildPeriods(40000, 1800), createdAt: new Date().toISOString() },
-  { id: 5, employeeId: 6, operator: "HR Operator", periods: buildPeriods(50000, 4500), createdAt: new Date().toISOString() },
-  { id: 6, employeeId: 7, operator: "Admin",       periods: buildPeriods(60000, 1700), createdAt: new Date().toISOString() },
-  { id: 7, employeeId: 8, operator: "HR Operator", periods: buildPeriods(70000, 1900), createdAt: new Date().toISOString() },
-  { id: 8, employeeId: 2, operator: "Admin",       periods: buildPeriods(80000, 5000), createdAt: new Date().toISOString() },
-];
+const seed: SalaryRecord[] = [];
 
 
 const load = (): SalaryRecord[] => {

@@ -1986,13 +1986,7 @@ interface ChrChange {
   newValue: string;
 }
 
-const MOCK_CHR_CHANGES: ChrChange[] = [
-  { id: "c1", employee: "Günel Əlizadə", field: "Vəzifə", oldValue: "HR mütəxəssisi", newValue: "HR menecer" },
-  { id: "c2", employee: "Nigar Hüseynova", field: "Maaş", oldValue: "1200 AZN", newValue: "1450 AZN" },
-  { id: "c3", employee: "Samir Həsənov", field: "Şöbə", oldValue: "İT", newValue: "Texniki dəstək" },
-  { id: "c4", employee: "Leyla Məmmədova", field: "Telefon", oldValue: "+994501234570", newValue: "+994551234570" },
-  { id: "c5", employee: "Rəşad Əliyev", field: "Status", oldValue: "Aktiv", newValue: "Məzuniyyətdə" },
-];
+const MOCK_CHR_CHANGES: ChrChange[] = [];
 
 const ChrImportDialog = ({ open, onClose }: { open: boolean; onClose: () => void }) => {
   const [selected, setSelected] = useState<Set<string>>(new Set());

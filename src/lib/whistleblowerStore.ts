@@ -125,50 +125,5 @@ export const STATUS_LABEL: Record<WBStatus, string> = {
 };
 
 export const seedWhistleblowerDemo = () => {
-  const SEED_KEY = "wb_seed_v1";
-  if (localStorage.getItem(SEED_KEY)) return;
-  if (read().length === 0) {
-    const samples = [
-      {
-        category: "Mobbing / Təzyiq",
-        title: "Komandada psixoloji təzyiq",
-        description:
-          "Şöbə rəhbəri tərəfindən bir neçə həmkar barədə davamlı təzyiq müşahidə olunur.",
-        status: "arashdirilir" as WBStatus,
-      },
-      {
-        category: "Korrupsiya",
-        title: "Tender prosesində şübhəli hərəkətlər",
-        description: "Müraciət edən şirkətlərdən birinə üstünlük verildiyi şübhəsi var.",
-        status: "yeni" as WBStatus,
-      },
-      {
-        category: "Etik qayda pozuntusu",
-        title: "İş yerində uyğunsuz davranış",
-        description: "Daxili qaydalara zidd hərəkətlər barədə bildiriş.",
-        status: "hell_olundu" as WBStatus,
-      },
-    ];
-    samples.forEach((s, i) => {
-      const r = createReport({
-        category: s.category,
-        title: s.title,
-        description: s.description,
-        attachments: [],
-      });
-      if (s.status !== "yeni") {
-        updateStatus(r.id, s.status, "Demo məlumat");
-      }
-      // shift createdAt for ordering
-      const list = read();
-      const idx = list.findIndex((x) => x.id === r.id);
-      if (idx !== -1) {
-        const d = new Date();
-        d.setDate(d.getDate() - (i + 1) * 2);
-        list[idx].createdAt = d.toISOString();
-        write(list);
-      }
-    });
-  }
-  localStorage.setItem(SEED_KEY, "1");
+  // Demo seeding disabled: reports only exist when real users submit them.
 };
