@@ -47,7 +47,7 @@ import { buildSharedCardFromDraft, inferSharedCardAssignmentMode, setKpiStatus, 
 import { withKartSuffix } from "@/lib/utils";
 import { WeightInput } from "@/components/kpi/WeightInput";
 // cascade root yaradılması `cascadeAssignment` üzərindən aparılır
-import { createRootsForCardAssignees, getCascadeCandidateIds } from "@/lib/cascadeAssignment";
+import { createRootsForCardAssignees, getCascadeCandidateIds, isBulkAssignedCard } from "@/lib/cascadeAssignment";
 import CascadeDistributeDialog from "@/components/kpi/CascadeDistributeDialog";
 import CascadeLoadConfirmDialog from "@/components/kpi/CascadeLoadConfirmDialog";
 import { getCurrentEmployeeId } from "@/lib/scope";
