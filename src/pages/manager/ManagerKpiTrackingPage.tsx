@@ -194,72 +194,49 @@ const ManagerKpiTrackingPage = () => {
   const tree = useCascadeTree();
   const sharedCards = useSharedKpiCards();
 
-  // Cari istifadəçiyə cascade və Owner-tipli SharedKpiCard-lardan yaranan dinamik KPI-lar
-  const dynamicMyKpis = useMemo<Kpi[]>(() => {
-    if (!user?.name) return [];
-    const result: Kpi[] = [];
-    // 1) Cascade tree node-ları (yuxarıdan pay alınmış hədəflər)
-    tree.filter(n => n.assigneeName === user.name).forEach(n => {
-      result.push({
-        id: `ct-${n.id}`,
-        name: `${withKartSuffix(n.cardName)} — ${n.goalName || "Ana hədəf"}`,
-        description: `${n.parentId ? "Yuxarı rəhbərdən pay" : "HR tərəfindən təyin edilmiş hədəf"}: ${new Intl.NumberFormat("az-AZ").format(n.limit)} ${n.unit}`,
-        period: new Date(n.createdAt).toLocaleDateString("az-AZ"),
-        target: Number(n.limit) || 0,
-        actual: 0,
-        unit: n.unit || "AZN",
-        stage: "assigned",
-        status: "in_progress",
-        deadline: "—",
-        createdAt: new Date(n.createdAt).toLocaleDateString("az-AZ"),
-        updatedAt: new Date(n.updatedAt).toLocaleDateString("az-AZ"),
-        responsible: { name: n.assigneeName, role: n.positionName || "İcraçı" },
-        measure: n.unit || "AZN", type: "Cascade", method: "Cascade paylanma", weight: 20,
-        cascadeNodeId: n.id,
-      });
-    });
-    // 2) SharedKpiCard-lar — cari istifadəçi assignee (və ya owner) olduğu kartlar.
-    // HR yaradan olsa da, kart Elvinə təyin edilibsə, Elvinin KPI-larında görünməlidir,
-    // yaradan HR-in "Mənim KPI-larım"-da yox.
-    const emp = getEmployees().find(e => `${e.firstName} ${e.lastName}` === user.name);
-    if (emp) {
-      const empKey = `e${emp.id}`;
-      sharedCards
-        .filter(c => (c.status === "aktiv" || c.status === "natamam") &&
-          (c.assigneeIds?.includes(empKey) || (!c.assigneeIds?.length && c.ownerId === empKey)))
-        .forEach(c => {
-          (c.targets || []).forEach((t: any) => {
-            const existsInCascadeTree = tree.some(n => n.assigneeName === user.name && n.cardName === c.name && n.goalName === (t.name || "Ana hədəf"));
-            if (existsInCascadeTree) return;
-            const target = parseFloat(String(t.targetValue ?? t.value ?? t.target ?? t.scoreLimit ?? "").replace(/[^\d.\-]/g, "")) || 0;
-            result.push({
-              id: `sk-${c.id}-${t.id}`,
-              name: `${withKartSuffix(c.name)} — ${t.name || "Hədəf"}`,
-              description: `HR tərəfindən sizə təyin olunmuş KPI (${c.status})`,
-              period: c.startDate || "—",
-              target, actual: 0, unit: t.unit || (t.type === "Məbləğ" ? "AZN" : ""),
-              stage: "assigned",
-              status: c.status === "aktiv" ? "in_progress" : "at_risk",
-              deadline: c.endDate || "—",
-              createdAt: c.createdAt?.slice(0, 10) || "—",
-              updatedAt: c.updatedAt?.slice(0, 10) || "—",
-              responsible: { name: user.name, role: emp.positionName || "İcraçı" },
-              measure: t.type || "—", type: c.frequency || "—", method: t.name || "—", weight: t.weight || 20,
-            });
-          });
-        });
-    }
-    return dedupeKpis(result);
-  }, [tree, sharedCards, user?.name]);
+  const me = useMemo(() => findEmployeeByUser(user), [user?.email, user?.name, sharedCards, tree]);
 
-  // Yalnız cari istifadəçiyə aid KPI-lar. Seed-də olan digər şəxslərin
-  // demo KPI-ları başqa hesablarda "Mənim KPI-larım"-da görünməməlidir.
-  const myKpis = useMemo(() => {
-    const seed = user?.name
-      ? MY_KPIS.filter(k => k.responsible.name === user.name)
-      : MY_KPIS;
-    return dedupeKpis([...dynamicMyKpis, ...seed]);
-  }, [dynamicMyKpis, user?.name]);
+  const realToKpi = (c: RealKpiCard, ownerName: string, ownerRole: string): Kpi => {
+    const plan = c.targets.reduce((s, t) => s + t.plan, 0);
+    const fakt = c.targets.reduce((s, t) => s + t.fakt, 0);
+    return {
+      id: c.id,
+      name: c.name,
+      description: "",
+      period: c.frequency || "—",
+      target: plan,
+      actual: fakt,
+      unit: c.targets[0]?.unit || "",
+      stage: "assigned",
+      status: "in_progress",
+      deadline: c.deadline,
+      createdAt: c.createdAt,
+      updatedAt: c.createdAt,
+      responsible: { name: ownerName, role: ownerRole },
+      measure: c.targets[0]?.unit || "—",
+      type: c.frequency || "—",
+      method: "—",
+      weight: 0,
+      realTargets: c.targets.map(t => ({ ...t, status: "in_progress" as KpiStatus })),
+    };
+  };
+
+  // Mənim KPI-larım — yalnız REAL kartlar (shared_kpi_cards + cascade_tree).
+  const myKpis = useMemo<Kpi[]>(() => {
+    if (!me) return [];
+    return getRealKpiCardsForEmployee(me.id).map(c =>
+      realToKpi(c, `${me.firstName} ${me.lastName}`, me.positionName || "İcraçı"),
+    );
+  }, [me, sharedCards, tree]);
+
+  // Komanda KPI-ları — istifadəçinin üzv olduğu komandalara TOPLU verilmiş kartlar.
+  const teamKpis = useMemo<Kpi[]>(() => {
+    if (!me) return [];
+    return getRealTeamKpiCards(me.id).map(c =>
+      realToKpi(c, `${me.firstName} ${me.lastName}`, me.positionName || "İcraçı"),
+    );
+  }, [me, sharedCards]);
+
 
   // Rəhbər yalnız öz strukturunu görməlidir, HR/SUPER_ADMIN isə bütün şirkəti.
   const subScopePath = useMemo<string | null>(() => {
