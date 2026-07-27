@@ -1864,7 +1864,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
             <DialogTitle>{employeeDrilldown} — KPI kartları</DialogTitle>
           </DialogHeader>
           {employeeDrilldown && (() => {
-            const cards = filteredCards.filter(c => (c.responsible || "Təyin olunmayıb") === employeeDrilldown);
+            const normName = (s: string) => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
+            const cards = filteredCards.filter(c => getCardAssignees(c).some(n => normName(n) === normName(employeeDrilldown)));
             if (cards.length === 0) return <p className="text-sm text-muted-foreground py-4">Kart tapılmadı.</p>;
             return (
               <div className="max-h-[60vh] overflow-y-auto divide-y divide-border">
@@ -1877,11 +1878,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                           <span className="font-medium text-foreground truncate">{withKartSuffix(card.name)}</span>
                           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${STATUS_STYLES[st.status]}`}>{STATUS_LABELS[st.status]}</span>
                         </div>
-                        <div className="text-[11px] text-muted-foreground">{card.period} · Hədəf {card.target} {card.unit} · Cari {card.current} {card.unit}</div>
-                        <div className="w-full bg-secondary rounded-full h-1.5 mt-1.5"><div className="bg-emerald-500 rounded-full h-1.5" style={{ width: `${card.progress}%` }} /></div>
+                        <div className="text-[11px] text-muted-foreground">{card.period} · Hədəf {card.target} {card.unit}</div>
                       </div>
                       <button
-                        onClick={() => { setEmployeeDrilldown(null); openDetail(card); }}
+                        onClick={() => { setDetailEmployee(employeeDrilldown); setEmployeeDrilldown(null); openDetail(card); }}
                         className="p-1.5 rounded border border-border hover:bg-secondary text-muted-foreground hover:text-foreground shrink-0"
                         title="Bax"
                       >
