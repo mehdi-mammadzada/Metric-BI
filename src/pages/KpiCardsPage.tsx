@@ -2309,7 +2309,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                         })()}
                       </div>
                     </div>
-                    {getAssignKindFor(selectedKpi.id) !== "Fərdi" && (() => {
+                    {(() => {
                       const own = selectedKpi.subKpis || [];
                       const entries = selectedKpi.id ? getEntriesForCard(selectedKpi.id) : [];
                       const ownIds = new Set(own.map(s => s.id));
