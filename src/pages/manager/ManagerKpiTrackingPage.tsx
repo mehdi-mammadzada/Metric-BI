@@ -53,65 +53,11 @@ interface Kpi {
 
 interface Person { id: string; name: string; position: string; parent?: string; level: number; assigned: boolean; stage: Stage; }
 
-const MY_KPIS: Kpi[] = [
-  {
-    id: "k1", name: "Satış Həcminin Artırılması",
-    description: "Satış həcmini ötən rübə müqayisədə artırmaq",
-    period: "2025 / 1-ci rüb", target: 500_000, actual: 265_000, unit: "AZN", stage: "assigned",
-    status: "at_risk", deadline: "29.05.2025", createdAt: "05.01.2025", updatedAt: "15.05.2025",
-    responsible: { name: "Aysel Məmmədova", role: "Satış meneceri" },
-    measure: "AZN", type: "Rüblük", method: "Toplam satış həcmi", weight: 30,
-  },
-  {
-    id: "k2", name: "Yeni Müştəri Qazanılması",
-    description: "Yeni müştərilərin sayını artırmaq",
-    period: "2025 / 1-ci rüb", target: 120, actual: 98, unit: "ədəd", stage: "assigned",
-    status: "in_progress", deadline: "29.05.2025", createdAt: "05.01.2025", updatedAt: "12.05.2025",
-    responsible: { name: "Rəşad Quliyev", role: "Satış Direktoru" },
-    measure: "ədəd", type: "Rüblük", method: "Yeni müqavilə sayı", weight: 25,
-  },
-  {
-    id: "k3", name: "Müştəri Məmnuniyyətinin Artırılması",
-    description: "Müştəri məmnuniyyət səviyyəsini yüksəltmək",
-    period: "2025 / 1-ci rüb", target: 90, actual: 61, unit: "%", stage: "assigned",
-    status: "in_progress", deadline: "28.05.2025", createdAt: "05.01.2025", updatedAt: "10.05.2025",
-    responsible: { name: "Günel Əlizadə", role: "HR Direktoru" },
-    measure: "%", type: "Rüblük", method: "CSAT anketi", weight: 20,
-  },
-];
+const MY_KPIS: Kpi[] = [];
 
-const TEAM_KPIS: Kpi[] = [
-  {
-    id: "t1", name: "Komanda satış həcmi (toplu)", description: "Bütöv komanda üçün toplam satış",
-    period: "Q1 2026", target: 1_500_000, actual: 1_120_000, unit: "AZN", stage: "assigned",
-    status: "in_progress", deadline: "30.03.2026", createdAt: "02.01.2026", updatedAt: "20.02.2026",
-    responsible: { name: "Rəşad Quliyev", role: "Satış Direktoru" },
-    measure: "AZN", type: "Rüblük", method: "Toplu satış", weight: 40,
-  },
-  {
-    id: "t2", name: "Brand kampaniya reach (toplu)", description: "Kampaniyaların çatdığı istifadəçi",
-    period: "Q1 2026", target: 500_000, actual: 342_000, unit: "istifadəçi", stage: "assigned",
-    status: "in_progress", deadline: "30.03.2026", createdAt: "02.01.2026", updatedAt: "18.02.2026",
-    responsible: { name: "Aysel İbrahimova", role: "Marketinq Meneceri" },
-    measure: "istifadəçi", type: "Rüblük", method: "Analytics", weight: 30,
-  },
-  {
-    id: "t3", name: "NPS orta bal (toplu)", description: "Komanda üzrə orta NPS",
-    period: "Q4 2025", target: 70, actual: 72, unit: "bal", stage: "evaluated",
-    status: "completed", deadline: "31.12.2025", createdAt: "01.10.2025", updatedAt: "28.12.2025",
-    responsible: { name: "Nigar Hüseynova", role: "CFO" },
-    measure: "bal", type: "Rüblük", method: "NPS survey", weight: 30,
-  },
-];
+const TEAM_KPIS: Kpi[] = [];
 
-const HIERARCHY: Person[] = [
-  { id: "p1", name: "Kamran Quliyev", position: "Rəqəmsal Marketinq Şöbə Müdiri", level: 1, assigned: true, stage: "assigned" },
-  { id: "p2", name: "Aynur Cəfərova",  position: "Brend Şöbə Müdiri",              level: 1, assigned: false, stage: "pending_assign" },
-  { id: "p3", name: "Orxan Bayramov",  position: "Marketinq Mütəxəssisi", parent: "p1", level: 2, assigned: true, stage: "assigned" },
-  { id: "p4", name: "Aytac Kərimova",  position: "Brend Mütəxəssisi",     parent: "p2", level: 2, assigned: false, stage: "pending_assign" },
-  { id: "p5", name: "Tural Məmmədzadə", position: "SEO Mütəxəssisi",       parent: "p1", level: 2, assigned: true, stage: "evaluated" },
-  { id: "p6", name: "Nərgiz Əhmədova", position: "Kontent Mütəxəssisi",   parent: "p2", level: 2, assigned: true, stage: "assigned" },
-];
+const HIERARCHY: Person[] = [];
 
 const fmt = (n: number) => new Intl.NumberFormat("az-AZ").format(n);
 const pctOf = (k: Kpi) => k.target ? Math.round((k.actual / k.target) * 100) : 0;
@@ -1078,13 +1024,7 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
 
 // Per-employee KPI list (deterministic subset of MY_KPIS variants)
 interface EmpKpi { id: string; name: string; desc: string; plan: number; fakt: number; unit: string; status: KpiStatus; }
-const BASE_KPIS: Omit<EmpKpi, "id" | "fakt" | "status">[] = [
-  { name: "Satış Həcminin Artırılması",         desc: "Satış həcmini ötən rübə müqayisədə artırmaq", plan: 500_000, unit: "₼" },
-  { name: "Yeni Müştəri Qazanılması",           desc: "Yeni müştərilərin sayını artırmaq",            plan: 120,     unit: "" },
-  { name: "Müştəri Məmnuniyyətinin Artırılması", desc: "Müştəri məmnuniyyət səviyyəsini yüksəltmək",  plan: 90,      unit: "%" },
-  { name: "Kredit Borclarının Azaldılması",     desc: "Kredit borclarının minimuma endirilməsi",      plan: 200_000, unit: "₼" },
-  { name: "Yeni Məhsul Satışının Artırılması",  desc: "Yeni məhsul satışlarının artırılması",         plan: 150_000, unit: "₼" },
-];
+const BASE_KPIS: Omit<EmpKpi, "id" | "fakt" | "status">[] = [];
 const buildEmpKpis = (empId: number): EmpKpi[] => {
   const h = hashStr(`ek${empId}`);
   return BASE_KPIS.map((b, i) => {
