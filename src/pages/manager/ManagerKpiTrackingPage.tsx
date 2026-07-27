@@ -2068,7 +2068,6 @@ const progressFromExec = (e: ExecutionStatus | null): number => {
   }
 };
 const execLabel: Record<ExecutionStatus, { label: string; cls: string }> = {
-  baslanmayib: { label: TARGET_STATUS_LABEL.in_progress, cls: TARGET_STATUS_BADGE.in_progress },
   icrada: { label: TARGET_STATUS_LABEL.in_progress, cls: TARGET_STATUS_BADGE.in_progress },
   tamamlandi: { label: TARGET_STATUS_LABEL.achieved, cls: TARGET_STATUS_BADGE.achieved },
   gecikme: { label: TARGET_STATUS_LABEL.not_achieved, cls: TARGET_STATUS_BADGE.not_achieved },
@@ -2106,7 +2105,7 @@ const useReviewRows = (): ReviewRow[] => {
         const emp = employees.find(e => e.id === empIdNum);
         const path = (emp?.structurePath || "").split("›").map(s => s.trim()).filter(Boolean);
         const execRaw: ExecutionStatus | null | undefined = sharedCard?.execution?.[aid];
-        const exec: ExecutionStatus = execRaw || "baslanmayib";
+        const exec: ExecutionStatus = execRaw || "icrada";
         const progress = execRaw ? progressFromExec(exec) : 0;
         const realTargets = (sharedCard?.targets || []).map((t, i) => {
           const plan = parseNumber(t.targetValue ?? t.scoreLimit);
