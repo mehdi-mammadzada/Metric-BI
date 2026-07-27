@@ -261,8 +261,10 @@ export const deleteDropdownCatalog = (id: string): boolean => {
 };
 
 export const addCatalogValue = (id: string, value: string): boolean => {
+  if (LOCKED_CATALOG_IDS.has(id)) return false;
   const v = value.trim();
   if (!v) return false;
+
   const list = load();
   const cat = list.find(c => c.id === id);
   if (!cat) return false;
