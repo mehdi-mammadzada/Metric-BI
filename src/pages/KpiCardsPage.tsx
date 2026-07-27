@@ -730,7 +730,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         setterEmployeeId: meEmpId,
       }));
 
-      if (incoming?.nodeId && incoming.value > 0 && first) {
+      if (isBulkAssignedCard({ cardId: id, cardName: d.name })) {
+        // Toplu kartlar üçün kaskad ağacı/yükü yaradılmır.
+      } else if (incoming?.nodeId && incoming.value > 0 && first) {
         setHrCascade({
           value: incoming.value,
           unit: incoming.unit || first.unit,
