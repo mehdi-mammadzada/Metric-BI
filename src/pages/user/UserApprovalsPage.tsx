@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { PageHero } from "@/components/ui/page-hero";
 import { decideApproval, useApprovals, type ApprovalItem } from "@/lib/approvalsStore";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
-import { getCurrentEmployeeId, getVisibleApprovals } from "@/lib/scope";
+import { getVisibleApprovals } from "@/lib/scope";
+import { getIdentityAliases, findMyRef } from "@/lib/identity";
 import { getEnrichedEmployee } from "@/data/mockExtras";
 
 interface ApprovalStep {
@@ -29,17 +30,16 @@ const empDepartment = (id?: string | null) => (id ? getEnrichedEmployee(id)?.dep
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString("az-AZ") : "—";
 
 const decisionNote = (d?: { note?: string; comment?: string }) => d?.note || d?.comment || undefined;
-const aliasesFor = (id: string | null) => id ? [id, id.startsWith("e") ? id.slice(1) : `e${id}`] : [];
+
 const findApprovalCard = (cards: ReturnType<typeof useSharedKpiCards>, kpiCardId: string) =>
   cards.find(c => c.id === kpiCardId || (c.numericId != null && (`kpi-${c.numericId}` === kpiCardId || String(c.numericId) === kpiCardId)));
 
-const toApprovalRequest = (a: ApprovalItem, cards: ReturnType<typeof useSharedKpiCards>, meId: string | null): ApprovalRequest => {
+const toApprovalRequest = (a: ApprovalItem, cards: ReturnType<typeof useSharedKpiCards>, myAliases: Set<string>): ApprovalRequest => {
   const card = findApprovalCard(cards, a.kpiCardId);
   const isDeletion = String(a.matrixId || "").startsWith("deletion:");
   const chain = a.stepsChain && a.stepsChain.length > 0 ? a.stepsChain : [a.approverIds];
   const currentStep = a.currentStep ?? Math.max(0, chain.findIndex(step => step.some(id => a.approverIds.includes(id))));
-  const myAliases = new Set(aliasesFor(meId));
-  const actionApproverId = a.approverIds.find(id => myAliases.has(id)) ?? null;
+  const actionApproverId = findMyRef(myAliases, a.approverIds ?? []);
   const approvalChain: ApprovalStep[] = chain.map((ids, index) => {
     const stepDecisions = ids.map(id => a.decisions[id]);
     const rejected = stepDecisions.find(d => d?.decision === "rejected");
@@ -81,11 +81,11 @@ const UserApprovalsPage = () => {
   const { user } = useAuth();
   const approvals = useApprovals();
   const cards = useSharedKpiCards();
-  const meId = getCurrentEmployeeId(user);
+  const myAliases = useMemo(() => getIdentityAliases(user), [user]);
   const visibleApprovals = useMemo(() => getVisibleApprovals(user, approvals), [user, approvals]);
   const requests = useMemo(
-    () => visibleApprovals.map(a => toApprovalRequest(a, cards, meId)),
-    [visibleApprovals, cards, meId],
+    () => visibleApprovals.map(a => toApprovalRequest(a, cards, myAliases)),
+    [visibleApprovals, cards, myAliases],
   );
 
   const [selectedRequest, setSelectedRequest] = useState<ApprovalRequest | null>(null);
@@ -98,7 +98,7 @@ const UserApprovalsPage = () => {
   const [approvedPage, setApprovedPage] = useState(1);
   const [rejectedPage, setRejectedPage] = useState(1);
 
-  const pendingRequests = requests.filter(r => r.status === "pending" && r.canAct);
+  const pendingRequests = requests.filter(r => r.status === "pending");
   const approvedRequests = requests.filter(r => r.status === "approved");
   const rejectedRequests = requests.filter(r => r.status === "rejected");
 
