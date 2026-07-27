@@ -63,6 +63,16 @@ const betterCard = (a: SharedKpiCard, b: SharedKpiCard) => {
   return bu > au ? b : a;
 };
 
+const stableCardTime = (card: SharedKpiCard) => Date.parse(card.createdAt || "") || 0;
+
+const stableCardId = (card: SharedKpiCard) => String(card.numericId ?? card.id ?? card.name ?? "");
+
+const stableCardSort = (a: SharedKpiCard, b: SharedKpiCard) => {
+  const byCreated = stableCardTime(b) - stableCardTime(a);
+  if (byCreated !== 0) return byCreated;
+  return stableCardId(a).localeCompare(stableCardId(b), "az", { numeric: true });
+};
+
 export const dedupeSharedKpiCards = (rows: SharedKpiCard[]): SharedKpiCard[] => {
   const byId = new Map<string, SharedKpiCard>();
   rows.forEach(row => byId.set(row.id, byId.has(row.id) ? betterCard(byId.get(row.id)!, row) : row));
@@ -71,7 +81,7 @@ export const dedupeSharedKpiCards = (rows: SharedKpiCard[]): SharedKpiCard[] => 
     const key = cardKey(row);
     byCard.set(key, byCard.has(key) ? betterCard(byCard.get(key)!, row) : row);
   });
-  return Array.from(byCard.values()).sort((a, b) => (Date.parse(b.updatedAt || b.createdAt || "") || 0) - (Date.parse(a.updatedAt || a.createdAt || "") || 0));
+  return Array.from(byCard.values()).sort(stableCardSort);
 };
 
 const load = (): SharedKpiCard[] => {
