@@ -1595,7 +1595,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                   </div>
               );
             })() : kartView === "kart2" ? (() => {
-              // Aggregate KPI stats per employee (by responsible full-name match)
+              // Kart tətbiq olunan əməkdaşlara görə qruplaşdırılır (yaradan yox)
               const norm = (s: string) => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
               const emps = getEmployees().filter((e: any) => e.active);
               const perEmp = new Map<number, { count: number; sumProgress: number }>();
@@ -1606,12 +1606,18 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 empByName.set(norm(`${e.lastName} ${e.firstName}`), e);
               });
               filteredCards.forEach(c => {
-                const e = empByName.get(norm(c.responsible || ""));
-                if (!e) return;
-                const cur = perEmp.get(e.id)!;
-                cur.count += 1;
-                cur.sumProgress += Number(c.progress) || 0;
+                const seen = new Set<number>();
+                assigneeNamesForCard(c).forEach(n => {
+                  const e = empByName.get(norm(n));
+                  if (!e || seen.has(e.id)) return;
+                  seen.add(e.id);
+                  const cur = perEmp.get(e.id);
+                  if (!cur) return;
+                  cur.count += 1;
+                  cur.sumProgress += Number(c.progress) || 0;
+                });
               });
+
               const rows = emps.map((e: any) => {
                 const st = perEmp.get(e.id)!;
                 return {
