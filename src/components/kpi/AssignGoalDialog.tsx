@@ -371,11 +371,13 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
             </div>
           </label>
         )}
+        </fieldset>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Ləğv et</Button>
-          <Button onClick={handleSave} disabled={!canSave}>Yadda saxla</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{readOnly ? "Bağla" : "Ləğv et"}</Button>
+          {!readOnly && <Button onClick={handleSave} disabled={!canSave}>Yadda saxla</Button>}
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
