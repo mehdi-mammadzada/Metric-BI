@@ -246,6 +246,7 @@ const AssignView = () => {
   const [open, setOpen] = useState<Record<number, boolean>>({});
   const [distribute, setDistribute] = useState<KpiSetEntry | null>(null);
   const [assignEntry, setAssignEntry] = useState<KpiSetEntry | null>(null);
+  const [assignReadOnly, setAssignReadOnly] = useState(false);
   const [cascadeConfirm, setCascadeConfirm] = useState<{ entry: KpiSetEntry; value: number; unit: string } | null>(null);
 
   const assignRows = useMemo(() => {
