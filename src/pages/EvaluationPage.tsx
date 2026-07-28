@@ -1023,11 +1023,11 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
               <div className="divide-y divide-border">
                 {card.targets.map((t, ti) => {
                   const { raters, finalS } = cardStats[ti];
-                  const h = hash(card.id + t.id);
-                  const actual = 60 + (h % 60);
+                  const actual = 0;
                   const doneCount = raters.filter(r => r.done).length;
                   const latestDate = raters.filter(r => r.done && r.date).map(r => r.date!).sort().slice(-1)[0] || null;
-                  const status = doneCount === raters.length ? "Tamamlanıb" : doneCount === 0 ? "Gözləyir" : "Davam edir";
+                  const status = raters.length > 0 && doneCount === raters.length ? "Tamamlanıb" : doneCount === 0 ? "Gözləyir" : "Davam edir";
+
                   const statusTone = status === "Tamamlanıb" ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : status === "Gözləyir" ? "bg-muted text-muted-foreground border-border" : "bg-amber-500/15 text-amber-600 border-amber-500/30";
                   return (
                     <div key={t.id} className="p-4 space-y-3 bg-background">
