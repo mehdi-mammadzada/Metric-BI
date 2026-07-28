@@ -47,9 +47,9 @@ const ManagerHomePage = () => {
           <FancyStatCard icon={Gift} label="Bu ay bonus" value="0 AZN" accent="emerald" />
         </div>
 
-        <div className="mb-6">
-          <SharedKpiPanel title="Komandama aid KPI kartları" />
-        </div>
+        <AIChatSection />
+
+
 
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
