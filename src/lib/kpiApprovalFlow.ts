@@ -268,7 +268,7 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
       if (!approval) triggerCardApprovalIfComplete(card.numericId);
     }
 
-    setSharedStatusIfNeeded(card, nextStatus, "system", note);
+    setSharedStatusIfNeeded(card, nextStatus, actor, note);
 
     const current = statusRows[card.numericId];
     const nextAssignees = hasSetterFlow
