@@ -813,6 +813,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
   // === KPI card status (Natamam / Təsdiq gözlənilir / İmtina / Aktiv) ===
   const [statusMap, setStatusMap] = useState<Record<number, import("@/lib/kpiCardStatusStore").KpiCardStatusRow>>({});
+  const [copyConfirm, setCopyConfirm] = useState<KpiCard | null>(null);
   const [statusDialogCardId, setStatusDialogCardId] = useState<number | null>(null);
   // HR üçün Cascade Load bölgüsü (rəhbər modulundakı ilə eyni axın)
   const [hrCascade, setHrCascade] = useState<null | {
