@@ -56,6 +56,9 @@ export const STATUS_STYLES: Record<KpiCardStatus, string> = {
   legv_olundu: "bg-slate-800 text-slate-100 border-slate-900 dark:bg-slate-900 dark:text-slate-200",
 };
 
+const isDeletedStatus = (status: KpiCardStatus | undefined | null) =>
+  status === "silindi" || status === "legv_olundu";
+
 export async function fetchAllStatuses(): Promise<Record<number, KpiCardStatusRow>> {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -67,8 +70,12 @@ export async function fetchAllStatuses(): Promise<Record<number, KpiCardStatusRo
 
 export async function upsertStatus(row: Partial<KpiCardStatusRow> & { card_id: number }): Promise<void> {
   const current = await fetchAllStatuses();
+  const existing = current[row.card_id];
+  const nextStatus = isDeletedStatus(existing?.status) && row.status && !isDeletedStatus(row.status)
+    ? existing.status
+    : row.status;
   current[row.card_id] = {
-    ...(current[row.card_id] ?? {
+    ...(existing ?? {
       card_id: row.card_id,
       status: "natamam",
       use_matrix: false,
@@ -79,6 +86,7 @@ export async function upsertStatus(row: Partial<KpiCardStatusRow> & { card_id: n
       updated_at: new Date().toISOString(),
     }),
     ...row,
+    ...(nextStatus ? { status: nextStatus } : {}),
     updated_at: new Date().toISOString(),
   } as KpiCardStatusRow;
   localStorage.setItem(LS_KEY, JSON.stringify(current));

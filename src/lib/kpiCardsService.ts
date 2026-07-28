@@ -25,6 +25,8 @@ const DRAFTS_KEY = "kpi_card_drafts_v1";
 const EVT_SHARED = "shared-kpi-cards-updated";
 const EVT_ALL    = "kpi-cards-updated";
 
+const isDeletedStatus = (status: unknown) => status === "silindi" || status === "legv_olundu";
+
 const asJson = (value: unknown): Json => JSON.parse(JSON.stringify(value ?? null)) as Json;
 
 // ── local raw helpers (bypass the store's own events during hydration) ────────
@@ -401,14 +403,18 @@ export const flushLocalKpiCardsToCloud = async () => {
   const drafts = rawRead<Record<string, any>>(DRAFTS_KEY, {});
   const existingModesRes = await supabase
     .from("kpi_cards")
-    .select("id, legacy_numeric_id, assignment_mode")
+    .select("id, legacy_numeric_id, assignment_mode, status")
     .eq("organization_id", orgId);
   const modeByUuid = new Map<string, "individual" | "bulk">();
   const modeByNumeric = new Map<number, "individual" | "bulk">();
+  const statusByUuid = new Map<string, SharedKpiStatus>();
+  const statusByNumeric = new Map<number, SharedKpiStatus>();
   (existingModesRes.data ?? []).forEach((row: any) => {
     const mode = row.assignment_mode === "bulk" ? "bulk" : "individual";
     if (row.id) modeByUuid.set(String(row.id), mode);
     if (row.legacy_numeric_id != null) modeByNumeric.set(Number(row.legacy_numeric_id), mode);
+    if (row.id && isDeletedStatus(row.status)) statusByUuid.set(String(row.id), row.status as SharedKpiStatus);
+    if (row.legacy_numeric_id != null && isDeletedStatus(row.status)) statusByNumeric.set(Number(row.legacy_numeric_id), row.status as SharedKpiStatus);
   });
 
   for (const c of shared) {
@@ -416,13 +422,23 @@ export const flushLocalKpiCardsToCloud = async () => {
     const s = numeric != null ? status[numeric] : undefined;
     const persistedMode = (numeric != null ? modeByNumeric.get(Number(numeric)) : undefined) ?? modeByUuid.get(c.id);
     const assignmentMode = persistedMode ?? (c.assignmentMode === "bulk" ? "bulk" : "individual");
+    const terminalStatus = [
+      numeric != null ? statusByNumeric.get(Number(numeric)) : undefined,
+      statusByUuid.get(c.id),
+      s?.status,
+      c.status,
+    ].find(isDeletedStatus) as SharedKpiStatus | undefined;
+    const effectiveStatus = terminalStatus ?? c.status;
+    if (terminalStatus && c.status !== terminalStatus) {
+      upsertSharedKpiCard({ ...c, status: terminalStatus });
+    }
     const payload: any = {
       organization_id: orgId,
       legacy_numeric_id: numeric,
       name: c.name,
       owner_employee_id: c.ownerId || null,
       matrix_id: c.matrixId ?? null,
-      status: c.status,
+      status: effectiveStatus,
       rejected_reason: c.rejectedReason ?? s?.rejection_reason ?? null,
       rejected_by: s?.rejected_by ?? null,
       rejected_at: s?.rejected_at ?? null,

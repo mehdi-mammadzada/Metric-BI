@@ -98,6 +98,7 @@ const setterStateForCard = (numericId: number) => {
 };
 
 const setSharedStatusIfNeeded = (card: SharedKpiCard, status: SharedKpiStatus, actor: string, note?: string) => {
+  if ((card.status === "silindi" || card.status === "legv_olundu") && status !== "silindi" && status !== "legv_olundu") return;
   if (card.status !== status || (status === "imtina" && note && card.rejectedReason !== note)) {
     setKpiStatus(card.id, status, actor, note);
   }
@@ -143,7 +144,7 @@ export const triggerCardApprovalIfComplete = (cardId: number): void => {
     const ctx = resolveCardContext(cardId);
     if (!ctx) return;
 
-    if (ctx.currentStatus === "aktiv") return;
+    if (ctx.currentStatus === "aktiv" || ctx.currentStatus === "silindi" || ctx.currentStatus === "legv_olundu") return;
 
     // NO MATRIX — bütün təyinedicilər hədəfləri təyin edib bitirdikdə kart avtomatik "aktiv".
     if (!ctx.matrixId) {

@@ -81,6 +81,9 @@ const stableCardTime = (card: SharedKpiCard) => Date.parse(card.createdAt || "")
 
 const stableCardId = (card: SharedKpiCard) => String(card.numericId ?? card.id ?? card.name ?? "");
 
+const isDeletedSharedStatus = (status: SharedKpiStatus | undefined | null) =>
+  status === "silindi" || status === "legv_olundu";
+
 const stableCardSort = (a: SharedKpiCard, b: SharedKpiCard) => {
   const byCreated = stableCardTime(b) - stableCardTime(a);
   if (byCreated !== 0) return byCreated;
@@ -166,6 +169,7 @@ export const setKpiStatus = (id: string, status: SharedKpiStatus, actor: string,
   const list = load();
   const idx = list.findIndex(c => c.id === id || (c.numericId != null && (`kpi-${c.numericId}` === id || String(c.numericId) === id)));
   if (idx < 0) return;
+  if (isDeletedSharedStatus(list[idx].status) && !isDeletedSharedStatus(status)) return;
   list[idx] = {
     ...list[idx],
     status,
