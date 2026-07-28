@@ -238,8 +238,16 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
     let rejectedBy: string | null = null;
     let rejectedAt: string | null = null;
 
+    let actor = "system";
+
     if (approval?.status === "approved") {
-      nextStatus = isDeletionApproval(approval) ? "silindi" : "aktiv";
+      const deletion = isDeletionApproval(approval);
+      nextStatus = deletion ? "silindi" : "aktiv";
+      if (deletion) {
+        const approved = Object.entries(approval.decisions || {}).find(([, d]) => d?.decision === "approved");
+        actor = approved?.[0] || "system";
+        note = (approved?.[1]?.note || "").trim() || "Silinmə sorğusu təsdiqləndi";
+      }
     } else if (card.status === "aktiv" && (!card.matrixId || approval?.status !== "rejected")) {
       nextStatus = "aktiv";
     } else if (approval?.status === "rejected") {
