@@ -39,13 +39,25 @@ const fmtUnit = (n: number, unit: string) => {
 };
 
 export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
+  // Store yeniləndikdə (cloud sinxronizasiya, limit təyini) yenidən oxunsun ki,
+  // Balanced Scorecard heç vaxt itməsin.
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const onUpd = () => setTick(t => t + 1);
+    window.addEventListener("kpi-set-updated", onUpd);
+    return () => window.removeEventListener("kpi-set-updated", onUpd);
+  }, []);
+
   // KPI Set entry-lərini hədəf kimi birləşdir (təkrarlanmalar aradan qaldırılır)
   const mergedSubKpis = useMemo(() => {
     const own = kpi.subKpis || [];
     const entries = kpi.id ? getEntriesForCard(kpi.id) : [];
+    const nameKey = (v?: string) => String(v || "").trim().toLowerCase();
     const ownById = new Map(own.map(s => [s.id, s]));
     const list: any[] = own.map((s: any) => {
-      const e = entries.find(en => en.subKpiId === s.id);
+      const e =
+        entries.find(en => en.subKpiId === s.id) ||
+        entries.find(en => nameKey(en.subKpiName) === nameKey(s.name));
       return { ...s, _entryId: e?.id ?? null, limits: s.limits ?? e?.limits, scoreDescriptions: s.scoreDescriptions ?? e?.scoreDescriptions, assignerFromSet: e?.assigneeName, unit: s.unit || e?.unit };
     });
     entries.forEach(e => {
