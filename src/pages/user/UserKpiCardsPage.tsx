@@ -23,6 +23,7 @@ import { useSharedKpiCards } from "@/lib/kpiCardStore";
 import { getEmployees } from "@/lib/orgStore";
 import { getCurrentEmployeeId } from "@/lib/scope";
 import { TARGET_STATUS_BADGE, TARGET_STATUS_LABEL, type TargetStatus } from "@/lib/targetStatus";
+import { getRealTeamKpiCards } from "@/lib/managerKpiData";
 
 // ============================================================
 // Demo data model
@@ -115,7 +116,7 @@ const UserKpiCardsPage = () => {
       result.push({
         id: `cascade-${n.id}`,
         scope: "own",
-        name: `${n.cardName} — ${n.goalName || "Hədəf"}`,
+        name: n.cardName,
         description: n.parentId ? "Cascade Load ilə formalaşan hədəf" : "Müstəqil kaskadlanan hədəf",
         period: toDate(n.createdAt), deadline: "—",
         createdAt: toDate(n.createdAt), updatedAt: toDate(n.updatedAt),
@@ -135,33 +136,117 @@ const UserKpiCardsPage = () => {
     sharedCards
       .filter(c => (c.status === "aktiv" || c.status === "natamam" || c.status === "tesdiq_gozlenilir") && c.assigneeIds.some(id => aliases.has(id)))
       .forEach(c => {
-        (c.targets || []).forEach((t: any) => {
-          const existsInTree = tree.some(n => n.cardName === c.name && n.goalName === (t.name || "Hədəf") && (n.assigneeName === name || (me && n.assigneeId === me.id)));
-          if (existsInTree) return;
-          const plan = parseMetric(t.targetValue);
-          result.push({
-            id: `shared-${c.id}-${t.id}`,
-            scope: "own",
-            name: `${c.name} — ${t.name || "Hədəf"}`,
-            description: "Sizə təyin olunmuş KPI hədəfi",
-            period: c.startDate || "—", deadline: c.endDate || "—",
-            createdAt: c.createdAt?.slice(0, 10) || "—", updatedAt: c.updatedAt?.slice(0, 10) || "—",
-            unit: t.unit || "", plan, fakt: 0, status: "in_progress",
-            frequency: c.frequency || "—", measure: t.unit || "", type: t.type || "Hədəf", method: "Təyin edilmiş KPI", weight: t.weight || 100,
-            responsible: { name: name || "İcraçı", role: me?.positionName || "İcraçı" },
-            bsc: { perspective: "KPI", strategicGoal: c.name },
-            targets: [{ id: String(t.id), name: t.name || "Hədəf", weight: t.weight || 100, plan, fakt: 0, unit: t.unit || "", status: "in_progress" }],
-            members: [{ name: name || "İcraçı", role: me?.positionName || "İcraçı", status: "in_progress", progress: 0 }],
-            comments: [],
-            history: [{ id: `hist-${c.id}-${t.id}`, date: c.createdAt?.slice(0, 10) || "—", author: "Sistem", field: "KPI", from: "—", to: `${fmt(plan)} ${t.unit || ""}`.trim() }],
-            reminders: [],
-            lifecycle: [{ name: "Təyin edildi", date: c.createdAt?.slice(0, 10) || "—", done: true }, { name: "İcra", date: c.endDate || "—", done: false }],
-          });
+        const targets: DemoTarget[] = (c.targets || [])
+          .filter((t: any) => !tree.some(n => n.cardName === c.name && n.goalName === (t.name || "Hədəf") && (n.assigneeName === name || (me && n.assigneeId === me.id))))
+          .map((t: any, i: number) => ({
+            id: String(t.id ?? i),
+            name: t.name || `Hədəf ${i + 1}`,
+            weight: Number(t.weight) || 0,
+            plan: parseMetric(t.targetValue ?? t.scoreLimit),
+            fakt: 0,
+            unit: t.unit || "",
+            status: "in_progress" as ItemStatus,
+          }));
+        if (targets.length === 0) return;
+        const planTotal = targets.reduce((s, t) => s + t.plan, 0);
+        result.push({
+          id: `shared-${c.id}`,
+          scope: "own",
+          name: c.name,
+          description: "Sizə təyin olunmuş KPI kartı",
+          period: c.startDate || "—", deadline: c.endDate || "—",
+          createdAt: c.createdAt?.slice(0, 10) || "—", updatedAt: c.updatedAt?.slice(0, 10) || "—",
+          unit: targets[0]?.unit || "", plan: planTotal, fakt: 0, status: "in_progress",
+          frequency: c.frequency || "—", measure: targets[0]?.unit || "", type: "KPI kartı",
+          method: "Təyin edilmiş KPI", weight: targets.reduce((s, t) => s + t.weight, 0),
+          responsible: { name: name || "İcraçı", role: me?.positionName || "İcraçı" },
+          bsc: { perspective: "KPI", strategicGoal: c.name },
+          targets,
+          members: [{ name: name || "İcraçı", role: me?.positionName || "İcraçı", status: "in_progress", progress: 0 }],
+          comments: [],
+          history: [{ id: `hist-${c.id}`, date: c.createdAt?.slice(0, 10) || "—", author: "Sistem", field: "KPI", from: "—", to: `${fmt(planTotal)} ${targets[0]?.unit || ""}`.trim() }],
+          reminders: [],
+          lifecycle: [{ name: "Təyin edildi", date: c.createdAt?.slice(0, 10) || "—", done: true }, { name: "İcra", date: c.endDate || "—", done: false }],
         });
       });
 
     return [...result, ...OWN_KPIS];
   }, [tree, sharedCards, user]);
+
+  // Komanda KPI-ları — üzvü olduğum komandalara toplu təyin olunmuş real kartlar.
+  const teamKpis = useMemo<DemoKpi[]>(() => {
+    const me = getEmployees().find(e => String(e.id) === getCurrentEmployeeId(user) || `e${e.id}` === getCurrentEmployeeId(user) || `${e.firstName} ${e.lastName}` === user?.name);
+    if (!me) return [];
+    return getRealTeamKpiCards(me.id).map(c => ({
+      id: `team-${c.id}`,
+      scope: "team" as Scope,
+      name: c.name,
+      description: "Komandaya təyin olunmuş KPI kartı",
+      period: c.createdAt, deadline: c.deadline,
+      createdAt: c.createdAt, updatedAt: c.createdAt,
+      unit: c.targets[0]?.unit || "",
+      plan: c.targets.reduce((s, t) => s + t.plan, 0),
+      fakt: 0,
+      status: "in_progress" as ItemStatus,
+      frequency: c.frequency || "—", measure: c.targets[0]?.unit || "", type: "KPI kartı", method: "Komanda KPI",
+      weight: c.targets.reduce((s, t) => s + t.weight, 0),
+      responsible: { name: c.ownerName || "—", role: "Komanda" },
+      bsc: { perspective: "KPI", strategicGoal: c.name },
+      targets: c.targets.map(t => ({
+        id: t.id, name: t.name, weight: t.weight, plan: t.plan, fakt: 0, unit: t.unit, status: "in_progress" as ItemStatus,
+      })),
+      members: [],
+      comments: [], history: [], reminders: [],
+      lifecycle: [{ name: "Təyin edildi", date: c.createdAt, done: true }],
+    }));
+  }, [sharedCards, user]);
+
+  // Struktur KPI-ları — mənim struktur vahidimə təyin olunmuş real kartlar.
+  const structureKpis = useMemo<DemoKpi[]>(() => {
+    const meId = getCurrentEmployeeId(user);
+    const me = getEmployees().find(e => String(e.id) === meId || `e${e.id}` === meId || `${e.firstName} ${e.lastName}` === user?.name);
+    const path = (me?.structurePath || "").trim().toLowerCase();
+    if (!path) return [];
+    const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
+    return sharedCards
+      .filter(c => (c.status === "aktiv" || c.status === "natamam" || c.status === "tesdiq_gozlenilir"))
+      .filter(c => (c.structureIds || []).some(sid => {
+        const s = norm(sid);
+        return !!s && (path === s || path.startsWith(`${s} › `) || s.endsWith(path));
+      }))
+      .map(c => {
+        const targets: DemoTarget[] = (c.targets || []).map((t: any, i: number) => ({
+          id: String(t.id ?? i),
+          name: t.name || `Hədəf ${i + 1}`,
+          weight: Number(t.weight) || 0,
+          plan: parseMetric(t.targetValue ?? t.scoreLimit),
+          fakt: 0,
+          unit: t.unit || "",
+          status: "in_progress" as ItemStatus,
+        }));
+        return {
+          id: `structure-${c.id}`,
+          scope: "structure" as Scope,
+          name: c.name,
+          description: "Struktur vahidinə təyin olunmuş KPI kartı",
+          period: c.startDate || "—", deadline: c.endDate || "—",
+          createdAt: c.createdAt?.slice(0, 10) || "—", updatedAt: c.updatedAt?.slice(0, 10) || "—",
+          unit: targets[0]?.unit || "",
+          plan: targets.reduce((s, t) => s + t.plan, 0),
+          fakt: 0,
+          status: "in_progress" as ItemStatus,
+          frequency: c.frequency || "—", measure: targets[0]?.unit || "", type: "KPI kartı", method: "Struktur KPI",
+          weight: targets.reduce((s, t) => s + t.weight, 0),
+          responsible: { name: me ? `${me.firstName} ${me.lastName}`.trim() : "—", role: me?.positionName || "—" },
+          bsc: { perspective: "KPI", strategicGoal: c.name },
+          targets,
+          members: [],
+          comments: [], history: [], reminders: [],
+          lifecycle: [{ name: "Təyin edildi", date: c.createdAt?.slice(0, 10) || "—", done: true }],
+        };
+      });
+  }, [sharedCards, user]);
+
 
   return (
     <div className="min-h-screen">
@@ -192,12 +277,12 @@ const UserKpiCardsPage = () => {
                 onClick={() => setView("own")} />
               <HubCard icon={Users} title="Komanda KPI-ları"
                 subtitle="Komandanıza toplu təyin olunmuş KPI-lar — yalnız ümumi göstəricilər."
-                count={TEAM_KPIS.length}
+                count={teamKpis.length}
                 gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40"
                 onClick={() => setView("team")} />
               <HubCard icon={Network} title="Struktur KPI-ları"
                 subtitle="Struktur səviyyəsində KPI-lar — yalnız ümumi vəziyyət və progress."
-                count={STRUCTURE_KPIS.length}
+                count={structureKpis.length}
                 gradient="from-amber-500/15 via-amber-500/5 to-transparent border-amber-400/40"
                 onClick={() => setView("structure")} />
             </div>
@@ -213,12 +298,12 @@ const UserKpiCardsPage = () => {
           title="Komanda KPI-ları"
           subtitle="Toplu təyinatlar — digər əməkdaşların fərdi hədəf və nəticələri gizlədilir."
           icon={Users}
-          data={TEAM_KPIS} scope="team" />}
+          data={teamKpis} scope="team" />}
         {view === "structure" && <KpiListView
           title="Struktur KPI-ları"
           subtitle="Struktur səviyyəli KPI-lar — yalnız ümumi status və progress."
           icon={Network}
-          data={STRUCTURE_KPIS} scope="structure" />}
+          data={structureKpis} scope="structure" />}
       </main>
     </div>
   );

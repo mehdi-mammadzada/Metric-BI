@@ -69,51 +69,31 @@ const monthStartWeekday = (y: number, m: number) => {
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const fmtDate = (y: number, m: number, d: number) => `${pad2(d)}.${pad2(m)}.${y}`;
 
-// Build synthetic monthly bucket for a given target.
+// Real dataya əsaslanan aylıq bucket. Sistemə faktiki nəticə daxil edilməyibsə,
+// heç bir sintetik gün/dəyər yaradılmır — cari dəyər 0 qalır.
 const buildMonthBucket = (
-  seed: number, year: number, month: number, targetName: string, isCurrent: boolean, baseTarget: number,
+  _seed: number, year: number, month: number, _targetName: string, isCurrent: boolean, baseTarget: number,
 ): PeriodBucket => {
-  const rand = seedRand(seed + month * 31 + year);
   const dim = daysInMonth(year, month);
   const points: DayPoint[] = [];
-  // ~40% of days have data
-  let prev = Math.round(baseTarget * 0.6);
-  for (let d = 1; d <= dim; d++) {
-    if (rand() < 0.4) {
-      const noise = Math.round((rand() - 0.4) * baseTarget * 0.3);
-      const cur = Math.max(0, prev + noise);
-      const pct = Math.max(0, Math.min(140, Math.round((cur / baseTarget) * 100)));
-      const trend = prev ? Math.round(((cur - prev) / prev) * 100) : 0;
-      points.push({
-        day: d, current: cur, target: baseTarget, pct, status: statusFromPct(pct), trend,
-        updated: `${pad2(9 + Math.floor(rand() * 10))}:${pad2(Math.floor(rand() * 60))}`,
-      });
-      prev = cur;
-    }
-  }
-  const avgCur = points.length ? Math.round(points.reduce((a, p) => a + p.current, 0) / points.length) : 0;
-  const avgPct = points.length ? Math.round(points.reduce((a, p) => a + p.pct, 0) / points.length) : 0;
-  const lastPoint = points[points.length - 1];
-  const trend = lastPoint && points.length >= 2
-    ? Math.round(((lastPoint.current - points[Math.floor(points.length / 2)].current) / Math.max(1, points[Math.floor(points.length / 2)].current)) * 100)
-    : 0;
   return {
     key: `${year}-${pad2(month)}`,
     label: `${MONTHS_AZ[month - 1]} ${year}`,
     year, month, isCurrent,
-    current: avgCur, target: baseTarget, pct: avgPct, trend,
-    status: statusFromPct(avgPct),
-    lastUpdate: lastPoint ? fmtDate(year, month, lastPoint.day) : "—",
+    current: 0, target: baseTarget, pct: 0, trend: 0,
+    status: statusFromPct(0),
+    lastUpdate: "—",
     daysInMonth: dim,
     monthStartWeekday: monthStartWeekday(year, month),
     points,
   };
 };
 
+
 const parseTargetNumber = (t?: string): number => {
-  if (!t) return 100;
+  if (!t) return 0;
   const n = parseFloat(String(t).replace(/[^\d.\-]/g, ""));
-  return isNaN(n) || n <= 0 ? 100 : n;
+  return isNaN(n) || n <= 0 ? 0 : n;
 };
 
 // Build periods for a target based on card frequency.
