@@ -2197,16 +2197,17 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                     {c.rows.map((r, i) => {
                       const isReasonRow = r.role === "Silinmə səbəbi";
                       return (
-                        <li key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg border ${toneCls[r.tone || "wait"]}`}>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-medium text-foreground truncate">
+                        <li key={i} className={`flex items-start justify-between gap-2 px-3 py-2 rounded-lg border ${toneCls[r.tone || "wait"]}`}>
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span className="text-sm font-medium text-foreground break-words whitespace-pre-wrap">
                               {isReasonRow ? r.name : `${i + 1}. ${r.name}`}
                             </span>
-                            <span className="text-[11px] text-muted-foreground truncate">{r.role}</span>
+                            <span className="text-[11px] text-muted-foreground break-words">{r.role}</span>
                           </div>
                           {!isReasonRow && (
                             <span className="text-xs font-medium shrink-0 ml-2">{badgeText[r.tone || "wait"]}</span>
                           )}
+
                         </li>
                       );
                     })}
