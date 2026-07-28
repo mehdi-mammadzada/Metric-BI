@@ -176,6 +176,20 @@ export const setKpiStatus = (id: string, status: SharedKpiStatus, actor: string,
   save(list);
 };
 
+/** Statusu dəyişmədən kartın tarixçəsinə qeyd əlavə edir (backend-ə də sinxronlaşır). */
+export const appendKpiHistory = (id: string, actor: string, action: string, note?: string) => {
+  const list = load();
+  const idx = list.findIndex(c => c.id === id || (c.numericId != null && (`kpi-${c.numericId}` === id || String(c.numericId) === id)));
+  if (idx < 0) return;
+  list[idx] = {
+    ...list[idx],
+    history: [...list[idx].history, { ts: new Date().toISOString(), actor, action, note }],
+    updatedAt: new Date().toISOString(),
+  };
+  save(list);
+};
+
+
 export const updateExecution = (id: string, assigneeId: string, status: ExecutionStatus, actor: string) => {
   const list = load();
   const idx = list.findIndex(c => c.id === id);

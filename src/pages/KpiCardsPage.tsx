@@ -43,7 +43,7 @@ import { flushLifecycleToCloud } from "@/lib/lifecycleService";
 import CreateKpiWizard, { type CreateKpiWizardDraft } from "@/components/kpi/CreateKpiWizard";
 import EmployeesTreeView from "@/components/kpi/EmployeesTreeView";
 import { upsertStatus } from "@/lib/kpiCardStatusStore";
-import { buildSharedCardFromDraft, inferSharedCardAssignmentMode, setKpiStatus, upsertSharedKpiCard, useSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
+import { appendKpiHistory, buildSharedCardFromDraft, inferSharedCardAssignmentMode, setKpiStatus, upsertSharedKpiCard, useSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
 import { withKartSuffix } from "@/lib/utils";
 import { WeightInput } from "@/components/kpi/WeightInput";
 // cascade root yaradılması `cascadeAssignment` üzərindən aparılır
@@ -1324,7 +1324,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       const mod = await import("@/lib/kpiCardStatusStore");
       await mod.upsertStatus({ card_id: card.id, status: "silindi" });
       const shared = sharedCards.find(s => s.numericId === card.id || s.id === `kpi-${card.id}` || s.id === String(card.id));
-      if (shared) setKpiStatus(shared.id, "silindi", user?.name || "HR", deleteComment || "Birbaşa silindi");
+      if (shared) setKpiStatus(shared.id, "silindi", getCurrentEmployeeId(user) || user?.name || "HR", (deleteComment || "").trim() || "Birbaşa silindi");
       const next = await mod.fetchAllStatuses();
       setStatusMap(next);
       void import("@/lib/kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
@@ -1360,6 +1360,15 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       kpiName: card.name,
       requestedBy: user?.name || "HR",
     });
+    if (shared) {
+      appendKpiHistory(
+        shared.id,
+        getCurrentEmployeeId(user) || user?.name || "HR",
+        "deletion:request",
+        (comment || "").trim() || "Səbəb qeyd edilməyib",
+      );
+      void import("@/lib/kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
+    }
     void import("@/lib/approvalsService").then(m => m.flushApprovalsToCloud()).catch(() => undefined);
     toast.success(`Silinmə sorğusu göndərildi — "${matrix.name}" (${matrix.approver.name}).`);
     setDeleteDialog(null);
@@ -1634,6 +1643,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                     }));
                                     try {
                                       await upsertStatus({ card_id: card.id, status: "silindi" as any, use_matrix: false, submitted_for_approval: false, assignees: [] });
+                                      const sharedDel = sharedCards.find(s2 => s2.numericId === card.id || s2.id === `kpi-${card.id}` || s2.id === String(card.id));
+                                      if (sharedDel) setKpiStatus(sharedDel.id, "silindi", getCurrentEmployeeId(user) || user?.name || "HR", "İmtina edilmiş kart silindi");
+                                      void import("@/lib/kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
                                       const mod = await import("@/lib/kpiCardStatusStore");
                                       const next = await mod.fetchAllStatuses();
                                       setStatusMap(prev => ({ ...prev, ...next }));
@@ -2080,6 +2092,24 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
             const rejectedRows = approvalRows.filter(r => r.tone === "err");
 
             const completedSetterRows = setterRows.length ? setterRows.map(r => ({ ...r, role: "Təyin etdi", tone: "ok" as const })) : [];
+
+            // Silinmə: aktoru və səbəbi kartın backend tarixçəsindən oxu (bütün cihazlarda eyni)
+            const deletionRows = (() => {
+              const hist = (sharedCard?.history || []);
+              const deletedEntry = [...hist].reverse().find(h =>
+                h.action === "status:silindi" || h.action === "status:legv_olundu");
+              const requestEntry = [...hist].reverse().find(h => h.action === "deletion:request");
+              const deleterId = deletedEntry?.actor || requestEntry?.actor || (st as any).rejected_by || "";
+              const deleterName = deleterId ? employeeNameById(deleterId) : (card?.responsible || "—");
+              const rawReason = (requestEntry?.note || "").trim() || (deletedEntry?.note || "").trim();
+              const reason = rawReason && rawReason !== "Silinmə sorğusu təsdiqləndi" ? rawReason : "";
+              return [
+                { role: "Silən", name: deleterName || "—", tone: "err" as const },
+                { role: "Silinmə səbəbi", name: reason || "Səbəb qeyd edilməyib", tone: "err" as const },
+              ];
+            })();
+
+
             const cfg: Record<string, { title: string; empty: string; rows: { role: string; name: string; tone?: "ok" | "wait" | "err" }[] }> = {
               qaralama:        { title: "Qaralama — hazırlanır", empty: "Kart yaradılıb, hələ təyinə göndərilməyib.", rows: [{ role: "Yaradan", name: card?.responsible || "—", tone: "wait" }] },
               natamam:         { title: "Təyin edənlər", empty: "Təyin edənlər tapılmadı.", rows: setterRows },
@@ -2088,8 +2118,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               aktiv:           { title: card?.matrixId ? "Təsdiq tamamlandı" : "Təyin edənlər tamamlandı", empty: "Bu kart üçün tamamlanmış iştirakçı tapılmadı.", rows: completedSetterRows.length ? completedSetterRows : (st.assignees || []).map(a => ({ role: a.ok ? "Tamamladı" : "İcraçı", name: a.name, tone: "ok" })) },
               qiymetlendirme:  { title: "Qiymətləndirəcək şəxslər", empty: "Qiymətləndirici təyin edilməyib.", rows: evaluators.map(e => ({ ...e, tone: "wait" as const })) },
               tamamlanib:      { title: "Tamamlanıb — qiymətləndirənlər", empty: "—", rows: evaluators.map(e => ({ ...e, tone: "ok" as const })) },
-               silindi:         { title: "Silindi", empty: "—", rows: [{ role: "Silən", name: card?.responsible || "—", tone: "err" }] },
-               legv_olundu:     { title: "Silindi", empty: "—", rows: [{ role: "Silən", name: card?.responsible || "—", tone: "err" }] },
+               silindi:         { title: "Silindi", empty: "—", rows: deletionRows },
+               legv_olundu:     { title: "Silindi", empty: "—", rows: deletionRows },
             };
 
             if (st.status === "tesdiq_gozlenilir" && cfg.tesdiq_gozlenilir.rows.length === 0) {
