@@ -949,33 +949,20 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
   // Competencies from the criteria catalog
   const competencies = getCriteria().slice(0, 6);
 
-  // Deterministic set of "evaluators" per group. For individual, use card.evaluatorIds
-  // + a couple of extra people so multi-rater is visible on at least one item.
-  const extraEvaluatorPool = mockEmployees.filter(e => e.id !== group.key).map(e => e.id);
-  const groupExtraEvaluators = (n: number): string[] => {
-    const h = hash(group.key);
-    return Array.from({ length: n }, (_, i) => extraEvaluatorPool[(h + i * 7) % extraEvaluatorPool.length]);
-  };
-
+  // Yalnız real qiymətləndiricilər: kartda təyin olunmuş şəxslər + komanda/struktur rəhbəri.
   const toggleCard = (cardId: string) => {
     setOpenCardIds(prev => prev.includes(cardId) ? prev.filter(id => id !== cardId) : [...prev, cardId]);
   };
 
-  const getGoalEvaluatorIds = (card: SharedKpiCard, targetIndex: number): string[] => {
+  const getGoalEvaluatorIds = (card: SharedKpiCard, _targetIndex: number): string[] => {
     const base = card.evaluatorIds.length > 0 ? card.evaluatorIds : [card.ownerId];
-    if (scope === "team") {
-      const team = mockTeams.find(t => t.id === group.key);
-      return Array.from(new Set([team?.leaderId || card.ownerId, ...base, ...groupExtraEvaluators(targetIndex === 0 ? 2 : 1)]));
+    if (scope === "team" || scope === "structure") {
+      const leaderId = group.leaderName ? employeeIdByName(group.leaderName) : "";
+      return Array.from(new Set([leaderId, ...base].filter(Boolean)));
     }
-    if (scope === "structure") {
-      const structure = mockStructures.find(s => s.id === group.key);
-      const teamLeaders = mockTeams.filter(t => t.structureId === group.key).map(t => t.leaderId);
-      return Array.from(new Set([structure?.managerId || card.ownerId, ...teamLeaders, ...base, ...groupExtraEvaluators(targetIndex === 0 ? 1 : 0)]));
-    }
-    return targetIndex === 0 && card === group.cards[0]
-      ? Array.from(new Set([...base, ...groupExtraEvaluators(2)]))
-      : base;
+    return base;
   };
+
 
   const renderGoalCards = (title: string, emptyText: string, badgeLabel?: string) => (
     <div className="space-y-3">
