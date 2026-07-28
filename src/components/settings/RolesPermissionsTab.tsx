@@ -60,6 +60,7 @@ const PERM_LABELS: Record<string, string> = {
   "home.view": "Baxış",
   "home.widgets": "Bütün widget-lər",
   "home.export": "Export",
+  "home.ai_assistant": "AI Köməkçi",
   // KPI cards
   "kpi.view": "Baxış",
   "kpi.create": "KPI yarat",
