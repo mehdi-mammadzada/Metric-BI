@@ -66,6 +66,15 @@ const parseNumber = (value: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 const pctOf = (k: Kpi) => k.target ? Math.round((k.actual / k.target) * 100) : 0;
+/** Plan 0 və ya etibarsız olduqda faiz həmişə 0 (NaN/Infinity göstərilmir). */
+const safePct = (fakt: number, plan: number) => {
+  const p = Number(plan) || 0;
+  const f = Number(fakt) || 0;
+  if (p <= 0) return 0;
+  const v = Math.round((f / p) * 100);
+  return Number.isFinite(v) ? v : 0;
+};
+
 const tone = (p: number) => p >= 100 ? "bg-zone-green-bg text-zone-green-text" : p >= 75 ? "bg-zone-yellow-bg text-zone-yellow-text" : "bg-zone-red-bg text-zone-red-text";
 
 const statusMeta: Record<KpiStatus, { label: string; cls: string }> = {
