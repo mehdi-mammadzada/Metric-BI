@@ -45,7 +45,13 @@ export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
   useEffect(() => {
     const onUpd = () => setTick(t => t + 1);
     window.addEventListener("kpi-set-updated", onUpd);
-    return () => window.removeEventListener("kpi-set-updated", onUpd);
+    window.addEventListener("shared-kpi-cards-updated", onUpd);
+    window.addEventListener("kpi-cards-updated", onUpd);
+    return () => {
+      window.removeEventListener("kpi-set-updated", onUpd);
+      window.removeEventListener("shared-kpi-cards-updated", onUpd);
+      window.removeEventListener("kpi-cards-updated", onUpd);
+    };
   }, []);
 
   // KPI Set entry-lərini hədəf kimi birləşdir (təkrarlanmalar aradan qaldırılır)

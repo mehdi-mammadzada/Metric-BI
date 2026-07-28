@@ -21,6 +21,7 @@ const SHARED_KEY = "shared_kpi_cards_v1";
 const STATUS_KEY = "kpi_card_status_v1";
 const META_KEY   = "kpi_card_meta_v1";
 const LEGACY_ROWS_KEY = "kpi_cards_v1";
+const DRAFTS_KEY = "kpi_card_drafts_v1";
 const EVT_SHARED = "shared-kpi-cards-updated";
 const EVT_ALL    = "kpi-cards-updated";
 
@@ -36,6 +37,129 @@ const rawRead = <T,>(key: string, fallback: T): T => {
   } catch { return fallback; }
 };
 
+const asPlainObject = (value: unknown): Record<string, any> =>
+  value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, any> : {};
+
+const hasPayload = (value: unknown): boolean => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return Object.keys(value as Record<string, unknown>).length > 0;
+};
+
+const rangesToLimitSet = (ranges: unknown): Record<string, { min: number; max: number }> | undefined => {
+  if (!Array.isArray(ranges)) return undefined;
+  const out: Record<string, { min: number; max: number }> = {
+    l1: { min: 0, max: 0 }, l2: { min: 0, max: 0 }, l3: { min: 0, max: 0 }, l4: { min: 0, max: 0 }, l5: { min: 0, max: 0 },
+  };
+  let touched = false;
+  ranges.forEach((row: any) => {
+    const score = Number(row?.score);
+    const min = Number(row?.min);
+    const max = Number(row?.max);
+    if (!Number.isFinite(score) || score < 1 || score > 5 || !Number.isFinite(min) || !Number.isFinite(max)) return;
+    out[`l${score}`] = { min, max };
+    touched = true;
+  });
+  return touched ? out : undefined;
+};
+
+const unitFromDraftTarget = (target: any): string => {
+  if (target?.type === "Məbləğ") return target?.currency || "AZN";
+  if (target?.type === "Faiz") return "%";
+  return target?.unit || "";
+};
+
+const evaluatorFromDraftTarget = (target: any): SharedKpiCard["targets"][number]["evaluator"] => {
+  if (!Array.isArray(target?.evaluators) || target.evaluators.length === 0) return undefined;
+  return {
+    type: "person",
+    persons: target.evaluators.map((e: any) => ({ name: e?.name || "", weight: Number(e?.weight) || 0 })),
+  };
+};
+
+const targetsFromDraft = (draft: any): SharedKpiCard["targets"] => {
+  if (!Array.isArray(draft?.targets)) return [];
+  return draft.targets
+    .map((target: any, index: number) => {
+      const name = String(target?.name || `Hədəf ${index + 1}`).trim();
+      if (!name) return null;
+      const limits = hasPayload(target?.limits) ? target.limits : rangesToLimitSet(target?.ranges);
+      return {
+        id: String(target?.id || `target-${index + 1}`),
+        name,
+        type: target?.type ?? "",
+        weight: Number(target?.weight ?? 0),
+        scoreLimit: Number(target?.scoreLimit ?? 0),
+        targetValue: String(target?.targetValue ?? ""),
+        unit: unitFromDraftTarget(target),
+        cascading: !!target?.cascading,
+        createdBy: target?.createdBy === "other" ? "other" : "self",
+        assigner: target?.assigner || undefined,
+        limits,
+        scoreDescriptions: Array.isArray(target?.scoreDescriptions) ? target.scoreDescriptions.map((s: any) => ({
+          score: Number(s?.score) || 0,
+          description: s?.description || "",
+          timeStart: s?.timeStart,
+          timeEnd: s?.timeEnd,
+          isMinBonus: !!s?.isMinBonus,
+        })) : [],
+        evaluator: evaluatorFromDraftTarget(target),
+        ranges: Array.isArray(target?.ranges) ? target.ranges : [],
+      };
+    })
+    .filter((target): target is SharedKpiCard["targets"][number] => !!target);
+};
+
+const mergeTargetsWithDraft = (targets: SharedKpiCard["targets"], draft: any): SharedKpiCard["targets"] => {
+  const draftTargets = targetsFromDraft(draft);
+  if (draftTargets.length === 0) return targets;
+  if (targets.length === 0) return draftTargets;
+  return targets.map((target, index) => {
+    const draftTarget = draftTargets.find(t => t.id === target.id) || draftTargets.find(t => t.name.trim().toLowerCase() === target.name.trim().toLowerCase()) || draftTargets[index];
+    if (!draftTarget) return target;
+    return {
+      ...target,
+      targetValue: target.targetValue || draftTarget.targetValue,
+      unit: target.unit || draftTarget.unit,
+      limits: target.limits || draftTarget.limits,
+      scoreDescriptions: target.scoreDescriptions?.length ? target.scoreDescriptions : draftTarget.scoreDescriptions,
+      evaluator: target.evaluator || draftTarget.evaluator,
+      ranges: target.ranges?.length ? target.ranges : draftTarget.ranges,
+    };
+  });
+};
+
+const draftForCard = (drafts: Record<string, any>, card: { legacy_numeric_id?: number | string | null; name?: string | null }) => {
+  if (card.legacy_numeric_id != null) {
+    const raw = String(card.legacy_numeric_id);
+    const numeric = String(Number(card.legacy_numeric_id));
+    if (drafts[raw]) return drafts[raw];
+    if (drafts[numeric]) return drafts[numeric];
+  }
+  const name = String(card.name || "").trim().toLowerCase();
+  if (!name) return undefined;
+  return Object.values(drafts).find((draft: any) => String(draft?.name || "").trim().toLowerCase() === name);
+};
+
+const dbTargetPayload = (orgId: string, cardId: string, target: SharedKpiCard["targets"][number], index: number) => ({
+  organization_id: orgId,
+  kpi_card_id: cardId,
+  legacy_id: target.id,
+  name: target.name,
+  type: target.type ?? null,
+  weight: target.weight ?? 0,
+  score_limit: target.scoreLimit ?? null,
+  target_value: target.targetValue ?? null,
+  unit: target.unit ?? null,
+  cascading: !!target.cascading,
+  created_by_mode: target.createdBy ?? null,
+  assigner: target.assigner ?? null,
+  limits: asJson(target.limits ?? {}),
+  score_descriptions: asJson(target.scoreDescriptions ?? []),
+  evaluator: asJson(target.evaluator ?? null),
+  ranges: asJson(target.ranges ?? []),
+  sort_order: index,
+});
+
 const replaceLocalKpiCache = (shared: SharedKpiCard[] = [], status: Record<number, any> = {}, meta: any[] = []) => {
   suppressFlush = true;
   rawWrite(SHARED_KEY, shared);
@@ -49,15 +173,19 @@ const replaceLocalKpiCache = (shared: SharedKpiCard[] = [], status: Record<numbe
 
 // ── HYDRATE ───────────────────────────────────────────────────────────────────
 export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => {
-  const [cardsRes, targetsRes, historyRes] = await Promise.all([
+  const [cardsRes, targetsRes, historyRes, draftsRes] = await Promise.all([
     supabase.from("kpi_cards").select("*").eq("organization_id", orgId),
     supabase.from("kpi_card_targets").select("*").eq("organization_id", orgId).order("sort_order"),
     supabase.from("kpi_card_history").select("*").eq("organization_id", orgId).order("occurred_at"),
+    supabase.from("org_catalogs").select("entries").eq("organization_id", orgId).eq("catalog_key", "kpi_card_drafts").maybeSingle(),
   ]);
 
   const cards = cardsRes.data ?? [];
   const targets = targetsRes.data ?? [];
   const history = historyRes.data ?? [];
+  const cloudDrafts = asPlainObject((draftsRes.data as any)?.entries);
+  const localDrafts = rawRead<Record<string, any>>(DRAFTS_KEY, {});
+  const drafts = { ...localDrafts, ...cloudDrafts };
 
   // Empty backend means empty organization. Never bootstrap a new org from
   // browser/localStorage cache, otherwise old data leaks into freshly-created orgs.
@@ -80,25 +208,9 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
   }
 
   // Rebuild shared KPI card records.
-  const shared: SharedKpiCard[] = dedupeSharedKpiCards(cards.map((c: any) => ({
-    id: c.id as string,
-    numericId: c.legacy_numeric_id ?? undefined,
-    name: c.name,
-    ownerId: c.owner_employee_id ?? "",
-    evaluatorIds: c.evaluator_ids ?? [],
-    assigneeIds: c.assignee_ids ?? [],
-    structureIds: c.structure_ids ?? [],
-    teamIds: c.team_ids ?? [],
-    positionIds: c.position_ids ?? [],
-    assignmentMode: c.assignment_mode === "bulk" ? "bulk" : "individual",
-    matrixId: c.matrix_id ?? null,
-    status: (c.status as SharedKpiStatus) ?? "natamam",
-    rejectedReason: c.rejected_reason ?? undefined,
-    startDate: c.start_date ?? "",
-    endDate: c.end_date ?? "",
-    frequency: c.frequency ?? "",
-    scoringSystem: c.scoring_system ?? "",
-    targets: (targetsByCard.get(c.id) ?? []).map((t: any) => ({
+  const shared: SharedKpiCard[] = dedupeSharedKpiCards(cards.map((c: any) => {
+    const draft = draftForCard(drafts, c);
+    const dbTargets: SharedKpiCard["targets"] = (targetsByCard.get(c.id) ?? []).map((t: any) => ({
       id: t.legacy_id ?? t.id,
       name: t.name,
       type: t.type ?? "",
@@ -109,21 +221,48 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
       cascading: !!t.cascading,
       createdBy: t.created_by_mode ?? undefined,
       assigner: t.assigner ?? undefined,
-      limits: t.limits && Object.keys(t.limits).length ? t.limits : undefined,
+      limits: hasPayload(t.limits) ? t.limits : undefined,
       scoreDescriptions: Array.isArray(t.score_descriptions) ? t.score_descriptions : [],
       evaluator: t.evaluator ?? undefined,
       ranges: Array.isArray(t.ranges) ? t.ranges : [],
-    })),
-    execution: (c.execution ?? {}) as Record<string, ExecutionStatus>,
-    history: (historyByCard.get(c.id) ?? []).map((h: any) => ({
-      ts: h.occurred_at,
-      actor: h.actor ?? "",
-      action: h.action,
-      note: h.note ?? undefined,
-    })),
-    createdAt: c.created_at,
-    updatedAt: c.updated_at,
-  })));
+    }));
+    return {
+      id: c.id as string,
+      numericId: c.legacy_numeric_id ?? undefined,
+      name: c.name,
+      ownerId: c.owner_employee_id ?? "",
+      evaluatorIds: c.evaluator_ids ?? [],
+      assigneeIds: c.assignee_ids ?? [],
+      structureIds: c.structure_ids ?? [],
+      teamIds: c.team_ids ?? [],
+      positionIds: c.position_ids ?? [],
+      assignmentMode: c.assignment_mode === "bulk" ? "bulk" : "individual",
+      matrixId: c.matrix_id ?? null,
+      status: (c.status as SharedKpiStatus) ?? "natamam",
+      rejectedReason: c.rejected_reason ?? undefined,
+      startDate: c.start_date ?? "",
+      endDate: c.end_date ?? "",
+      frequency: c.frequency ?? "",
+      scoringSystem: c.scoring_system ?? "",
+      targets: mergeTargetsWithDraft(dbTargets, draft),
+      execution: (c.execution ?? {}) as Record<string, ExecutionStatus>,
+      history: (historyByCard.get(c.id) ?? []).map((h: any) => ({
+        ts: h.occurred_at,
+        actor: h.actor ?? "",
+        action: h.action,
+        note: h.note ?? undefined,
+      })),
+      createdAt: c.created_at,
+      updatedAt: c.updated_at,
+    };
+  }));
+
+  const missingTargetRepairs = cards
+    .filter((c: any) => (targetsByCard.get(c.id) ?? []).length === 0)
+    .flatMap((c: any) => targetsFromDraft(draftForCard(drafts, c)).map((target, index) => dbTargetPayload(orgId, c.id as string, target, index)));
+  if (missingTargetRepairs.length > 0) {
+    await supabase.from("kpi_card_targets").insert(missingTargetRepairs as never);
+  }
 
   // Rebuild status + meta caches from card rows.
   const status: Record<number, any> = {};
@@ -200,27 +339,7 @@ const seedCloudFromLocal = async (orgId: string) => {
     upsertSharedKpiCard({ ...c, id: cardId });
 
     if (c.targets.length) {
-      await supabase.from("kpi_card_targets").insert(
-        c.targets.map((t, i) => ({
-          organization_id: orgId,
-          kpi_card_id: cardId,
-          legacy_id: t.id,
-          name: t.name,
-          type: t.type ?? null,
-          weight: t.weight ?? 0,
-          score_limit: t.scoreLimit ?? null,
-          target_value: t.targetValue ?? null,
-          unit: t.unit ?? null,
-          cascading: !!t.cascading,
-          created_by_mode: t.createdBy ?? null,
-          assigner: t.assigner ?? null,
-          limits: asJson(t.limits ?? {}),
-          score_descriptions: asJson(t.scoreDescriptions ?? []),
-          evaluator: asJson(t.evaluator ?? null),
-          ranges: asJson(t.ranges ?? []),
-          sort_order: i,
-        })),
-      );
+      await supabase.from("kpi_card_targets").insert(c.targets.map((t, i) => dbTargetPayload(orgId, cardId, t, i)) as never);
     }
     if (c.history.length) {
       await supabase.from("kpi_card_history").insert(
@@ -255,6 +374,7 @@ export const flushLocalKpiCardsToCloud = async () => {
   if (!orgId) return;
   const shared = getSharedKpiCards();
   const status = rawRead<Record<number, any>>(STATUS_KEY, {});
+  const drafts = rawRead<Record<string, any>>(DRAFTS_KEY, {});
   const existingModesRes = await supabase
     .from("kpi_cards")
     .select("id, legacy_numeric_id, assignment_mode")
@@ -325,30 +445,12 @@ export const flushLocalKpiCardsToCloud = async () => {
     }
     if (!cardUuid) continue;
 
-    // Replace-in-place strategy for targets + history keeps things simple.
-    await supabase.from("kpi_card_targets").delete().eq("kpi_card_id", cardUuid);
-    if (c.targets.length) {
-      await supabase.from("kpi_card_targets").insert(
-        c.targets.map((t, i) => ({
-          organization_id: orgId,
-          kpi_card_id: cardUuid,
-          legacy_id: t.id,
-          name: t.name,
-          type: t.type ?? null,
-          weight: t.weight ?? 0,
-          score_limit: t.scoreLimit ?? null,
-          target_value: t.targetValue ?? null,
-          unit: t.unit ?? null,
-          cascading: !!t.cascading,
-          created_by_mode: t.createdBy ?? null,
-          assigner: t.assigner ?? null,
-          limits: asJson(t.limits ?? {}),
-          score_descriptions: asJson(t.scoreDescriptions ?? []),
-          evaluator: asJson(t.evaluator ?? null),
-          ranges: asJson(t.ranges ?? []),
-          sort_order: i,
-        })),
-      );
+    // Replace-in-place for targets only when we have a non-empty authoritative target list.
+    // Never let a stale empty local cache erase BSC targets from the backend.
+    const targetsToPersist = mergeTargetsWithDraft(c.targets, draftForCard(drafts, { legacy_numeric_id: numeric, name: c.name }));
+    if (targetsToPersist.length) {
+      await supabase.from("kpi_card_targets").delete().eq("kpi_card_id", cardUuid);
+      await supabase.from("kpi_card_targets").insert(targetsToPersist.map((t, i) => dbTargetPayload(orgId, cardUuid, t, i)) as never);
     }
     await supabase.from("kpi_card_history").delete().eq("kpi_card_id", cardUuid);
     if (c.history.length) {

@@ -1135,6 +1135,12 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     return [...kpiCards.map(c => applySharedDetails(c, bySharedNumericId.get(c.id))), ...extras];
   }, [kpiCards, sharedCards]);
 
+  useEffect(() => {
+    if (!selectedKpi) return;
+    const fresh = mergedKpiCards.find(card => card.id === selectedKpi.id);
+    if (fresh) setSelectedKpi(fresh);
+  }, [mergedKpiCards, selectedKpi?.id]);
+
   // === Kartın TƏTBİQ OLUNDUĞU əməkdaşlar (yaradan yox!) ===
   // Backend-authoritative: shared kartın assignee_ids / team_ids / structure_ids
   // sahələri sinxronlaşdığı üçün bütün brauzer və cihazlarda eyni nəticə verir.
