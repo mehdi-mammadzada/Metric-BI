@@ -9,6 +9,7 @@
 //   • kpi_card_meta_v1     (numeric card ↔ shared id bridge)
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import {
   getSharedKpiCards, upsertSharedKpiCard,
   dedupeSharedKpiCards,
@@ -22,6 +23,8 @@ const META_KEY   = "kpi_card_meta_v1";
 const LEGACY_ROWS_KEY = "kpi_cards_v1";
 const EVT_SHARED = "shared-kpi-cards-updated";
 const EVT_ALL    = "kpi-cards-updated";
+
+const asJson = (value: unknown): Json => JSON.parse(JSON.stringify(value ?? null)) as Json;
 
 // ── local raw helpers (bypass the store's own events during hydration) ────────
 const rawWrite = (key: string, value: unknown) =>
@@ -211,10 +214,10 @@ const seedCloudFromLocal = async (orgId: string) => {
           cascading: !!t.cascading,
           created_by_mode: t.createdBy ?? null,
           assigner: t.assigner ?? null,
-          limits: t.limits ?? {},
-          score_descriptions: t.scoreDescriptions ?? [],
-          evaluator: t.evaluator ?? null,
-          ranges: t.ranges ?? [],
+          limits: asJson(t.limits ?? {}),
+          score_descriptions: asJson(t.scoreDescriptions ?? []),
+          evaluator: asJson(t.evaluator ?? null),
+          ranges: asJson(t.ranges ?? []),
           sort_order: i,
         })),
       );
@@ -339,10 +342,10 @@ export const flushLocalKpiCardsToCloud = async () => {
           cascading: !!t.cascading,
           created_by_mode: t.createdBy ?? null,
           assigner: t.assigner ?? null,
-          limits: t.limits ?? {},
-          score_descriptions: t.scoreDescriptions ?? [],
-          evaluator: t.evaluator ?? null,
-          ranges: t.ranges ?? [],
+          limits: asJson(t.limits ?? {}),
+          score_descriptions: asJson(t.scoreDescriptions ?? []),
+          evaluator: asJson(t.evaluator ?? null),
+          ranges: asJson(t.ranges ?? []),
           sort_order: i,
         })),
       );
