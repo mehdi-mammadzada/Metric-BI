@@ -1903,7 +1903,11 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
             <DialogTitle>{employeeDrilldown} — KPI kartları</DialogTitle>
           </DialogHeader>
           {employeeDrilldown && (() => {
-            const cards = filteredCards.filter(c => (c.responsible || "Təyin olunmayıb") === employeeDrilldown);
+            const cards = filteredCards.filter(c => {
+              const names = assigneeNamesForCard(c);
+              return (names.length ? names : ["Təyin olunmayıb"]).includes(employeeDrilldown);
+            });
+
             if (cards.length === 0) return <p className="text-sm text-muted-foreground py-4">Kart tapılmadı.</p>;
             return (
               <div className="max-h-[60vh] overflow-y-auto divide-y divide-border">
