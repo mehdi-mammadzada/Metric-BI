@@ -517,23 +517,18 @@ const DropdownCatalogsTab = () => {
         <div className="space-y-1 max-h-[calc(100vh-280px)] overflow-y-auto">
           {catalogs.map(c => {
             const isActive = c.id === activeId;
-            const count = c.schema === "kpi_periods" ? periods.length : (c.rows?.length ?? c.values.length);
             return (
               <button
                 key={c.id}
                 onClick={() => { setActiveId(c.id); setSearch(""); }}
-                className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-secondary"}`}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors ${isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-secondary"}`}
               >
-                <span className="flex items-center gap-2 min-w-0">
-                  <Database className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className="truncate text-left">{c.name}</span>
-                </span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isActive ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"}`}>
-                  {count}
-                </span>
+                <Database className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                <span className="truncate text-left">{c.name}</span>
               </button>
             );
           })}
+
         </div>
       </div>
 
