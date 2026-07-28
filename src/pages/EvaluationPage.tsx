@@ -777,6 +777,8 @@ interface StatusGroup {
   cards: SharedKpiCard[];
   goalCount: number;
   members?: { id: string; name: string; position?: string }[];
+  leaderName?: string;
+  teamCount?: number;
 }
 
 const hash = (s: string) => {
@@ -793,6 +795,12 @@ const employeePosition = (id: string): string => {
   return e?.position || "";
 };
 
+const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
+
+/** Ad üzrə real əməkdaş id-si (tapılmasa adın özü qaytarılır). */
+const employeeIdByName = (name: string): string =>
+  mockEmployees.find(e => norm(e.fullName) === norm(name))?.id || name;
+
 const buildGroups = (scope: StatusScope): StatusGroup[] => {
   const cards = getSharedKpiCards().filter(c => c.status !== "imtina");
   if (scope === "individual") {
@@ -808,45 +816,61 @@ const buildGroups = (scope: StatusScope): StatusGroup[] => {
       };
     });
   }
+
   if (scope === "team") {
-    const map = new Map<string, StatusGroup>();
-    cards.filter(c => c.teamIds && c.teamIds.length > 0).forEach(c => {
-      c.teamIds.forEach(tid => {
-        const team = mockTeams.find(t => t.id === tid);
-        const g = map.get(tid) || {
-          key: tid,
-          name: team?.name || tid,
-          subtitle: team ? `${team.memberIds.length} üzv` : undefined,
-          cards: [], goalCount: 0,
-          members: team?.memberIds.map(mid => ({ id: mid, name: employeeName(mid), position: employeePosition(mid) })),
-        };
-        g.cards.push(c);
-        g.goalCount += c.targets.length;
-        map.set(tid, g);
-      });
-    });
-    return Array.from(map.values());
-  }
-  // structure
-  const map = new Map<string, StatusGroup>();
-  cards.filter(c => c.structureIds && c.structureIds.length > 0).forEach(c => {
-    c.structureIds.forEach(sid => {
-      const st = mockStructures.find(s => s.id === sid);
-      const members = mockTeams.filter(t => t.structureId === sid).flatMap(t => t.memberIds);
-      const uniqueMembers = Array.from(new Set(members));
-      const g = map.get(sid) || {
-        key: sid,
-        name: st?.name || sid,
-        subtitle: `${uniqueMembers.length} əməkdaş`,
-        cards: [], goalCount: 0,
-        members: uniqueMembers.map(mid => ({ id: mid, name: employeeName(mid), position: employeePosition(mid) })),
+    // Sistemdəki real komandalar (Komandalar modulu) — mock yoxdur.
+    return getTeams().map(t => {
+      const memberNames = Array.from(
+        new Set([t.leader, ...(t.members || []).map(m => m.name)].filter(Boolean)),
+      );
+      const teamCards = cards.filter(c =>
+        (c.teamIds || []).some(id => norm(id) === norm(t.id) || norm(id) === norm(t.name)),
+      );
+      return {
+        key: String(t.id),
+        name: t.name,
+        subtitle: `${memberNames.length} üzv`,
+        cards: teamCards,
+        goalCount: teamCards.reduce((sum, card) => sum + card.targets.length, 0),
+        leaderName: t.leader || "—",
+        members: memberNames.map(n => {
+          const id = employeeIdByName(n);
+          return { id, name: n, position: employeePosition(id) };
+        }),
       };
-      g.cards.push(c);
-      g.goalCount += c.targets.length;
-      map.set(sid, g);
     });
+  }
+
+  // Struktur: real təşkilati struktur ağacı.
+  const nodes = getFlatStructureNodes();
+  const emps = getEmployees().filter(e => e.active !== false);
+  return nodes.map(n => {
+    const members = emps.filter(e => {
+      const path = e.structurePath || "";
+      return path === n.path || path.startsWith(`${n.path} › `);
+    });
+    const structureCards = cards.filter(c =>
+      (c.structureIds || []).some(sidValue => {
+        const s = norm(sidValue);
+        return s === norm(n.id) || s === norm(n.path) || s === norm(n.name);
+      }),
+    );
+    const leader = getStarHolderOfUnit(n.id);
+    return {
+      key: String(n.id),
+      name: n.path,
+      subtitle: `${members.length} əməkdaş`,
+      cards: structureCards,
+      goalCount: structureCards.reduce((sum, card) => sum + card.targets.length, 0),
+      leaderName: leader ? `${leader.firstName} ${leader.lastName}`.trim() : "—",
+      teamCount: nodes.filter(x => x.parentId === n.id).length,
+      members: members.map(e => ({
+        id: String(e.id),
+        name: `${e.firstName} ${e.lastName}`.trim(),
+        position: e.positionName || "",
+      })),
+    };
   });
-  return Array.from(map.values());
 };
 
 // ---------- Multi-rater evaluation row ----------
@@ -859,32 +883,21 @@ interface RaterEval {
   done: boolean;
 }
 
-const buildRaters = (seed: string, evaluatorIds: string[], scoreLimit: number): RaterEval[] => {
-  const weightPatterns: Record<number, number[]> = {
-    1: [100],
-    2: [60, 40],
-    3: [40, 35, 25],
-    4: [35, 25, 20, 20],
-  };
-  const weights = weightPatterns[evaluatorIds.length] || evaluatorIds.map((_, i) => {
-    const base = Math.floor(100 / evaluatorIds.length);
-    return i === 0 ? base + (100 - base * evaluatorIds.length) : base;
-  });
-  return evaluatorIds.map((eid, ei) => {
-    const h = hash(seed + eid);
-    const done = (h + ei) % 4 !== 0; // ~75% completed
-    const score = done ? 1 + (h % scoreLimit) : null;
-    const day = 5 + (h % 22);
-    return {
-      evaluatorId: eid,
-      score,
-      max: scoreLimit,
-      weight: weights[ei] || 0,
-      date: done ? `2026-01-${String(day).padStart(2, "0")}` : null,
-      done,
-    };
-  });
+/** Real qiymətləndiricilər — bal yalnız sistemdə qeyd edildikdə görünür.
+ *  Heç bir simulyasiya / təsadüfi dəyər yaradılmır. */
+const buildRaters = (_seed: string, evaluatorIds: string[], scoreLimit: number): RaterEval[] => {
+  if (evaluatorIds.length === 0) return [];
+  const base = Math.floor(100 / evaluatorIds.length);
+  return evaluatorIds.map((eid, ei) => ({
+    evaluatorId: eid,
+    score: null,
+    max: scoreLimit,
+    weight: ei === 0 ? base + (100 - base * evaluatorIds.length) : base,
+    date: null,
+    done: false,
+  }));
 };
+
 
 const finalScore = (raters: RaterEval[]): number | null => {
   const done = raters.filter(r => r.done && r.score !== null);
