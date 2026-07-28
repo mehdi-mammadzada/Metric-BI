@@ -4205,7 +4205,41 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
           }}
         />
       )}
+
+      <Dialog open={!!copyConfirm} onOpenChange={(o) => !o && setCopyConfirm(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Kartı kopyalamaq istəyirsiniz?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground break-words">
+            “{copyConfirm ? withKartSuffix(copyConfirm.name) : ""}” kartının surəti “Natamam” statusunda yaradılacaq. Davam etmək istəyirsiniz?
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setCopyConfirm(null)}>Ləğv et</Button>
+            <Button
+              onClick={async () => {
+                const card = copyConfirm;
+                setCopyConfirm(null);
+                if (!card) return;
+                const newId = Math.max(0, ...kpiCards.map(c => c.id)) + 1;
+                const copy: KpiCard = { ...card, id: newId, name: `${withKartSuffix(card.name)} (kopya)`, approvalStatus: "pending" };
+                setKpiCards(prev => [copy, ...prev]);
+                try {
+                  await upsertStatus({ card_id: newId, status: "natamam", use_matrix: false, submitted_for_approval: false, assignees: [] });
+                  const mod = await import("@/lib/kpiCardStatusStore");
+                  const next = await mod.fetchAllStatuses();
+                  setStatusMap(next);
+                } catch {}
+                toast.success("Kart kopyalandı (Natamam)");
+              }}
+            >
+              Təsdiq et
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 };
 
