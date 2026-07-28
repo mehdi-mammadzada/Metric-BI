@@ -2080,6 +2080,25 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
             const rejectedRows = approvalRows.filter(r => r.tone === "err");
 
             const completedSetterRows = setterRows.length ? setterRows.map(r => ({ ...r, role: "Təyin etdi", tone: "ok" as const })) : [];
+
+            // Silinmə: aktoru və səbəbi kartın backend tarixçəsindən oxu (bütün cihazlarda eyni)
+            const deletionRows = (() => {
+              const hist = (sharedCard?.history || []).filter(h =>
+                h.action === "status:silindi" || h.action === "status:legv_olundu");
+              const last = hist[hist.length - 1];
+              const deleterId = last?.actor || (st as any).rejected_by || "";
+              const deleterName = deleterId ? employeeNameById(deleterId) : (card?.responsible || "—");
+              const reason = (last?.note || "").trim()
+                || (approval && isDeletionApproval?.(approval) ? (approval as any).reason : "")
+                || (sharedCard as any)?.rejectedReason
+                || "";
+              const rows: { role: string; name: string; tone?: "ok" | "wait" | "err" }[] = [
+                { role: "Silən", name: deleterName || "—", tone: "err" },
+              ];
+              rows.push({ role: "Silinmə səbəbi", name: reason || "Səbəb qeyd edilməyib", tone: "err" });
+              return rows;
+            })();
+
             const cfg: Record<string, { title: string; empty: string; rows: { role: string; name: string; tone?: "ok" | "wait" | "err" }[] }> = {
               qaralama:        { title: "Qaralama — hazırlanır", empty: "Kart yaradılıb, hələ təyinə göndərilməyib.", rows: [{ role: "Yaradan", name: card?.responsible || "—", tone: "wait" }] },
               natamam:         { title: "Təyin edənlər", empty: "Təyin edənlər tapılmadı.", rows: setterRows },
