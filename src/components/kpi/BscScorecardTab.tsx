@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { User as UserIcon, Sliders } from "lucide-react";
 import { getEntriesForCard, type LimitSet, TIER_LABELS } from "@/lib/kpiSetStore";
 
