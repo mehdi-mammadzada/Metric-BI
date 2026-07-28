@@ -1309,7 +1309,7 @@ const StatusTab = () => {
       {viewMode === "card" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filtered.map(g => {
-            const teamCount = subTab === "structure" ? mockTeams.filter(t => t.structureId === g.key).length : 0;
+            const teamCount = subTab === "structure" ? (g.teamCount ?? 0) : 0;
             const metaChips: { label: string; value: string | number }[] =
               subTab === "individual"
                 ? [
