@@ -65,30 +65,13 @@ const numericText = (value: number, unit?: string) => {
   return `${value.toLocaleString("az-AZ")}${unit ? ` ${unit}` : ""}`;
 };
 
-const buildMonthBucket = (seed: number, year: number, month: number, isCurrent: boolean, baseTarget: number): PeriodBucket => {
-  const rand = seedRand(seed + year * 13 + month * 97);
+// Sistemdə faktiki nəticə yoxdursa heç bir sintetik gün dəyəri yaradılmır.
+const buildMonthBucket = (_seed: number, year: number, month: number, isCurrent: boolean, baseTarget: number): PeriodBucket => {
   const dim = daysInMonth(year, month);
   const points: DayPoint[] = [];
-  let previous = Math.max(1, Math.round(baseTarget * (0.55 + rand() * 0.2)));
-
-  for (let day = 1; day <= dim; day++) {
-    const hasData = [5, 9, 12, 15, 19, 22, 25].includes(day) || rand() > 0.76;
-    if (!hasData) continue;
-    const current = Math.max(0, Math.round(previous + (rand() - 0.35) * baseTarget * 0.18));
-    const pct = Math.max(0, Math.min(140, Math.round((current / baseTarget) * 100)));
-    const trend = previous ? Math.round(((current - previous) / Math.max(1, previous)) * 100) : 0;
-    points.push({ day, current, target: baseTarget, pct, status: statusFromPct(pct), trend, note: day % 5 === 0 ? "Günlük nəticə sistemə daxil edildi." : undefined, updated: `${pad2(9 + Math.floor(rand() * 10))}:${pad2(Math.floor(rand() * 60))}` });
-    previous = current;
-  }
-
-  const avgPct = points.length ? Math.round(points.reduce((sum, p) => sum + p.pct, 0) / points.length) : 0;
-  const avgCurrent = points.length ? Math.round(points.reduce((sum, p) => sum + p.current, 0) / points.length) : 0;
-  const first = points[0];
-  const last = points[points.length - 1];
-  const trend = first && last ? Math.round(((last.current - first.current) / Math.max(1, first.current)) * 100) : 0;
-
-  return { key: `${year}-${pad2(month)}`, label: `${MONTHS_AZ[month - 1]} ${year}`, year, month, isCurrent, current: avgCurrent, target: baseTarget, pct: avgPct, trend, status: statusFromPct(avgPct), lastUpdate: last ? fmtDate(year, month, last.day) : "—", daysInMonth: dim, monthStartWeekday: monthStartWeekday(year, month), points };
+  return { key: `${year}-${pad2(month)}`, label: `${MONTHS_AZ[month - 1]} ${year}`, year, month, isCurrent, current: 0, target: baseTarget, pct: 0, trend: 0, status: statusFromPct(0), lastUpdate: "—", daysInMonth: dim, monthStartWeekday: monthStartWeekday(year, month), points };
 };
+
 
 const aggregateBucket = (key: string, label: string, buckets: PeriodBucket[], isCurrent: boolean): PeriodBucket => {
   const pct = Math.round(buckets.reduce((sum, b) => sum + b.pct, 0) / Math.max(1, buckets.length));
