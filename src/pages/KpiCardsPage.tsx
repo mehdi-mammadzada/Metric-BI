@@ -1610,24 +1610,13 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                 </button>
                               )}
                               <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  const newId = Math.max(0, ...kpiCards.map(c => c.id)) + 1;
-                                  const copy: KpiCard = { ...card, id: newId, name: `${withKartSuffix(card.name)} (kopya)`, approvalStatus: "pending" };
-                                  setKpiCards(prev => [copy, ...prev]);
-                                  try {
-                                    await upsertStatus({ card_id: newId, status: "natamam", use_matrix: false, submitted_for_approval: false, assignees: [] });
-                                    const mod = await import("@/lib/kpiCardStatusStore");
-                                    const next = await mod.fetchAllStatuses();
-                                    setStatusMap(next);
-                                  } catch {}
-                                  toast.success("Kart kopyalandı (Natamam)");
-                                }}
+                                onClick={(e) => { e.stopPropagation(); setCopyConfirm(card); }}
                                 title="Kopyala"
                                 className="p-1.5 rounded border border-border hover:bg-secondary text-muted-foreground hover:text-foreground"
                               >
                                 <Copy className="w-3.5 h-3.5" />
                               </button>
+
                               {st.status === "imtina" && (
                                 <button
                                   onClick={async (e) => {
