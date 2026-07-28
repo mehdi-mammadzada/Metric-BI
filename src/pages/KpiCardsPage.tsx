@@ -813,6 +813,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
   // === KPI card status (Natamam / Təsdiq gözlənilir / İmtina / Aktiv) ===
   const [statusMap, setStatusMap] = useState<Record<number, import("@/lib/kpiCardStatusStore").KpiCardStatusRow>>({});
+  const [copyConfirm, setCopyConfirm] = useState<KpiCard | null>(null);
   const [statusDialogCardId, setStatusDialogCardId] = useState<number | null>(null);
   // HR üçün Cascade Load bölgüsü (rəhbər modulundakı ilə eyni axın)
   const [hrCascade, setHrCascade] = useState<null | {
@@ -1610,24 +1611,13 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                 </button>
                               )}
                               <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  const newId = Math.max(0, ...kpiCards.map(c => c.id)) + 1;
-                                  const copy: KpiCard = { ...card, id: newId, name: `${withKartSuffix(card.name)} (kopya)`, approvalStatus: "pending" };
-                                  setKpiCards(prev => [copy, ...prev]);
-                                  try {
-                                    await upsertStatus({ card_id: newId, status: "natamam", use_matrix: false, submitted_for_approval: false, assignees: [] });
-                                    const mod = await import("@/lib/kpiCardStatusStore");
-                                    const next = await mod.fetchAllStatuses();
-                                    setStatusMap(next);
-                                  } catch {}
-                                  toast.success("Kart kopyalandı (Natamam)");
-                                }}
+                                onClick={(e) => { e.stopPropagation(); setCopyConfirm(card); }}
                                 title="Kopyala"
                                 className="p-1.5 rounded border border-border hover:bg-secondary text-muted-foreground hover:text-foreground"
                               >
                                 <Copy className="w-3.5 h-3.5" />
                               </button>
+
                               {st.status === "imtina" && (
                                 <button
                                   onClick={async (e) => {
@@ -2197,16 +2187,17 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                     {c.rows.map((r, i) => {
                       const isReasonRow = r.role === "Silinmə səbəbi";
                       return (
-                        <li key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg border ${toneCls[r.tone || "wait"]}`}>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-medium text-foreground truncate">
+                        <li key={i} className={`flex items-start justify-between gap-2 px-3 py-2 rounded-lg border ${toneCls[r.tone || "wait"]}`}>
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span className="text-sm font-medium text-foreground break-words whitespace-pre-wrap">
                               {isReasonRow ? r.name : `${i + 1}. ${r.name}`}
                             </span>
-                            <span className="text-[11px] text-muted-foreground truncate">{r.role}</span>
+                            <span className="text-[11px] text-muted-foreground break-words">{r.role}</span>
                           </div>
                           {!isReasonRow && (
                             <span className="text-xs font-medium shrink-0 ml-2">{badgeText[r.tone || "wait"]}</span>
                           )}
+
                         </li>
                       );
                     })}
@@ -4214,7 +4205,41 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
           }}
         />
       )}
+
+      <Dialog open={!!copyConfirm} onOpenChange={(o) => !o && setCopyConfirm(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Kartı kopyalamaq istəyirsiniz?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground break-words">
+            “{copyConfirm ? withKartSuffix(copyConfirm.name) : ""}” kartının surəti “Natamam” statusunda yaradılacaq. Davam etmək istəyirsiniz?
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setCopyConfirm(null)}>Ləğv et</Button>
+            <Button
+              onClick={async () => {
+                const card = copyConfirm;
+                setCopyConfirm(null);
+                if (!card) return;
+                const newId = Math.max(0, ...kpiCards.map(c => c.id)) + 1;
+                const copy: KpiCard = { ...card, id: newId, name: `${withKartSuffix(card.name)} (kopya)`, approvalStatus: "pending" };
+                setKpiCards(prev => [copy, ...prev]);
+                try {
+                  await upsertStatus({ card_id: newId, status: "natamam", use_matrix: false, submitted_for_approval: false, assignees: [] });
+                  const mod = await import("@/lib/kpiCardStatusStore");
+                  const next = await mod.fetchAllStatuses();
+                  setStatusMap(next);
+                } catch {}
+                toast.success("Kart kopyalandı (Natamam)");
+              }}
+            >
+              Təsdiq et
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 };
 

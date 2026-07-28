@@ -2175,6 +2175,7 @@ const ReviewsView = () => {
   const [q, setQ] = useState("");
   const [overview, setOverview] = useState<{ row: ReviewRow; data: ReviewOverviewData } | null>(null);
   const [statusDialog, setStatusDialog] = useState<{ row: ReviewRow } | null>(null);
+  const [reasonDialog, setReasonDialog] = useState<{ title: string; label: string; text: string } | null>(null);
   const [targetDetail, setTargetDetail] = useState<{ cardId: string; cardName: string; target: CardTarget } | null>(null);
 
   const filtered = useMemo(() => {
@@ -2282,15 +2283,20 @@ const ReviewsView = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => r.outcomeComment && setReasonDialog({
+                          title: withKartSuffix(r.cardName),
+                          label: r.reviewStatus === "deferred" ? "Təxirə salınma səbəbi" : "Review nəticəsi",
+                          text: r.outcomeComment,
+                        })}
+                        title={r.outcomeComment ? "Səbəbə bax" : undefined}
+                        className={r.outcomeComment ? "cursor-pointer" : "cursor-default"}
+                      >
                         <Badge className={`${reviewStyle.badge} inline-flex items-center gap-1`}><ReviewIcon className="w-3 h-3" />{reviewStyle.badgeLabel}</Badge>
-                        {r.outcomeComment && (
-                          <div className="text-[11px] text-muted-foreground max-w-[220px] truncate" title={r.outcomeComment}>
-                            {r.reviewStatus === "deferred" ? "Səbəb" : "Şərh"}: {r.outcomeComment}
-                          </div>
-                        )}
-                      </div>
+                      </button>
                     </td>
+
                     <td className="px-4 py-3 text-muted-foreground">{r.reviewStart}</td>
                     <td className="px-4 py-3 text-muted-foreground">{r.updatedAt}</td>
                     <td className="px-4 py-3 text-right">
@@ -2333,7 +2339,20 @@ const ReviewsView = () => {
         currentStatus={statusDialog ? toOverviewStatus(statusDialog.row.reviewStatus) : "in_progress"}
         onSave={saveStatus}
       />
+
+      <Dialog open={!!reasonDialog} onOpenChange={(o) => !o && setReasonDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{reasonDialog?.label || "Səbəb"}</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground -mt-2">{reasonDialog?.title}</p>
+          <div className="rounded-lg border border-border bg-secondary/40 p-3 max-h-[50vh] overflow-y-auto">
+            <p className="text-sm text-foreground whitespace-pre-wrap break-words">{reasonDialog?.text}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
+
   );
 };
 
