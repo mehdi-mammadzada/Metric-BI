@@ -276,11 +276,17 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
   }));
 
   const missingTargetRepairs = cards
-    .filter((c: any) => (targetsByCard.get(c.id) ?? []).length === 0)
-    .flatMap((c: any) => targetsFromDraft(draftForCard(drafts, c)).map((target, index) => dbTargetPayload(orgId, c.id as string, target, index)));
+    .filter((c: any) => (targetsByCard.get(c.id) ?? []).length === 0 && !repairedCardIds.has(String(c.id)))
+    .flatMap((c: any) => {
+      const rows = dedupeTargets(targetsFromDraft(draftForCard(drafts, c)));
+      if (!rows.length) return [];
+      repairedCardIds.add(String(c.id));
+      return rows.map((target, index) => dbTargetPayload(orgId, c.id as string, target, index));
+    });
   if (missingTargetRepairs.length > 0) {
     await supabase.from("kpi_card_targets").insert(missingTargetRepairs as never);
   }
+
 
   // Rebuild status + meta caches from card rows.
   const status: Record<number, any> = {};
