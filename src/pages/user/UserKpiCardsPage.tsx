@@ -231,7 +231,7 @@ const UserKpiCardsPage = () => {
                 onClick={() => setView("own")} />
               <HubCard icon={Users} title="Komanda KPI-ları"
                 subtitle="Komandanıza toplu təyin olunmuş KPI-lar — yalnız ümumi göstəricilər."
-                count={TEAM_KPIS.length}
+                count={teamKpis.length}
                 gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40"
                 onClick={() => setView("team")} />
               <HubCard icon={Network} title="Struktur KPI-ları"
@@ -252,7 +252,7 @@ const UserKpiCardsPage = () => {
           title="Komanda KPI-ları"
           subtitle="Toplu təyinatlar — digər əməkdaşların fərdi hədəf və nəticələri gizlədilir."
           icon={Users}
-          data={TEAM_KPIS} scope="team" />}
+          data={teamKpis} scope="team" />}
         {view === "structure" && <KpiListView
           title="Struktur KPI-ları"
           subtitle="Struktur səviyyəli KPI-lar — yalnız ümumi status və progress."
