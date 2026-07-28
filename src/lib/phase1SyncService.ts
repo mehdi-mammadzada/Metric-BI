@@ -46,6 +46,8 @@ const STORES: StoreMirror[] = [
   { localKey: "manual_peer_assignments_v1",  cloudKey: "manual_peer_assignments", event: "manual-assignments-updated",       table: "org_catalogs" },
   // Phase 5 — remaining stores sweep
   { localKey: "kpi_set_entries_v6",          cloudKey: "kpi_set_entries",      event: "kpi-set-updated",                     table: "org_catalogs" },
+  // KPI sehrbazının tam draft-ı (hədəflər, BSC limitləri, KPI üzvləri)
+  { localKey: "kpi_card_drafts_v1",          cloudKey: "kpi_card_drafts",      event: "kpi-card-drafts-updated",             table: "org_catalogs" },
   { localKey: "kpi_hr_admin_accounts_v1",    cloudKey: "hr_admin_accounts",    event: "hr-admins-updated",                   table: "org_catalogs" },
   { localKey: "kpi_roles_v1",                cloudKey: "roles_catalog",        event: "kpi-roles-updated",                   table: "org_catalogs" },
   { localKey: "manager_cascade_load_v1",     cloudKey: "manager_cascade_load", event: "manager-cascade-load-updated",        table: "org_catalogs" },
