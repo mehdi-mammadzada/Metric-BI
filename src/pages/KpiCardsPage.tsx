@@ -2586,12 +2586,58 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
               {detailTab === "team" && (() => {
                 const initials = (n: string) => n.split(" ").filter(Boolean).slice(0, 2).map(s => s[0]?.toUpperCase() || "").join("");
-                const team = selectedKpi.team && selectedKpi.team.length > 0
+                const baseTeam = selectedKpi.team && selectedKpi.team.length > 0
                   ? selectedKpi.team
                   : (selectedKpi.responsible ? [{ name: selectedKpi.responsible, role: "Lider / Məsul", avatar: initials(selectedKpi.responsible) }] : []);
+                const isActiveCard = getStatusFor(selectedKpi.id).status === "aktiv";
+
+                // Aktiv kartda yalnız hədəfləri təyin edən və kartı təsdiqləyən şəxslər görünür.
+                const activeTeam = (() => {
+                  const map = new Map<string, { name: string; role: string; avatar: string }>();
+                  const push = (raw: string | undefined, role: string) => {
+                    const n = String(raw || "").split(" — ")[0].trim();
+                    if (!n || n === "—" || map.has(n)) return;
+                    map.set(n, { name: n, role, avatar: initials(n) || "?" });
+                  };
+                  // 1) Hədəfləri təyin edənlər
+                  (selectedKpi.subKpis || []).forEach(sk => {
+                    if ((sk as any).assigner) push((sk as any).assigner, "Hədəfi təyin edən");
+                  });
+                  try {
+                    getKpiSetEntries()
+                      .filter(e => e.cardId === selectedKpi.id)
+                      .forEach(e => push(e.assigneeName, "Hədəfi təyin edən"));
+                  } catch {}
+                  baseTeam.filter(m => m.role === "Təyin edici").forEach(m => push(m.name, "Hədəfi təyin edən"));
+                  // 2) Kartı təsdiqləyənlər (təsdiqləmə matrisi)
+                  try {
+                    const shared = sharedCards.find(s => s.numericId === selectedKpi.id || s.id === `kpi-${selectedKpi.id}`);
+                    const approval = getApprovals().find(a =>
+                      a.kpiCardId === `kpi-${selectedKpi.id}`
+                      || a.kpiCardId === shared?.id
+                      || a.kpiCardId === String(selectedKpi.id));
+                    if (approval) {
+                      const ids = approval.stepsChain?.length
+                        ? Array.from(new Set(approval.stepsChain.flat()))
+                        : Array.from(new Set([...(approval.approverIds || []), ...Object.keys(approval.decisions || {})]));
+                      ids.forEach(id => {
+                        const emp = getEmployees().find((e: any) => String(e.id) === String(id) || `e${e.id}` === String(id));
+                        const name = emp ? `${emp.firstName} ${emp.lastName}`.trim() : getEmployeeDisplayName(String(id), "Təsdiqləyici");
+                        const decision = approval.decisions?.[id]?.decision;
+                        push(name, decision === "approved" ? "Kartı təsdiqlədi" : "Təsdiqləyici");
+                      });
+                    }
+                  } catch {}
+                  return Array.from(map.values());
+                })();
+
+                const team = isActiveCard ? activeTeam : baseTeam;
                 return (
                   <div className="bg-card rounded-lg border border-border p-4">
                     <h4 className="font-semibold text-foreground mb-4">KPI Üzvləri</h4>
+                    {team.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Məlumat yoxdur.</p>
+                    ) : (
                     <div className="space-y-3">
                       {team.map((m, i) => (
                         <div key={i} className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary">
@@ -2599,13 +2645,15 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">{m.avatar}</div>
                             <div><p className="text-sm font-medium text-foreground">{m.name}</p><p className="text-xs text-muted-foreground">{m.role}</p></div>
                           </div>
-                          {i === 0 && <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-zone-green-bg text-zone-green-text">Lider</span>}
+                          {!isActiveCard && i === 0 && <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-zone-green-bg text-zone-green-text">Lider</span>}
                         </div>
                       ))}
                     </div>
+                    )}
                   </div>
                 );
               })()}
+
 
               {detailTab === "setStatus" && (() => {
                 const own = selectedKpi.subKpis || [];
