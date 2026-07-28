@@ -1156,6 +1156,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
   const handleDeleteCard = (card: KpiCard) => {
     const st = statusMap[card.id]?.status;
+    if (st === "silindi" || st === "legv_olundu") return;
     // Yalnız "Qaralama" birbaşa silinir. Natamam / Təsdiq gözlənilir / Aktiv və digər
     // statuslarda "Silinmə sorğusu göndər" seçimi olan pop-up açılır.
     const isDraftOnly = st === "qaralama";
@@ -1440,15 +1441,6 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                   <Pencil className="w-3.5 h-3.5" />
                                 </button>
                               )}
-                              {st.status === "imtina" && (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); openWizardForEdit(card.id); }}
-                                  title="Redaktə et və yenidən təsdiqə göndər"
-                                  className="p-1.5 rounded border border-blue-500/40 hover:bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                              )}
                               <button
                                 onClick={async (e) => {
                                   e.stopPropagation();
@@ -1511,7 +1503,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                   <X className="w-3.5 h-3.5" />
                                 </button>
                               )}
-                              {st.status !== "imtina" && (
+                              {st.status !== "imtina" && st.status !== "silindi" && st.status !== "legv_olundu" && (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleDeleteCard(card); }}
                                   title="Sil"
@@ -1672,7 +1664,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               const renderCard = (card: KpiCard) => {
                 const cardSt = getStatusFor(card.id).status;
                 const canEdit = cardSt === "qaralama" || cardSt === "natamam";
-                const canDelete = cardSt !== "imtina";
+                const canDelete = cardSt !== "imtina" && cardSt !== "silindi" && cardSt !== "legv_olundu";
                 return (
                   <div key={card.id} onClick={() => openDetail(card)} className={`bg-card rounded-xl p-5 border-2 border-border cursor-pointer hover:shadow-md hover:border-primary/40 transition-shadow relative group ${card.frozen ? "opacity-70" : ""}`}>
                     {canEdit && (

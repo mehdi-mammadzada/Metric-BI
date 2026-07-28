@@ -1,5 +1,5 @@
 // Anonymous whistleblower store (localStorage)
-export type WBStatus = "yeni" | "arashdirilir" | "hell_olundu";
+export type WBStatus = "yeni" | "arashdirilir" | "hell_olundu" | (string & {});
 
 export const WB_CATEGORIES = [
   "Korrupsiya",
@@ -118,7 +118,7 @@ export const updateStatus = (id: string, toStatus: WBStatus, note?: string, by?:
   write(list);
 };
 
-export const STATUS_LABEL: Record<WBStatus, string> = {
+export const STATUS_LABEL: Record<string, string> = {
   yeni: "Yeni",
   arashdirilir: "Araşdırılır",
   hell_olundu: "Həll olundu",

@@ -232,7 +232,7 @@ const applyResetMigration = (list: DropdownCatalog[]): { list: DropdownCatalog[]
   const next = list.map(c => {
     const seed = seedById.get(c.id);
     if (!seed || seed.schema) return c;
-    return { ...c, values: [...(seed.values ?? [])] };
+    return { ...c, values: uniqueValues([...(seed.values ?? []), ...(c.values ?? [])]) };
   });
   return { list: [...next, META_ENTRY], changed: true };
 };
