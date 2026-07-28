@@ -1140,12 +1140,11 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
 
 
   const renderTeamDetail = () => {
-    const team = mockTeams.find(t => t.id === group.key);
     const members = group.members || [];
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Komanda rəhbəri</p><p className="text-sm font-semibold text-foreground">{employeeName(team?.leaderId || "")}</p></div>
+          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Komanda rəhbəri</p><p className="text-sm font-semibold text-foreground">{group.leaderName || "—"}</p></div>
           <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Üzv sayı</p><p className="text-sm font-semibold text-foreground">{members.length}</p></div>
           <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Qiymətləndirmə tipi</p><p className="text-sm font-semibold text-foreground">Hədəf əsaslı</p></div>
         </div>
@@ -1155,19 +1154,19 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
   };
 
   const renderStructureDetail = () => {
-    const teams = mockTeams.filter(t => t.structureId === group.key);
     const members = group.members || [];
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Struktur rəhbəri</p><p className="text-sm font-semibold text-foreground">{employeeName(mockStructures.find(s => s.id === group.key)?.managerId || "")}</p></div>
-          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Komanda sayı</p><p className="text-sm font-semibold text-foreground">{teams.length}</p></div>
+          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Struktur rəhbəri</p><p className="text-sm font-semibold text-foreground">{group.leaderName || "—"}</p></div>
+          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Alt struktur sayı</p><p className="text-sm font-semibold text-foreground">{group.teamCount ?? 0}</p></div>
           <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Əməkdaş sayı</p><p className="text-sm font-semibold text-foreground">{members.length}</p></div>
         </div>
         {renderGoalCards("Struktur hədəfləri üzrə qiymətləndirmələr", "Bu struktur üçün hədəf KPI kartı yoxdur", `${group.goalCount} hədəf`)}
       </div>
     );
   };
+
 
   return (
     <Dialog open={!!group} onOpenChange={(o) => { if (!o) onClose(); }}>
