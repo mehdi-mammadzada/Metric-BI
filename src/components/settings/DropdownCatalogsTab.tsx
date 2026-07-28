@@ -14,6 +14,7 @@ import {
   renameDropdownCatalog,
   updateCatalogRow,
   updateCatalogValue,
+  LOCKED_CATALOG_IDS,
   type DropdownCatalog,
   type CatalogRow,
   type TargetTypeRow,
@@ -410,10 +411,12 @@ const DropdownCatalogsTab = () => {
     const fn = () => refresh();
     const pf = () => refreshPeriods();
     window.addEventListener("dropdown-catalogs-updated", fn);
+    window.addEventListener("storage", fn);
     window.addEventListener("periods-updated", pf);
     window.addEventListener("storage", pf);
     return () => {
       window.removeEventListener("dropdown-catalogs-updated", fn);
+      window.removeEventListener("storage", fn);
       window.removeEventListener("periods-updated", pf);
       window.removeEventListener("storage", pf);
     };
@@ -558,7 +561,7 @@ const DropdownCatalogsTab = () => {
                     </button>
                   </>
                 )}
-                {active.id !== "evaluator_types" && active.id !== "kpi_statuses" && (
+                {!LOCKED_CATALOG_IDS.has(active.id) && (
                   <button onClick={openAddDialog} className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
                     <Plus className="w-4 h-4" /> {addLabel()}
                   </button>
@@ -617,7 +620,7 @@ const DropdownCatalogsTab = () => {
                       <td className="py-4 text-foreground">{v}</td>
                       <td className="py-4">
                         <div className="flex items-center justify-end gap-2 pr-2">
-                          {active.id !== "kpi_statuses" && (
+                          {!LOCKED_CATALOG_IDS.has(active.id) && (
                             <>
                               <button onClick={() => setValueDialog({ mode: "edit", index: i, value: v })} className="p-1.5 rounded hover:bg-secondary"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
                               <button onClick={() => { if (confirm("Bu dəyər silinsin?")) { removeCatalogValue(active.id, i); refresh(); } }} className="p-1.5 rounded hover:bg-zone-red-bg"><Trash2 className="w-4 h-4 text-destructive" /></button>
