@@ -2088,8 +2088,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               aktiv:           { title: card?.matrixId ? "Təsdiq tamamlandı" : "Təyin edənlər tamamlandı", empty: "Bu kart üçün tamamlanmış iştirakçı tapılmadı.", rows: completedSetterRows.length ? completedSetterRows : (st.assignees || []).map(a => ({ role: a.ok ? "Tamamladı" : "İcraçı", name: a.name, tone: "ok" })) },
               qiymetlendirme:  { title: "Qiymətləndirəcək şəxslər", empty: "Qiymətləndirici təyin edilməyib.", rows: evaluators.map(e => ({ ...e, tone: "wait" as const })) },
               tamamlanib:      { title: "Tamamlanıb — qiymətləndirənlər", empty: "—", rows: evaluators.map(e => ({ ...e, tone: "ok" as const })) },
-               silindi:         { title: "Silindi", empty: "—", rows: [{ role: "Silən", name: card?.responsible || "—", tone: "err" }] },
-               legv_olundu:     { title: "Silindi", empty: "—", rows: [{ role: "Silən", name: card?.responsible || "—", tone: "err" }] },
+               silindi:         { title: "Silindi", empty: "—", rows: deletionRows },
+               legv_olundu:     { title: "Silindi", empty: "—", rows: deletionRows },
             };
 
             if (st.status === "tesdiq_gozlenilir" && cfg.tesdiq_gozlenilir.rows.length === 0) {
