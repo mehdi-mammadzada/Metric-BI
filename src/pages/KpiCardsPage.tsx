@@ -43,7 +43,7 @@ import { flushLifecycleToCloud } from "@/lib/lifecycleService";
 import CreateKpiWizard, { type CreateKpiWizardDraft } from "@/components/kpi/CreateKpiWizard";
 import EmployeesTreeView from "@/components/kpi/EmployeesTreeView";
 import { upsertStatus } from "@/lib/kpiCardStatusStore";
-import { buildSharedCardFromDraft, inferSharedCardAssignmentMode, setKpiStatus, upsertSharedKpiCard, useSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
+import { appendKpiHistory, buildSharedCardFromDraft, inferSharedCardAssignmentMode, setKpiStatus, upsertSharedKpiCard, useSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
 import { withKartSuffix } from "@/lib/utils";
 import { WeightInput } from "@/components/kpi/WeightInput";
 // cascade root yaradılması `cascadeAssignment` üzərindən aparılır
@@ -1324,7 +1324,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       const mod = await import("@/lib/kpiCardStatusStore");
       await mod.upsertStatus({ card_id: card.id, status: "silindi" });
       const shared = sharedCards.find(s => s.numericId === card.id || s.id === `kpi-${card.id}` || s.id === String(card.id));
-      if (shared) setKpiStatus(shared.id, "silindi", user?.name || "HR", deleteComment || "Birbaşa silindi");
+      if (shared) setKpiStatus(shared.id, "silindi", getCurrentEmployeeId(user) || user?.name || "HR", (deleteComment || "").trim() || "Birbaşa silindi");
       const next = await mod.fetchAllStatuses();
       setStatusMap(next);
       void import("@/lib/kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
@@ -1360,6 +1360,15 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       kpiName: card.name,
       requestedBy: user?.name || "HR",
     });
+    if (shared) {
+      appendKpiHistory(
+        shared.id,
+        getCurrentEmployeeId(user) || user?.name || "HR",
+        "deletion:request",
+        (comment || "").trim() || "Səbəb qeyd edilməyib",
+      );
+      void import("@/lib/kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
+    }
     void import("@/lib/approvalsService").then(m => m.flushApprovalsToCloud()).catch(() => undefined);
     toast.success(`Silinmə sorğusu göndərildi — "${matrix.name}" (${matrix.approver.name}).`);
     setDeleteDialog(null);
@@ -1634,6 +1643,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                     }));
                                     try {
                                       await upsertStatus({ card_id: card.id, status: "silindi" as any, use_matrix: false, submitted_for_approval: false, assignees: [] });
+                                      const sharedDel = sharedCards.find(s2 => s2.numericId === card.id || s2.id === `kpi-${card.id}` || s2.id === String(card.id));
+                                      if (sharedDel) setKpiStatus(sharedDel.id, "silindi", getCurrentEmployeeId(user) || user?.name || "HR", "İmtina edilmiş kart silindi");
+                                      void import("@/lib/kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
                                       const mod = await import("@/lib/kpiCardStatusStore");
                                       const next = await mod.fetchAllStatuses();
                                       setStatusMap(prev => ({ ...prev, ...next }));
