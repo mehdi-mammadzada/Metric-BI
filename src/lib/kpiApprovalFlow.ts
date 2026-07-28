@@ -221,6 +221,12 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
   for (const card of cards) {
     if (card.numericId == null) continue;
     if (card.status === "qaralama" || card.status === "silindi" || card.status === "legv_olundu") continue;
+    // "Silindi" terminaldır: backend status sətri silinmiş göstərirsə, heç vaxt başqa statusa keçmir.
+    const backendStatus = statusRows[card.numericId]?.status;
+    if (backendStatus === "silindi" || backendStatus === "legv_olundu") {
+      setSharedStatusIfNeeded(card, "silindi", "system");
+      continue;
+    }
 
     const setters = setterStateForCard(card.numericId);
     const hasSetterFlow = setters.length > 0;
@@ -232,8 +238,16 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
     let rejectedBy: string | null = null;
     let rejectedAt: string | null = null;
 
+    let actor = "system";
+
     if (approval?.status === "approved") {
-      nextStatus = isDeletionApproval(approval) ? "silindi" : "aktiv";
+      const deletion = isDeletionApproval(approval);
+      nextStatus = deletion ? "silindi" : "aktiv";
+      if (deletion) {
+        const approved = Object.entries(approval.decisions || {}).find(([, d]) => d?.decision === "approved");
+        actor = approved?.[0] || "system";
+        note = (approved?.[1]?.note || "").trim() || "Silinmə sorğusu təsdiqləndi";
+      }
     } else if (card.status === "aktiv" && (!card.matrixId || approval?.status !== "rejected")) {
       nextStatus = "aktiv";
     } else if (approval?.status === "rejected") {
@@ -254,7 +268,7 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
       if (!approval) triggerCardApprovalIfComplete(card.numericId);
     }
 
-    setSharedStatusIfNeeded(card, nextStatus, "system", note);
+    setSharedStatusIfNeeded(card, nextStatus, actor, note);
 
     const current = statusRows[card.numericId];
     const nextAssignees = hasSetterFlow
