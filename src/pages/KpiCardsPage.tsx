@@ -332,7 +332,25 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   const [wizardInitial, setWizardInitial] = useState<Partial<CreateKpiWizardDraft> | undefined>(undefined);
   const [wizardEditingId, setWizardEditingId] = useState<number | null>(null);
   // Saved wizard drafts per cardId (so editing resumes from the last step)
-  const [cardDrafts, setCardDrafts] = useState<Record<number, CreateKpiWizardDraft>>({});
+  const [cardDrafts, setCardDraftsState] = useState<Record<number, CreateKpiWizardDraft>>(() => getCardDrafts());
+  // localStorage + cloud sinxronizasiyası (refresh / başqa cihaz üçün davamlılıq)
+  useEffect(() => {
+    const sync = () => setCardDraftsState(getCardDrafts());
+    window.addEventListener(KPI_CARD_DRAFTS_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(KPI_CARD_DRAFTS_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+  const setCardDrafts = (
+    updater: Record<number, CreateKpiWizardDraft> | ((prev: Record<number, CreateKpiWizardDraft>) => Record<number, CreateKpiWizardDraft>),
+  ) => {
+    const prev = getCardDrafts();
+    const next = typeof updater === "function" ? (updater as any)(prev) : updater;
+    saveCardDrafts(next);
+    setCardDraftsState(next);
+  };
   const openWizard = (initial?: Partial<CreateKpiWizardDraft>, editingId: number | null = null) => {
     setWizardInitial(initial);
     setWizardEditingId(editingId);
