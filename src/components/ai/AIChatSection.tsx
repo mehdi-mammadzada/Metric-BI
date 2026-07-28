@@ -121,7 +121,10 @@ export const AIChatSection = () => {
     }
   };
 
+  if (!canUseAi) return null;
+
   return (
+
     <>
       <section className="mb-6 relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 via-card to-card p-6 md:p-8">
         <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
