@@ -124,6 +124,11 @@ const ApprovalsPage = () => {
 
   const handleApproveInDetail = async () => {
     if (!detail || !meId) return;
+    const isDeletion = String(detail.matrixId || "").startsWith("deletion:");
+    if (isDeletion && !detailNote.trim()) {
+      toast.error("Silinmə təsdiqi üçün silinmə səbəbini yazın");
+      return;
+    }
     const approverId = findMyRef(myAliases, detail.approverIds ?? []) || meId;
     try {
       await decideApproval(detail.id, approverId, "approved", detailNote || undefined);
