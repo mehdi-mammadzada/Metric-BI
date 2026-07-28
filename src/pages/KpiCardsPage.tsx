@@ -1050,6 +1050,27 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       employeeById.set(String(e.id), e);
       employeeById.set(`e${e.id}`, e);
     });
+    const initials = (name: string) => name.split(" ").filter(Boolean).slice(0, 2).map(s => s[0]?.toUpperCase() || "").join("") || "?";
+    const cleanPersonName = (raw: string) => String(raw || "").split(" — ")[0].trim();
+    const teamFromSharedCard = (s: SharedKpiCard): KpiCard["team"] => {
+      const members = new Map<string, { name: string; role: string; avatar: string }>();
+      const add = (raw: string | undefined, role: string) => {
+        const name = cleanPersonName(raw || "");
+        if (!name || members.has(name)) return;
+        members.set(name, { name, role, avatar: initials(name) });
+      };
+      const owner = employeeById.get(s.ownerId);
+      if (owner) add(`${owner.firstName} ${owner.lastName}`, "KPI sahibi");
+      (s.assigneeIds || []).forEach(id => {
+        const emp = employeeById.get(String(id));
+        add(emp ? `${emp.firstName} ${emp.lastName}` : String(id), "Tətbiq olunan əməkdaş");
+      });
+      (s.targets || []).forEach(t => {
+        add(t.assigner, "Təyin edici");
+        (t.evaluator?.persons || []).forEach(p => add(p.name, "Qiymətləndirici"));
+      });
+      return Array.from(members.values());
+    };
     const toKpiCard = (s: SharedKpiCard): KpiCard => {
       const owner = employeeById.get(s.ownerId);
       const responsible = owner ? `${owner.firstName} ${owner.lastName}` : s.ownerId;
@@ -1070,7 +1091,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         department: "—", group: "—", subdivision: "—",
         startDate: s.startDate || "", endDate: s.endDate || "",
         frequency: s.frequency || "Aylıq",
-        team: [], history: [],
+        team: teamFromSharedCard(s), history: [],
         description: `${notes ? notes + "\n" : ""}Bal sistemi: ${s.scoringSystem || "1-5"} · ${inferSharedCardAssignmentMode(s) === "bulk" ? "Toplu" : "Fərdi"}`,
 
         weight: 10,
@@ -1085,14 +1106,33 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
           progress: 0,
           assignerMode: t.createdBy === "other" ? "other" : "self",
           assigner: t.assigner,
+          evaluator: t.evaluator as EvaluatorConfig | undefined,
+          limits: t.limits,
+          scoreDescriptions: t.scoreDescriptions || [],
         } as SubKpi)),
         matrixId: s.matrixId,
+      };
+    };
+    const applySharedDetails = (card: KpiCard, shared?: SharedKpiCard): KpiCard => {
+      if (!shared) return card;
+      const full = toKpiCard(shared);
+      return {
+        ...card,
+        startDate: card.startDate || full.startDate,
+        endDate: card.endDate || full.endDate,
+        frequency: card.frequency || full.frequency,
+        matrixId: card.matrixId ?? full.matrixId,
+        description: full.description || card.description,
+        subKpis: full.subKpis && full.subKpis.length ? full.subKpis : card.subKpis,
+        team: full.team && full.team.length ? full.team : card.team,
       };
     };
     const extras = sharedCards
       .filter(s => !(s.numericId && existingNumIds.has(s.numericId)))
       .map(toKpiCard);
-    return [...kpiCards, ...extras];
+    const bySharedNumericId = new Map<number, SharedKpiCard>();
+    sharedCards.forEach(s => bySharedNumericId.set(s.numericId ?? Math.abs(hashStrLocal(s.id)), s));
+    return [...kpiCards.map(c => applySharedDetails(c, bySharedNumericId.get(c.id))), ...extras];
   }, [kpiCards, sharedCards]);
 
   // === Kartın TƏTBİQ OLUNDUĞU əməkdaşlar (yaradan yox!) ===
@@ -1137,6 +1177,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       (s.assigneeIds || []).forEach(id => { const n = resolveId(id); if (n) set.add(n); });
       (s.teamIds || []).forEach(t => addTeam(set, t));
       (s.structureIds || []).forEach(st => addStructure(set, st));
+      (s.positionIds || []).forEach(p => addPosition(set, p));
       if (set.size > 0) map.set(numericId, Array.from(set));
     });
 
