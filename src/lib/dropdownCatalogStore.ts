@@ -41,7 +41,10 @@ export interface DropdownCatalog {
   schema?: CatalogSchema;
   /** Strukturlaşdırılmış sətirlər (schema təyin olunmuşdursa) */
   rows?: CatalogRow[];
+  /** İstifadəçi tərəfindən silinmiş seed dəyərləri — bir daha bərpa olunmasın */
+  removed?: string[];
 }
+
 
 const KEY = "kpi_dropdown_catalogs_v6";
 
