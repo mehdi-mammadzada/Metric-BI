@@ -1056,6 +1056,79 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     return [...kpiCards, ...extras];
   }, [kpiCards, sharedCards]);
 
+  // === Kartın TƏTBİQ OLUNDUĞU əməkdaşlar (yaradan yox!) ===
+  // Backend-authoritative: shared kartın assignee_ids / team_ids / structure_ids
+  // sahələri sinxronlaşdığı üçün bütün brauzer və cihazlarda eyni nəticə verir.
+  const cardAssigneesById = useMemo(() => {
+    const emps = getEmployees();
+    const nameOf = (e: any) => [e.firstName, e.lastName].filter(Boolean).join(" ");
+    const byId = new Map<string, string>();
+    emps.forEach((e: any) => { byId.set(String(e.id), nameOf(e)); byId.set(`e${e.id}`, nameOf(e)); });
+    const allNames = new Set(emps.map(nameOf));
+    const teams = getTeams();
+    const map = new Map<number, string[]>();
+
+    const resolveId = (raw: any): string | undefined => {
+      const id = String(raw ?? "").trim();
+      if (!id) return undefined;
+      return byId.get(id) || (allNames.has(id) ? id : undefined);
+    };
+    const addTeam = (set: Set<string>, ref: any) => {
+      const t = teams.find(x => String(x.id) === String(ref) || x.name === ref);
+      if (!t) return;
+      if (t.leader) set.add(t.leader);
+      t.members.forEach((m: any) => m?.name && set.add(m.name));
+    };
+    const addStructure = (set: Set<string>, ref: any) => {
+      const key = String(ref ?? "").trim();
+      if (!key) return;
+      emps.forEach((e: any) => {
+        if (String(e.structureId ?? "") === key || (e.structurePath || "").includes(key)) set.add(nameOf(e));
+      });
+    };
+    const addPosition = (set: Set<string>, ref: any) => {
+      const key = String(ref ?? "").trim().toLowerCase();
+      if (!key) return;
+      emps.forEach((e: any) => { if ((e.positionName || "").toLowerCase() === key) set.add(nameOf(e)); });
+    };
+
+    sharedCards.forEach(s => {
+      const numericId = s.numericId ?? Math.abs(hashStrLocal(s.id));
+      const set = new Set<string>();
+      (s.assigneeIds || []).forEach(id => { const n = resolveId(id); if (n) set.add(n); });
+      (s.teamIds || []).forEach(t => addTeam(set, t));
+      (s.structureIds || []).forEach(st => addStructure(set, st));
+      if (set.size > 0) map.set(numericId, Array.from(set));
+    });
+
+    Object.entries(cardDrafts).forEach(([idStr, d]) => {
+      const id = Number(idStr);
+      const set = new Set<string>(map.get(id) || []);
+      if (d?.mode === "individual") {
+        (d.individualEmployees || []).forEach(n => { const r = resolveId(n); if (r) set.add(r); });
+      } else if (d?.bulkSelections) {
+        const bs = d.bulkSelections;
+        (bs.persons || []).forEach(n => { const r = resolveId(n); if (r) set.add(r); });
+        (bs.teams || []).forEach(t => addTeam(set, t));
+        (bs.structures || []).forEach(st => addStructure(set, st));
+        (bs.positions || []).forEach(p => addPosition(set, p));
+      }
+      (d?.targets || []).forEach((t: any) => { const r = resolveId(t?.assigner); if (r) set.add(r); });
+      if (set.size > 0) map.set(id, Array.from(set));
+    });
+
+    return map;
+  }, [sharedCards, cardDrafts]);
+
+  /** Kartın görünəcəyi əməkdaş adları — təyin olunanlar, yoxdursa məsul şəxs. */
+  const assigneeNamesForCard = (c: { id: number; responsible?: string }): string[] => {
+    const list = cardAssigneesById.get(c.id);
+    if (list && list.length > 0) return list;
+    return c.responsible ? [c.responsible] : [];
+  };
+
+
+
   const filteredCards = mergedKpiCards.filter(c => {
     const matchesSearch = c.name.toLowerCase().includes(searchText.toLowerCase());
     let matchesTeam = true;
