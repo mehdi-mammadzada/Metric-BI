@@ -282,7 +282,7 @@ const UserKpiCardsPage = () => {
                 onClick={() => setView("team")} />
               <HubCard icon={Network} title="Struktur KPI-ları"
                 subtitle="Struktur səviyyəsində KPI-lar — yalnız ümumi vəziyyət və progress."
-                count={STRUCTURE_KPIS.length}
+                count={structureKpis.length}
                 gradient="from-amber-500/15 via-amber-500/5 to-transparent border-amber-400/40"
                 onClick={() => setView("structure")} />
             </div>
@@ -303,7 +303,7 @@ const UserKpiCardsPage = () => {
           title="Struktur KPI-ları"
           subtitle="Struktur səviyyəli KPI-lar — yalnız ümumi status və progress."
           icon={Network}
-          data={STRUCTURE_KPIS} scope="structure" />}
+          data={structureKpis} scope="structure" />}
       </main>
     </div>
   );
