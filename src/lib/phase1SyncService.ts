@@ -11,6 +11,7 @@
 // cache) while making cloud the source of truth across devices/sessions.
 
 import { supabase } from "@/integrations/supabase/client";
+import { getAllDropdownCatalogs } from "@/lib/dropdownCatalogStore";
 
 // ── Local <-> Cloud key map ─────────────────────────────────────────────────
 // One entry per synced store. Each store dispatches `event` when it mutates.
@@ -232,8 +233,10 @@ export const activatePhase1Sync = async (orgId: string) => {
   } finally {
     suppressFlush = false;
   }
-  await hydratePhase1FromCloud(orgId);
   installStoragePatch();
+  await hydratePhase1FromCloud(orgId);
+  getAllDropdownCatalogs();
+  scheduleFlush("kpi_dropdown_catalogs_v6");
 
   if (realtimeChannel) supabase.removeChannel(realtimeChannel);
   realtimeChannel = supabase

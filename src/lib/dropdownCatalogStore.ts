@@ -107,8 +107,8 @@ const RAW_SEED: DropdownCatalog[] = [
     "Tamamlanıb", "Gözləyir",
   ]},
   { id: "integration_systems", name: "İnteqrasiya Sistemləri", system: true, values: []},
-  { id: "evaluator_types", name: "Qiymətləndirici seçimi", system: true, values: [
-    "Komandadaxili", "Konkret şəxs", "Özü", "İnteqrasiya",
+  { id: "evaluator_types", name: "Qiymətləndirici Seçimi", system: true, values: [
+    "Şəxs", "Komanda", "Struktur", "Özü", "İnteqrasiya",
   ]},
   { id: "whistleblower_categories", name: "Bildiriş Kateqoriyaları", system: true, values: [
     "Korrupsiya", "Saxtakarlıq", "Mobbing / Təzyiq", "Diskriminasiya",
@@ -125,6 +125,7 @@ const SEED: DropdownCatalog[] = RAW_SEED.map(c => ({ ...c, rows: [] }));
 export const VISIBLE_CATALOG_IDS: string[] = [
   "frequencies",
   "sub_kpi_units",
+  "evaluator_types",
   "kpi_statuses",
   "whistleblower_statuses",
   "evaluation_statuses",
@@ -133,7 +134,12 @@ export const VISIBLE_CATALOG_IDS: string[] = [
 ];
 
 /** Bu kataloqlara yeni dəyər əlavə etmək olmaz (sistem sabitləri). */
-export const LOCKED_CATALOG_IDS = new Set<string>(["kpi_statuses", "evaluator_types"]);
+export const LOCKED_CATALOG_IDS = new Set<string>([
+  "kpi_statuses",
+  "evaluator_types",
+  "sub_kpi_units",
+  "evaluation_statuses",
+]);
 
 // Strukturlaşdırılmış kataloqlarda values array-ı rows.name-dən avtomatik sinxronlaşdırılır
 const syncValues = (cat: DropdownCatalog): DropdownCatalog => {
@@ -155,13 +161,78 @@ const META_ENTRY: DropdownCatalog = { id: META_ID, name: META_ID, system: true, 
 
 const seedById = new Map(SEED.map(c => [c.id, c]));
 
+const EVALUATOR_TYPE_ALIASES: Record<string, string> = {
+  "konkret şəxs": "Şəxs",
+  "şəxs": "Şəxs",
+  "komandadaxili": "Komanda",
+  "komanda": "Komanda",
+  "struktur": "Struktur",
+  "özü": "Özü",
+  "inteqrasiya": "İnteqrasiya",
+};
+
+const uniqueValues = (values: string[]): string[] => {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  values.forEach(value => {
+    const v = String(value || "").trim();
+    if (!v) return;
+    const key = v.toLocaleLowerCase("az-AZ");
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(v);
+  });
+  return out;
+};
+
+const ensureSystemCatalogs = (list: DropdownCatalog[]): { list: DropdownCatalog[]; changed: boolean } => {
+  let changed = false;
+  const byId = new Map(list.map(c => [c.id, c]));
+  const next = SEED.map(seed => {
+    const existing = byId.get(seed.id);
+    if (!existing) {
+      changed = true;
+      return { ...seed };
+    }
+
+    let values = existing.values ?? [];
+    if (!seed.schema && seed.system) {
+      values = uniqueValues([...(seed.values ?? []), ...values]);
+      if (seed.id === "evaluator_types") {
+        values = uniqueValues(values.map(v => EVALUATOR_TYPE_ALIASES[v.toLocaleLowerCase("az-AZ")] ?? v));
+        values = uniqueValues([...(seed.values ?? []), ...values]);
+      }
+    }
+
+    const merged: DropdownCatalog = {
+      ...seed,
+      ...existing,
+      name: seed.system ? seed.name : existing.name,
+      system: seed.system || existing.system,
+      schema: seed.schema ?? existing.schema,
+      values,
+      rows: seed.schema && seed.schema !== "kpi_periods" ? (existing.rows ?? []) : existing.rows,
+    };
+
+    if (JSON.stringify(existing) !== JSON.stringify(merged)) changed = true;
+    return merged;
+  });
+
+  list.forEach(cat => {
+    if (!seedById.has(cat.id) && cat.id !== META_ID) next.push(cat);
+  });
+
+  if (list.some(cat => cat.id === META_ID)) next.push(META_ENTRY);
+  return { list: next, changed };
+};
+
 // Bir dəfəlik sıfırlama: sistem kataloqları tələb olunan standart dəyərlərə gətirilir.
 const applyResetMigration = (list: DropdownCatalog[]): { list: DropdownCatalog[]; changed: boolean } => {
   if (list.some(c => c.id === META_ID)) return { list, changed: false };
   const next = list.map(c => {
     const seed = seedById.get(c.id);
     if (!seed || seed.schema) return c;
-    return { ...c, values: [...(seed.values ?? [])] };
+    return { ...c, values: uniqueValues([...(seed.values ?? []), ...(c.values ?? [])]) };
   });
   return { list: [...next, META_ENTRY], changed: true };
 };
@@ -174,9 +245,10 @@ const load = (): DropdownCatalog[] => {
       const ids = new Set(parsed.map(c => c.id));
       const missing = SEED.filter(s => !ids.has(s.id));
       const merged = missing.length === 0 ? parsed : [...parsed, ...missing];
-      const reset = applyResetMigration(merged);
+      const ensured = ensureSystemCatalogs(merged);
+      const reset = applyResetMigration(ensured.list);
       const synced = reset.list.map(syncValues);
-      if (missing.length > 0 || reset.changed) {
+      if (missing.length > 0 || ensured.changed || reset.changed) {
         localStorage.setItem(KEY, JSON.stringify(synced));
         window.dispatchEvent(new Event("dropdown-catalogs-updated"));
       }
@@ -274,6 +346,7 @@ export const addCatalogValue = (id: string, value: string): boolean => {
 };
 
 export const updateCatalogValue = (id: string, index: number, value: string): boolean => {
+  if (LOCKED_CATALOG_IDS.has(id)) return false;
   const v = value.trim();
   if (!v) return false;
   const list = load();
@@ -285,6 +358,7 @@ export const updateCatalogValue = (id: string, index: number, value: string): bo
 };
 
 export const removeCatalogValue = (id: string, index: number) => {
+  if (LOCKED_CATALOG_IDS.has(id)) return;
   const list = load();
   persist(list.map(c => c.id === id ? { ...c, values: c.values.filter((_, i) => i !== index) } : c));
 };

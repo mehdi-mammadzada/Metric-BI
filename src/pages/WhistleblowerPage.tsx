@@ -17,31 +17,53 @@ import { useAuth } from "@/contexts/AuthContext";
 import { User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 
+const DEFAULT_WB_STATUS_KEYS: WBStatus[] = ["yeni", "arashdirilir", "hell_olundu"];
+
+const getStatusLabel = (status: WBStatus, labels: string[]) => {
+  const idx = DEFAULT_WB_STATUS_KEYS.indexOf(status);
+  if (idx >= 0) return labels[idx] ?? STATUS_LABEL[status] ?? status;
+  return STATUS_LABEL[status] ?? status;
+};
+
+const getStatusOptions = (labels: string[]) => {
+  const base = DEFAULT_WB_STATUS_KEYS.map((value, index) => ({ value, label: labels[index] ?? STATUS_LABEL[value] ?? value }));
+  const existing = new Set(base.map(o => o.label.toLocaleLowerCase("az-AZ")));
+  labels.slice(DEFAULT_WB_STATUS_KEYS.length).forEach(label => {
+    const v = label.trim();
+    if (!v) return;
+    const key = v.toLocaleLowerCase("az-AZ");
+    if (existing.has(key)) return;
+    existing.add(key);
+    base.push({ value: v as WBStatus, label: v });
+  });
+  return base;
+};
+
 const statusVariant = (s: WBStatus): { cls: string; icon: typeof AlertCircle } => {
   switch (s) {
     case "yeni": return { cls: "bg-primary/15 text-primary border-primary/30", icon: AlertCircle };
     case "arashdirilir": return { cls: "bg-warning/15 text-warning border-warning/30", icon: Clock };
     case "hell_olundu": return { cls: "bg-success/15 text-success border-success/30", icon: CheckCircle2 };
+    default: return { cls: "bg-muted text-muted-foreground border-border", icon: AlertCircle };
   }
 };
 
-const StatusBadge = ({ status }: { status: WBStatus }) => {
+const StatusBadge = ({ status, label }: { status: WBStatus; label: string }) => {
   const v = statusVariant(status);
   const Icon = v.icon;
   return (
     <Badge variant="outline" className={`gap-1 ${v.cls}`}>
-      <Icon className="w-3 h-3" /> {STATUS_LABEL[status]}
+      <Icon className="w-3 h-3" /> {label}
     </Badge>
   );
 };
 
 const formatDate = (iso: string) => new Date(iso).toLocaleString("az-AZ", { dateStyle: "medium", timeStyle: "short" });
 
-const WB_STATUS_KEYS: WBStatus[] = ["yeni", "arashdirilir", "hell_olundu"];
-
 const StatusUpdateDialog = ({ report, open, onOpenChange }: { report: WBReport; open: boolean; onOpenChange: (v: boolean) => void }) => {
   const { user } = useAuth();
   const wbStatusLabels = useCatalogValues("whistleblower_statuses", ["Yeni", "Araşdırılır", "Həll olundu"]);
+  const statusOptions = useMemo(() => getStatusOptions(wbStatusLabels), [wbStatusLabels]);
   const [newStatus, setNewStatus] = useState<WBStatus>(report.status);
   const [note, setNote] = useState("");
 
@@ -67,7 +89,7 @@ const StatusUpdateDialog = ({ report, open, onOpenChange }: { report: WBReport; 
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Status yenilə · #{report.id}</DialogTitle>
-          <DialogDescription>Cari status: {STATUS_LABEL[report.status]}</DialogDescription>
+          <DialogDescription>Cari status: {getStatusLabel(report.status, wbStatusLabels)}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
@@ -75,8 +97,8 @@ const StatusUpdateDialog = ({ report, open, onOpenChange }: { report: WBReport; 
             <Select value={newStatus} onValueChange={(v) => setNewStatus(v as WBStatus)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {WB_STATUS_KEYS.map((k, i) => (
-                  <SelectItem key={k} value={k}>{wbStatusLabels[i] ?? k}</SelectItem>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -95,7 +117,7 @@ const StatusUpdateDialog = ({ report, open, onOpenChange }: { report: WBReport; 
   );
 };
 
-const ReportDetailDialog = ({ report, open, onOpenChange, onChangeStatus }: { report: WBReport | null; open: boolean; onOpenChange: (v: boolean) => void; onChangeStatus: () => void }) => {
+const ReportDetailDialog = ({ report, open, onOpenChange, onChangeStatus, statusLabels }: { report: WBReport | null; open: boolean; onOpenChange: (v: boolean) => void; onChangeStatus: () => void; statusLabels: string[] }) => {
   if (!report) return null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -103,7 +125,7 @@ const ReportDetailDialog = ({ report, open, onOpenChange, onChangeStatus }: { re
         <DialogHeader>
           <div className="flex items-center justify-between gap-3 pr-6">
             <DialogTitle className="font-mono">#{report.id}</DialogTitle>
-            <StatusBadge status={report.status} />
+            <StatusBadge status={report.status} label={getStatusLabel(report.status, statusLabels)} />
           </div>
           <DialogDescription>{report.category} · {formatDate(report.createdAt)}</DialogDescription>
         </DialogHeader>
@@ -161,8 +183,8 @@ const ReportDetailDialog = ({ report, open, onOpenChange, onChangeStatus }: { re
                   <p className="text-xs text-muted-foreground">{formatDate(h.at)}</p>
                   {h.toStatus && (
                     <p className="text-xs mt-0.5">
-                      {h.fromStatus ? `${STATUS_LABEL[h.fromStatus]} → ` : ""}
-                      <span className="font-medium">{STATUS_LABEL[h.toStatus]}</span>
+                      {h.fromStatus ? `${getStatusLabel(h.fromStatus, statusLabels)} → ` : ""}
+                      <span className="font-medium">{getStatusLabel(h.toStatus, statusLabels)}</span>
                     </p>
                   )}
                   {h.note && <p className="text-xs italic text-muted-foreground mt-0.5">"{h.note}"</p>}
@@ -185,6 +207,8 @@ const PAGE_SIZE = 10;
 
 const WhistleblowerPage = () => {
   const wbCategories = useCatalogValues("whistleblower_categories", [...WB_CATEGORIES]);
+  const wbStatusLabels = useCatalogValues("whistleblower_statuses", ["Yeni", "Araşdırılır", "Həll olundu"]);
+  const statusOptions = useMemo(() => getStatusOptions(wbStatusLabels), [wbStatusLabels]);
   const [reports, setReports] = useState<WBReport[]>([]);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("all");
@@ -222,11 +246,11 @@ const WhistleblowerPage = () => {
       if (cf.id && !r.id.toLowerCase().includes(cf.id)) return false;
       if (cf.category && !r.category.toLowerCase().includes(cf.category)) return false;
       if (cf.title && !r.title.toLowerCase().includes(cf.title)) return false;
-      if (cf.status && !STATUS_LABEL[r.status].toLowerCase().includes(cf.status)) return false;
+      if (cf.status && !getStatusLabel(r.status, wbStatusLabels).toLowerCase().includes(cf.status)) return false;
       if (cf.date && !formatDate(r.createdAt).toLowerCase().includes(cf.date)) return false;
       return true;
     });
-  }, [reports, search, filterCat, filterStatus, filterDate, colFilters]);
+  }, [reports, search, filterCat, filterStatus, filterDate, colFilters, wbStatusLabels]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -315,9 +339,7 @@ const WhistleblowerPage = () => {
             <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Bütün statuslar</SelectItem>
-              <SelectItem value="yeni">Yeni</SelectItem>
-              <SelectItem value="arashdirilir">Araşdırılır</SelectItem>
-              <SelectItem value="hell_olundu">Həll olundu</SelectItem>
+              {statusOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
             </SelectContent>
           </Select>
           <Input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
@@ -343,7 +365,7 @@ const WhistleblowerPage = () => {
               },
               { key: "category", label: "Kateqoriya", filterType: "select", selectOptions: [...wbCategories], accessor: (r) => r.category },
               { key: "title", label: "Başlıq", filterType: "text", accessor: (r) => r.title },
-              { key: "status", label: "Status", filterType: "select", selectOptions: Object.values(STATUS_LABEL), accessor: (r) => STATUS_LABEL[r.status], render: (r) => <StatusBadge status={r.status} /> },
+              { key: "status", label: "Status", filterType: "select", selectOptions: statusOptions.map(o => o.label), accessor: (r) => getStatusLabel(r.status, wbStatusLabels), render: (r) => <StatusBadge status={r.status} label={getStatusLabel(r.status, wbStatusLabels)} /> },
               { key: "date", label: "Tarix", filterType: "date", accessor: (r) => new Date(r.createdAt), render: (r) => <span className="text-sm text-muted-foreground">{formatDate(r.createdAt)}</span> },
             ]}
           />
@@ -356,6 +378,7 @@ const WhistleblowerPage = () => {
         open={detailOpen}
         onOpenChange={setDetailOpen}
         onChangeStatus={() => { setDetailOpen(false); setStatusOpen(true); }}
+        statusLabels={wbStatusLabels}
       />
       {selected && (
         <StatusUpdateDialog report={selected} open={statusOpen} onOpenChange={setStatusOpen} />

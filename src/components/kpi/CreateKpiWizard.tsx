@@ -31,6 +31,10 @@ export const HEDEF_TYPES: HedefType[] = [
   "Faiz", "Nisbət", "Boolean", "Zaman",
 ];
 
+const FREQUENCY_DEFAULTS = ["Aylıq", "Rüblük", "6 Aylıq", "İllik", "Custom"];
+const SCORING_DEFAULTS = ["1-3 Bal Sistemi", "1-5 Bal Sistemi", "1-10 Bal Sistemi", "Faiz (0-100)"];
+const EVALUATOR_TYPE_DEFAULTS = ["Şəxs", "Komanda", "Struktur", "Özü", "İnteqrasiya"];
+
 export const CASCADE_TYPES: HedefType[] = ["Məbləğ", "Say", "Faiz", "Nisbət"];
 
 /** Types that DO NOT allow range definitions — only score+description rows. */
@@ -167,7 +171,7 @@ export const emptyKpiWizardDraft = (): CreateKpiWizardDraft => ({
   quarter: 1,
   startDate: "",
   endDate: "",
-  scoringSystem: "1-5",
+  scoringSystem: "1-5 Bal Sistemi",
   useMatrix: false,
   approvalMatrixId: "",
   approvalMethod: "matrix",
@@ -222,8 +226,6 @@ const STEPS = [
 ];
 const TOTAL_STEPS = STEPS.length;
 
-const PERIODS = ["Aylıq", "Rüblük", "6 Aylıq", "İllik", "Custom"];
-const SCORING = ["1-5", "1-10", "Digər"];
 const CURRENCIES: WizardHedef["currency"][] = ["AZN", "USD", "EUR"];
 
 // ============ DATE HELPERS ============
@@ -506,7 +508,9 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     }
   }, [open, initial]);
 
-  const scoringExtra = useCatalogValues("scoring_systems", ["1-3 Bal", "Faiz (0-100)"]);
+  const periodOptions = useCatalogValues("frequencies", FREQUENCY_DEFAULTS);
+  const scoringOptions = useCatalogValues("scoring_systems", SCORING_DEFAULTS);
+  const targetTypeOptions = useCatalogValues("sub_kpi_units", HEDEF_TYPES);
   const cascadeMatrices = useCascadeMatrices();
 
   // ===== Reference data =====
@@ -1164,7 +1168,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                 <Field label="Dövr" required span="col-span-12 md:col-span-4">
                   <select value={draft.frequency} onChange={e => setFrequency(e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background">
-                    {PERIODS.map(f => <option key={f} value={f}>{f}</option>)}
+                    {[...new Set([...periodOptions, draft.frequency].filter(Boolean))].map(f => <option key={f} value={f}>{f}</option>)}
                   </select>
                 </Field>
 
@@ -1209,7 +1213,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                 <Field label="Qiymətləndirmə bal sistemi" required span="col-span-12 md:col-span-4">
                   <select value={draft.scoringSystem} onChange={e => update({ scoringSystem: e.target.value })}
                     className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background">
-                    {[...SCORING, ...scoringExtra.filter(x => !SCORING.includes(x))].map(s => <option key={s} value={s}>{s}</option>)}
+                    {[...new Set([...scoringOptions, draft.scoringSystem].filter(Boolean))].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </Field>
 
@@ -1374,6 +1378,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
               cascadeMatrices={cascadeMatrices}
               scoreMax={scoreMax}
               totalWeight={totalWeight}
+              targetTypeOptions={targetTypeOptions}
               update={update}
               updHedef={updHedef}
               addHedef={addHedef}
@@ -1595,13 +1600,14 @@ function LifecycleStage({ title, start, end, onStart, onEnd, disabled }: {
 // =========================================================
 function Step2Targets({
   draft, employeeOptions, cascadeMatrices, scoreMax, totalWeight,
-  update, updHedef, addHedef, removeHedef, applyEvaluatorsToAll, applyAssignerToAll,
+  targetTypeOptions, update, updHedef, addHedef, removeHedef, applyEvaluatorsToAll, applyAssignerToAll,
 }: {
   draft: CreateKpiWizardDraft;
   employeeOptions: { value: string; label: string }[];
   cascadeMatrices: { id: string; name: string; scopeType: string }[];
   scoreMax: number | undefined;
   totalWeight: number;
+  targetTypeOptions: string[];
   update: (p: Partial<CreateKpiWizardDraft>) => void;
   updHedef: (id: string, p: Partial<WizardHedef>) => void;
   addHedef: () => void;
@@ -1764,7 +1770,7 @@ function Step2Targets({
                 <label className="text-[11px] text-muted-foreground">Hədəf növü *</label>
                 <select value={t.type} disabled={disabled} onChange={e => updHedef(t.id, { type: e.target.value as HedefType })}
                   className="w-full mt-0.5 px-2 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60">
-                  {HEDEF_TYPES.map(h => <option key={h} value={h}>{h}</option>)}
+                  {[...new Set([...targetTypeOptions, t.type].filter(Boolean))].map(h => <option key={h} value={h}>{h}</option>)}
                 </select>
               </div>
               <div className="col-span-6 md:col-span-2">
@@ -2338,6 +2344,7 @@ function EvaluatorPickerDialog({ target, employeeOptions, onClose, onSave }: {
     return "person";
   })();
   const [tab, setTab] = useState<"person" | "team" | "structure" | "self" | "integration">(initialTab);
+  const evaluatorTypeLabels = useCatalogValues("evaluator_types", EVALUATOR_TYPE_DEFAULTS);
   const [personEvs, setPersonEvs] = useState<WizardEvaluatorRef[]>(
     initialTab === "person" ? target.evaluators : []
   );
@@ -2485,11 +2492,11 @@ function EvaluatorPickerDialog({ target, employeeOptions, onClose, onSave }: {
   };
 
   const tabs: { key: typeof tab; label: string }[] = [
-    { key: "person", label: "Şəxs" },
-    { key: "team", label: "Komanda" },
-    { key: "structure", label: "Struktur" },
-    { key: "self", label: "Özü" },
-    { key: "integration", label: "İnteqrasiya" },
+    { key: "person", label: evaluatorTypeLabels[0] ?? "Şəxs" },
+    { key: "team", label: evaluatorTypeLabels[1] ?? "Komanda" },
+    { key: "structure", label: evaluatorTypeLabels[2] ?? "Struktur" },
+    { key: "self", label: evaluatorTypeLabels[3] ?? "Özü" },
+    { key: "integration", label: evaluatorTypeLabels[4] ?? "İnteqrasiya" },
   ];
 
   return (
