@@ -66,4 +66,6 @@ export const HR_FULL_UI_PERMISSIONS = [
   "kpi_team",
   "teams_compare",
   "teams_all",
+  "home.ai_assistant",
 ];
+

@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { ClipboardList, Plus, Search, Settings2, Download, CheckCircle2, XCircle, Trash2, Filter, ListChecks, UserCheck, Users, ArrowRight, ArrowLeft, Sparkles, Target, Send, Calendar as CalendarIcon, Shuffle, Hand, CalendarDays, Pencil, Star, Eye, ArrowLeftCircle, ChevronDown, LayoutGrid, List as ListIcon } from "lucide-react";
 import { getSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
 import { mockStructures, mockTeams } from "@/data/mockExtras";
+import { getTeams } from "@/lib/teamsStore";
+import { getFlatStructureNodes, getEmployees, getStarHolderOfUnit } from "@/lib/orgStore";
+
 import { PageHero } from "@/components/ui/page-hero";
 import ExportMenu from "@/components/common/ExportMenu";
 import Header from "@/components/layout/Header";
@@ -777,6 +780,8 @@ interface StatusGroup {
   cards: SharedKpiCard[];
   goalCount: number;
   members?: { id: string; name: string; position?: string }[];
+  leaderName?: string;
+  teamCount?: number;
 }
 
 const hash = (s: string) => {
@@ -793,6 +798,12 @@ const employeePosition = (id: string): string => {
   return e?.position || "";
 };
 
+const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
+
+/** Ad üzrə real əməkdaş id-si (tapılmasa adın özü qaytarılır). */
+const employeeIdByName = (name: string): string =>
+  mockEmployees.find(e => norm(e.fullName) === norm(name))?.id || name;
+
 const buildGroups = (scope: StatusScope): StatusGroup[] => {
   const cards = getSharedKpiCards().filter(c => c.status !== "imtina");
   if (scope === "individual") {
@@ -808,45 +819,61 @@ const buildGroups = (scope: StatusScope): StatusGroup[] => {
       };
     });
   }
+
   if (scope === "team") {
-    const map = new Map<string, StatusGroup>();
-    cards.filter(c => c.teamIds && c.teamIds.length > 0).forEach(c => {
-      c.teamIds.forEach(tid => {
-        const team = mockTeams.find(t => t.id === tid);
-        const g = map.get(tid) || {
-          key: tid,
-          name: team?.name || tid,
-          subtitle: team ? `${team.memberIds.length} üzv` : undefined,
-          cards: [], goalCount: 0,
-          members: team?.memberIds.map(mid => ({ id: mid, name: employeeName(mid), position: employeePosition(mid) })),
-        };
-        g.cards.push(c);
-        g.goalCount += c.targets.length;
-        map.set(tid, g);
-      });
-    });
-    return Array.from(map.values());
-  }
-  // structure
-  const map = new Map<string, StatusGroup>();
-  cards.filter(c => c.structureIds && c.structureIds.length > 0).forEach(c => {
-    c.structureIds.forEach(sid => {
-      const st = mockStructures.find(s => s.id === sid);
-      const members = mockTeams.filter(t => t.structureId === sid).flatMap(t => t.memberIds);
-      const uniqueMembers = Array.from(new Set(members));
-      const g = map.get(sid) || {
-        key: sid,
-        name: st?.name || sid,
-        subtitle: `${uniqueMembers.length} əməkdaş`,
-        cards: [], goalCount: 0,
-        members: uniqueMembers.map(mid => ({ id: mid, name: employeeName(mid), position: employeePosition(mid) })),
+    // Sistemdəki real komandalar (Komandalar modulu) — mock yoxdur.
+    return getTeams().map(t => {
+      const memberNames = Array.from(
+        new Set([t.leader, ...(t.members || []).map(m => m.name)].filter(Boolean)),
+      );
+      const teamCards = cards.filter(c =>
+        (c.teamIds || []).some(id => norm(id) === norm(t.id) || norm(id) === norm(t.name)),
+      );
+      return {
+        key: String(t.id),
+        name: t.name,
+        subtitle: `${memberNames.length} üzv`,
+        cards: teamCards,
+        goalCount: teamCards.reduce((sum, card) => sum + card.targets.length, 0),
+        leaderName: t.leader || "—",
+        members: memberNames.map(n => {
+          const id = employeeIdByName(n);
+          return { id, name: n, position: employeePosition(id) };
+        }),
       };
-      g.cards.push(c);
-      g.goalCount += c.targets.length;
-      map.set(sid, g);
     });
+  }
+
+  // Struktur: real təşkilati struktur ağacı.
+  const nodes = getFlatStructureNodes();
+  const emps = getEmployees().filter(e => e.active !== false);
+  return nodes.map(n => {
+    const members = emps.filter(e => {
+      const path = e.structurePath || "";
+      return path === n.path || path.startsWith(`${n.path} › `);
+    });
+    const structureCards = cards.filter(c =>
+      (c.structureIds || []).some(sidValue => {
+        const s = norm(sidValue);
+        return s === norm(n.id) || s === norm(n.path) || s === norm(n.name);
+      }),
+    );
+    const leader = getStarHolderOfUnit(n.id);
+    return {
+      key: String(n.id),
+      name: n.path,
+      subtitle: `${members.length} əməkdaş`,
+      cards: structureCards,
+      goalCount: structureCards.reduce((sum, card) => sum + card.targets.length, 0),
+      leaderName: leader ? `${leader.firstName} ${leader.lastName}`.trim() : "—",
+      teamCount: nodes.filter(x => x.parentId === n.id).length,
+      members: members.map(e => ({
+        id: String(e.id),
+        name: `${e.firstName} ${e.lastName}`.trim(),
+        position: e.positionName || "",
+      })),
+    };
   });
-  return Array.from(map.values());
 };
 
 // ---------- Multi-rater evaluation row ----------
@@ -859,32 +886,21 @@ interface RaterEval {
   done: boolean;
 }
 
-const buildRaters = (seed: string, evaluatorIds: string[], scoreLimit: number): RaterEval[] => {
-  const weightPatterns: Record<number, number[]> = {
-    1: [100],
-    2: [60, 40],
-    3: [40, 35, 25],
-    4: [35, 25, 20, 20],
-  };
-  const weights = weightPatterns[evaluatorIds.length] || evaluatorIds.map((_, i) => {
-    const base = Math.floor(100 / evaluatorIds.length);
-    return i === 0 ? base + (100 - base * evaluatorIds.length) : base;
-  });
-  return evaluatorIds.map((eid, ei) => {
-    const h = hash(seed + eid);
-    const done = (h + ei) % 4 !== 0; // ~75% completed
-    const score = done ? 1 + (h % scoreLimit) : null;
-    const day = 5 + (h % 22);
-    return {
-      evaluatorId: eid,
-      score,
-      max: scoreLimit,
-      weight: weights[ei] || 0,
-      date: done ? `2026-01-${String(day).padStart(2, "0")}` : null,
-      done,
-    };
-  });
+/** Real qiymətləndiricilər — bal yalnız sistemdə qeyd edildikdə görünür.
+ *  Heç bir simulyasiya / təsadüfi dəyər yaradılmır. */
+const buildRaters = (_seed: string, evaluatorIds: string[], scoreLimit: number): RaterEval[] => {
+  if (evaluatorIds.length === 0) return [];
+  const base = Math.floor(100 / evaluatorIds.length);
+  return evaluatorIds.map((eid, ei) => ({
+    evaluatorId: eid,
+    score: null,
+    max: scoreLimit,
+    weight: ei === 0 ? base + (100 - base * evaluatorIds.length) : base,
+    date: null,
+    done: false,
+  }));
 };
+
 
 const finalScore = (raters: RaterEval[]): number | null => {
   const done = raters.filter(r => r.done && r.score !== null);
@@ -933,33 +949,20 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
   // Competencies from the criteria catalog
   const competencies = getCriteria().slice(0, 6);
 
-  // Deterministic set of "evaluators" per group. For individual, use card.evaluatorIds
-  // + a couple of extra people so multi-rater is visible on at least one item.
-  const extraEvaluatorPool = mockEmployees.filter(e => e.id !== group.key).map(e => e.id);
-  const groupExtraEvaluators = (n: number): string[] => {
-    const h = hash(group.key);
-    return Array.from({ length: n }, (_, i) => extraEvaluatorPool[(h + i * 7) % extraEvaluatorPool.length]);
-  };
-
+  // Yalnız real qiymətləndiricilər: kartda təyin olunmuş şəxslər + komanda/struktur rəhbəri.
   const toggleCard = (cardId: string) => {
     setOpenCardIds(prev => prev.includes(cardId) ? prev.filter(id => id !== cardId) : [...prev, cardId]);
   };
 
-  const getGoalEvaluatorIds = (card: SharedKpiCard, targetIndex: number): string[] => {
+  const getGoalEvaluatorIds = (card: SharedKpiCard, _targetIndex: number): string[] => {
     const base = card.evaluatorIds.length > 0 ? card.evaluatorIds : [card.ownerId];
-    if (scope === "team") {
-      const team = mockTeams.find(t => t.id === group.key);
-      return Array.from(new Set([team?.leaderId || card.ownerId, ...base, ...groupExtraEvaluators(targetIndex === 0 ? 2 : 1)]));
+    if (scope === "team" || scope === "structure") {
+      const leaderId = group.leaderName ? employeeIdByName(group.leaderName) : "";
+      return Array.from(new Set([leaderId, ...base].filter(Boolean)));
     }
-    if (scope === "structure") {
-      const structure = mockStructures.find(s => s.id === group.key);
-      const teamLeaders = mockTeams.filter(t => t.structureId === group.key).map(t => t.leaderId);
-      return Array.from(new Set([structure?.managerId || card.ownerId, ...teamLeaders, ...base, ...groupExtraEvaluators(targetIndex === 0 ? 1 : 0)]));
-    }
-    return targetIndex === 0 && card === group.cards[0]
-      ? Array.from(new Set([...base, ...groupExtraEvaluators(2)]))
-      : base;
+    return base;
   };
+
 
   const renderGoalCards = (title: string, emptyText: string, badgeLabel?: string) => (
     <div className="space-y-3">
@@ -1020,11 +1023,11 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
               <div className="divide-y divide-border">
                 {card.targets.map((t, ti) => {
                   const { raters, finalS } = cardStats[ti];
-                  const h = hash(card.id + t.id);
-                  const actual = 60 + (h % 60);
+                  const actual = 0;
                   const doneCount = raters.filter(r => r.done).length;
                   const latestDate = raters.filter(r => r.done && r.date).map(r => r.date!).sort().slice(-1)[0] || null;
-                  const status = doneCount === raters.length ? "Tamamlanıb" : doneCount === 0 ? "Gözləyir" : "Davam edir";
+                  const status = raters.length > 0 && doneCount === raters.length ? "Tamamlanıb" : doneCount === 0 ? "Gözləyir" : "Davam edir";
+
                   const statusTone = status === "Tamamlanıb" ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : status === "Gözləyir" ? "bg-muted text-muted-foreground border-border" : "bg-amber-500/15 text-amber-600 border-amber-500/30";
                   return (
                     <div key={t.id} className="p-4 space-y-3 bg-background">
@@ -1092,12 +1095,10 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
               </div>
               <div className="divide-y divide-border">
                 {cat.items.map((c, ci) => {
-                  const base = group.cards[0]?.evaluatorIds && group.cards[0].evaluatorIds.length > 0
+                  const evalIds = group.cards[0]?.evaluatorIds && group.cards[0].evaluatorIds.length > 0
                     ? group.cards[0].evaluatorIds
-                    : groupExtraEvaluators(1);
-                  const evalIds = ci === 0
-                    ? Array.from(new Set([...base, ...groupExtraEvaluators(2)]))
-                    : base;
+                    : [];
+
                   const raters = buildRaters(group.key + "-comp-" + c, evalIds, 5);
                   const finalS = finalScore(raters);
                   const weight = Math.round(100 / cat.items.length);
@@ -1139,12 +1140,11 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
 
 
   const renderTeamDetail = () => {
-    const team = mockTeams.find(t => t.id === group.key);
     const members = group.members || [];
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Komanda rəhbəri</p><p className="text-sm font-semibold text-foreground">{employeeName(team?.leaderId || "")}</p></div>
+          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Komanda rəhbəri</p><p className="text-sm font-semibold text-foreground">{group.leaderName || "—"}</p></div>
           <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Üzv sayı</p><p className="text-sm font-semibold text-foreground">{members.length}</p></div>
           <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Qiymətləndirmə tipi</p><p className="text-sm font-semibold text-foreground">Hədəf əsaslı</p></div>
         </div>
@@ -1154,19 +1154,19 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
   };
 
   const renderStructureDetail = () => {
-    const teams = mockTeams.filter(t => t.structureId === group.key);
     const members = group.members || [];
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Struktur rəhbəri</p><p className="text-sm font-semibold text-foreground">{employeeName(mockStructures.find(s => s.id === group.key)?.managerId || "")}</p></div>
-          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Komanda sayı</p><p className="text-sm font-semibold text-foreground">{teams.length}</p></div>
+          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Struktur rəhbəri</p><p className="text-sm font-semibold text-foreground">{group.leaderName || "—"}</p></div>
+          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Alt struktur sayı</p><p className="text-sm font-semibold text-foreground">{group.teamCount ?? 0}</p></div>
           <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Əməkdaş sayı</p><p className="text-sm font-semibold text-foreground">{members.length}</p></div>
         </div>
         {renderGoalCards("Struktur hədəfləri üzrə qiymətləndirmələr", "Bu struktur üçün hədəf KPI kartı yoxdur", `${group.goalCount} hədəf`)}
       </div>
     );
   };
+
 
   return (
     <Dialog open={!!group} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -1246,13 +1246,15 @@ const StatusTab = () => {
   const [viewMode, setViewMode] = useState<"card" | "list">("card");
   const [search, setSearch] = useState("");
   const [openGroup, setOpenGroup] = useState<StatusGroup | null>(null);
-  const [, force] = useState(0);
+  const [tick, force] = useState(0);
   useEffect(() => {
     const r = () => force(t => t + 1);
-    window.addEventListener("shared-kpi-cards-updated", r);
-    return () => window.removeEventListener("shared-kpi-cards-updated", r);
+    const events = ["shared-kpi-cards-updated", "org-updated", "teams-updated", "teams-hydrated"];
+    events.forEach(e => window.addEventListener(e, r));
+    return () => events.forEach(e => window.removeEventListener(e, r));
   }, []);
-  const groups = useMemo(() => buildGroups(subTab), [subTab]);
+  const groups = useMemo(() => buildGroups(subTab), [subTab, tick]);
+
   const filtered = groups.filter(g => !search.trim() || g.name.toLowerCase().includes(search.toLowerCase()));
 
   const label = subTab === "individual" ? "Əməkdaş" : subTab === "team" ? "Komanda" : "Struktur";
@@ -1309,7 +1311,7 @@ const StatusTab = () => {
       {viewMode === "card" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filtered.map(g => {
-            const teamCount = subTab === "structure" ? mockTeams.filter(t => t.structureId === g.key).length : 0;
+            const teamCount = subTab === "structure" ? (g.teamCount ?? 0) : 0;
             const metaChips: { label: string; value: string | number }[] =
               subTab === "individual"
                 ? [

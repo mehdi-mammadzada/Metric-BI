@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Users, Target, Trophy, Gift, Sparkles, TrendingUp } from "lucide-react";
 import { PageHero, FancyStatCard, FancyCard } from "@/components/ui/page-hero";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import SharedKpiPanel from "@/components/kpi/SharedKpiPanel";
+import { AIChatSection } from "@/components/ai/AIChatSection";
 import { useApprovals } from "@/lib/approvalsStore";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
 import { getCurrentEmployeeId, getVisibleApprovals, getVisibleKpiCards, getVisibleTeams } from "@/lib/scope";
@@ -47,9 +47,9 @@ const ManagerHomePage = () => {
           <FancyStatCard icon={Gift} label="Bu ay bonus" value="0 AZN" accent="emerald" />
         </div>
 
-        <div className="mb-6">
-          <SharedKpiPanel title="Komandama aid KPI kartları" />
-        </div>
+        <AIChatSection />
+
+
 
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

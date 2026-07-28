@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ReactMarkdown from "react-markdown";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -20,11 +22,14 @@ const SUGGESTIONS = [
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/kpi-chat`;
 
 export const AIChatSection = () => {
+  const { hasPermission } = useAuth();
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const canUseAi = hasPermission("home.ai_assistant");
+
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -116,7 +121,10 @@ export const AIChatSection = () => {
     }
   };
 
+  if (!canUseAi) return null;
+
   return (
+
     <>
       <section className="mb-6 relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 via-card to-card p-6 md:p-8">
         <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-primary/25 blur-3xl pointer-events-none" />
