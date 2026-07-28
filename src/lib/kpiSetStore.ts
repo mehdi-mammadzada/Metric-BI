@@ -79,7 +79,10 @@ const norm = (value?: string | number | null) => String(value ?? "").split(" —
 
 const entryKey = (entry: Pick<KpiSetEntry, "cardId" | "subKpiId" | "subKpiName" | "assigneeId" | "assigneeName">) => {
   const assignee = norm(entry.assigneeName) || (entry.assigneeId != null ? String(entry.assigneeId) : "");
-  return `${entry.cardId}::${assignee}`;
+  // Bir kartda bir neçə hədəf ola bilər — hədəf də açara daxil edilir,
+  // əks halda sinxronizasiya zamanı kartın yalnız 1 hədəfi qalır (BSC itir).
+  const sub = norm(entry.subKpiName) || (entry.subKpiId != null ? String(entry.subKpiId) : "");
+  return `${entry.cardId}::${assignee}::${sub}`;
 };
 
 const betterEntry = (a: KpiSetEntry, b: KpiSetEntry) => {

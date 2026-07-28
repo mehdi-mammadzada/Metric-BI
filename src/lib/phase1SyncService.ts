@@ -74,7 +74,9 @@ const writeLocal = (key: string, value: unknown) => {
 const normalizeKpiSetEntries = (value: unknown): unknown => {
   if (!Array.isArray(value)) return value;
   const norm = (v: unknown) => String(v ?? "").split(" — ")[0].trim().toLowerCase().replace(/\s+/g, " ");
-  const keyOf = (row: any) => `${row?.cardId}::${norm(row?.assigneeName) || row?.assigneeId || ""}`;
+  const keyOf = (row: any) =>
+    `${row?.cardId}::${norm(row?.assigneeName) || row?.assigneeId || ""}::${norm(row?.subKpiName) || row?.subKpiId || ""}`;
+
   const map = new Map<string, any>();
   value.forEach((row: any) => {
     const key = keyOf(row);
