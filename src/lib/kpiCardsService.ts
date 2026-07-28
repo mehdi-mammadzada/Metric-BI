@@ -109,11 +109,26 @@ const targetsFromDraft = (draft: any): SharedKpiCard["targets"] => {
     .filter((target): target is SharedKpiCard["targets"][number] => !!target);
 };
 
+/** Eyni hədəfin (ad və ya id üzrə) təkrarlanmasının qarşısını alır — ən zəngin sətir saxlanılır. */
+const targetRichness = (t: SharedKpiCard["targets"][number]) =>
+  (t.targetValue ? 1 : 0) + (t.limits ? 1 : 0) + (t.scoreDescriptions?.length ? 1 : 0) + (t.ranges?.length ? 1 : 0);
+
+const dedupeTargets = (targets: SharedKpiCard["targets"]): SharedKpiCard["targets"] => {
+  const byKey = new Map<string, SharedKpiCard["targets"][number]>();
+  targets.forEach(t => {
+    const key = String(t.name || "").trim().toLowerCase() || String(t.id);
+    const prev = byKey.get(key);
+    if (!prev || targetRichness(t) > targetRichness(prev)) byKey.set(key, t);
+  });
+  return Array.from(byKey.values());
+};
+
 const mergeTargetsWithDraft = (targets: SharedKpiCard["targets"], draft: any): SharedKpiCard["targets"] => {
-  const draftTargets = targetsFromDraft(draft);
-  if (draftTargets.length === 0) return targets;
+  const draftTargets = dedupeTargets(targetsFromDraft(draft));
+  if (draftTargets.length === 0) return dedupeTargets(targets);
   if (targets.length === 0) return draftTargets;
-  return targets.map((target, index) => {
+  // DB hədəfləri həqiqi mənbədir — draft yalnız boş sahələri doldurur, YENİ sətir yaratmır.
+  return dedupeTargets(targets).map((target, index) => {
     const draftTarget = draftTargets.find(t => t.id === target.id) || draftTargets.find(t => t.name.trim().toLowerCase() === target.name.trim().toLowerCase()) || draftTargets[index];
     if (!draftTarget) return target;
     return {
@@ -127,6 +142,9 @@ const mergeTargetsWithDraft = (targets: SharedKpiCard["targets"], draft: any): S
     };
   });
 };
+
+/** Bir hidratasiya sessiyasında eyni kart üçün təkrar bərpa insert-i olmasın. */
+const repairedCardIds = new Set<string>();
 
 const draftForCard = (drafts: Record<string, any>, card: { legacy_numeric_id?: number | string | null; name?: string | null }) => {
   if (card.legacy_numeric_id != null) {
@@ -258,11 +276,17 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
   }));
 
   const missingTargetRepairs = cards
-    .filter((c: any) => (targetsByCard.get(c.id) ?? []).length === 0)
-    .flatMap((c: any) => targetsFromDraft(draftForCard(drafts, c)).map((target, index) => dbTargetPayload(orgId, c.id as string, target, index)));
+    .filter((c: any) => (targetsByCard.get(c.id) ?? []).length === 0 && !repairedCardIds.has(String(c.id)))
+    .flatMap((c: any) => {
+      const rows = dedupeTargets(targetsFromDraft(draftForCard(drafts, c)));
+      if (!rows.length) return [];
+      repairedCardIds.add(String(c.id));
+      return rows.map((target, index) => dbTargetPayload(orgId, c.id as string, target, index));
+    });
   if (missingTargetRepairs.length > 0) {
     await supabase.from("kpi_card_targets").insert(missingTargetRepairs as never);
   }
+
 
   // Rebuild status + meta caches from card rows.
   const status: Record<number, any> = {};

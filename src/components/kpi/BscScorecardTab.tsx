@@ -66,8 +66,11 @@ export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
         entries.find(en => nameKey(en.subKpiName) === nameKey(s.name));
       return { ...s, _entryId: e?.id ?? null, limits: s.limits ?? e?.limits, scoreDescriptions: s.scoreDescriptions ?? e?.scoreDescriptions, assignerFromSet: e?.assigneeName, unit: s.unit || e?.unit };
     });
+    const ownNames = new Set(own.map((s: any) => nameKey(s.name)));
     entries.forEach(e => {
-      if (!ownById.has(e.subKpiId) && e.subKpiName) {
+      // Yalnız kartda ümumiyyətlə mövcud olmayan hədəflər əlavə olunur — ad üzrə uyğunluq varsa təkrar yaradılmır.
+      if (!ownById.has(e.subKpiId) && e.subKpiName && !ownNames.has(nameKey(e.subKpiName))) {
+        ownNames.add(nameKey(e.subKpiName));
         list.push({
           id: e.subKpiId,
           name: e.subKpiName,
@@ -80,13 +83,11 @@ export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
         });
       }
     });
-    // Dublikatları sil: eyni ad + hədəf + təyinedici yalnız bir dəfə
+    // Dublikatları sil: eyni ad yalnız bir dəfə göstərilir
     const seen = new Set<string>();
     return list.filter(s => {
-      const name = String(s.name || "").trim();
-      if (!name) return false;
-      const key = `${name.toLowerCase()}::${String(s.target ?? "").trim()}::${String(s.assigner || s.assignerFromSet || "").trim().toLowerCase()}`;
-      if (seen.has(key)) return false;
+      const key = nameKey(s.name);
+      if (!key || seen.has(key)) return false;
       seen.add(key);
       return true;
     });
