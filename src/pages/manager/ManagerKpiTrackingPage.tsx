@@ -2175,6 +2175,7 @@ const ReviewsView = () => {
   const [q, setQ] = useState("");
   const [overview, setOverview] = useState<{ row: ReviewRow; data: ReviewOverviewData } | null>(null);
   const [statusDialog, setStatusDialog] = useState<{ row: ReviewRow } | null>(null);
+  const [reasonDialog, setReasonDialog] = useState<{ title: string; label: string; text: string } | null>(null);
   const [targetDetail, setTargetDetail] = useState<{ cardId: string; cardName: string; target: CardTarget } | null>(null);
 
   const filtered = useMemo(() => {
