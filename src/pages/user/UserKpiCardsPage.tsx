@@ -201,6 +201,52 @@ const UserKpiCardsPage = () => {
     }));
   }, [sharedCards, user]);
 
+  // Struktur KPI-ları — mənim struktur vahidimə təyin olunmuş real kartlar.
+  const structureKpis = useMemo<DemoKpi[]>(() => {
+    const meId = getCurrentEmployeeId(user);
+    const me = getEmployees().find(e => String(e.id) === meId || `e${e.id}` === meId || `${e.firstName} ${e.lastName}` === user?.name);
+    const path = (me?.structurePath || "").trim().toLowerCase();
+    if (!path) return [];
+    const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
+    return sharedCards
+      .filter(c => (c.status === "aktiv" || c.status === "natamam" || c.status === "tesdiq_gozlenilir"))
+      .filter(c => (c.structureIds || []).some(sid => {
+        const s = norm(sid);
+        return !!s && (path === s || path.startsWith(`${s} › `) || s.endsWith(path));
+      }))
+      .map(c => {
+        const targets: DemoTarget[] = (c.targets || []).map((t: any, i: number) => ({
+          id: String(t.id ?? i),
+          name: t.name || `Hədəf ${i + 1}`,
+          weight: Number(t.weight) || 0,
+          plan: parseMetric(t.targetValue ?? t.scoreLimit),
+          fakt: 0,
+          unit: t.unit || "",
+          status: "in_progress" as ItemStatus,
+        }));
+        return {
+          id: `structure-${c.id}`,
+          scope: "structure" as Scope,
+          name: c.name,
+          description: "Struktur vahidinə təyin olunmuş KPI kartı",
+          period: c.startDate || "—", deadline: c.endDate || "—",
+          createdAt: c.createdAt?.slice(0, 10) || "—", updatedAt: c.updatedAt?.slice(0, 10) || "—",
+          unit: targets[0]?.unit || "",
+          plan: targets.reduce((s, t) => s + t.plan, 0),
+          fakt: 0,
+          status: "in_progress" as ItemStatus,
+          frequency: c.frequency || "—", measure: targets[0]?.unit || "", type: "KPI kartı", method: "Struktur KPI",
+          weight: targets.reduce((s, t) => s + t.weight, 0),
+          responsible: { name: me ? `${me.firstName} ${me.lastName}`.trim() : "—", role: me?.positionName || "—" },
+          bsc: { perspective: "KPI", strategicGoal: c.name },
+          targets,
+          members: [],
+          comments: [], history: [], reminders: [],
+          lifecycle: [{ name: "Təyin edildi", date: c.createdAt?.slice(0, 10) || "—", done: true }],
+        };
+      });
+  }, [sharedCards, user]);
+
 
   return (
     <div className="min-h-screen">
