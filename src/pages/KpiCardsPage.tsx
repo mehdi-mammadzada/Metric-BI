@@ -53,7 +53,7 @@ import CascadeLoadConfirmDialog from "@/components/kpi/CascadeLoadConfirmDialog"
 import { getCurrentEmployeeId } from "@/lib/scope";
 import { getEmployeeDisplayName } from "@/data/mockExtras";
 import { enqueueApproval, getApprovals } from "@/lib/approvalsStore";
-import { getCardDrafts, setCardDraft, saveCardDrafts, KPI_CARD_DRAFTS_EVENT } from "@/lib/kpiCardDraftsStore";
+import { getCardDrafts, saveCardDrafts, KPI_CARD_DRAFTS_EVENT } from "@/lib/kpiCardDraftsStore";
 
 const STATUS_LABELS = {
   qaralama: "Qaralama", natamam: "Natamam", tesdiq_gozlenilir: "Təsdiq gözlənilir",
