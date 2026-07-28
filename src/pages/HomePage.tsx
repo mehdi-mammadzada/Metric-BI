@@ -40,7 +40,6 @@ const HomePage = () => {
     const visible = cards.filter(c => c.status !== "silindi" && c.status !== "legv_olundu");
     const total = visible.length;
     const active = visible.filter(c => c.status === "aktiv").length;
-    const pending = visible.filter(c => c.status === "tesdiq_gozlenilir" || c.status === "natamam").length;
     const met = visible.filter(c => {
       const states = Object.values(c.execution ?? {});
       return states.length > 0 && states.every(s => s === "tamamlandi");
