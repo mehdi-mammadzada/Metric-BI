@@ -191,14 +191,16 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TargetIcon className="w-5 h-5 text-primary" />
-            Hədəf təyin et — {entry ? withKartSuffix(entry.cardName) : ""}
+            {readOnly ? "Hədəf detalları" : "Hədəf təyin et"} — {entry ? withKartSuffix(entry.cardName) : ""}
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
             Əməkdaş: <span className="font-medium text-foreground">{entry?.assigneeName}</span>
           </p>
         </DialogHeader>
 
+        <fieldset disabled={readOnly} className="contents">
         <div className="grid grid-cols-12 gap-2">
+
           <div className="col-span-12">
             <label className="text-[11px] text-muted-foreground">Hədəfin adı *</label>
             <input value={name} onChange={e => setName(e.target.value)}
