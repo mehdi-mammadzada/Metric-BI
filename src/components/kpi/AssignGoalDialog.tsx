@@ -46,10 +46,12 @@ interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   entry: KpiSetEntry | null;
+  /** Təyin edilmiş hədəf yalnız baxış rejimində açılır. */
+  readOnly?: boolean;
   onSaved?: (saved: { entryId: string; name: string; value: number; unit: string; cascadable: boolean; type: HedefType }) => void;
 }
 
-const AssignGoalDialog = ({ open, onOpenChange, entry, onSaved }: Props) => {
+const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved }: Props) => {
   const [name, setName] = useState("");
   const [type, setType] = useState<HedefType>("Məbləğ");
   const [target, setTarget] = useState("");
