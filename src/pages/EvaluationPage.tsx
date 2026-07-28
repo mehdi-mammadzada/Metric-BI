@@ -1095,12 +1095,10 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
               </div>
               <div className="divide-y divide-border">
                 {cat.items.map((c, ci) => {
-                  const base = group.cards[0]?.evaluatorIds && group.cards[0].evaluatorIds.length > 0
+                  const evalIds = group.cards[0]?.evaluatorIds && group.cards[0].evaluatorIds.length > 0
                     ? group.cards[0].evaluatorIds
-                    : groupExtraEvaluators(1);
-                  const evalIds = ci === 0
-                    ? Array.from(new Set([...base, ...groupExtraEvaluators(2)]))
-                    : base;
+                    : [];
+
                   const raters = buildRaters(group.key + "-comp-" + c, evalIds, 5);
                   const finalS = finalScore(raters);
                   const weight = Math.round(100 / cat.items.length);
