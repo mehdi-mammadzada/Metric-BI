@@ -191,6 +191,20 @@ export const updateExecution = (id: string, assigneeId: string, status: Executio
 
 export const deleteSharedKpiCard = (id: string) => save(load().filter(c => c.id !== id));
 
+const rangesToLimitSet = (ranges?: { min: string; max: string; score: string }[]): LimitSet | undefined => {
+  if (!ranges || ranges.length === 0) return undefined;
+  const zero = { min: 0, max: 0 };
+  const out: LimitSet = { l1: { ...zero }, l2: { ...zero }, l3: { ...zero }, l4: { ...zero }, l5: { ...zero } };
+  let touched = false;
+  ranges.forEach(r => {
+    const score = Number(r.score);
+    if (!Number.isFinite(score) || score < 1 || score > 5) return;
+    out[`l${score}` as keyof LimitSet] = { min: Number(r.min) || 0, max: Number(r.max) || 0 };
+    touched = true;
+  });
+  return touched ? out : undefined;
+};
+
 /** Convert a wizard draft into a shared KPI card snapshot. */
 export const buildSharedCardFromDraft = (
   d: CreateKpiWizardDraft,
@@ -235,7 +249,7 @@ export const buildSharedCardFromDraft = (
     cascading: !!t.cascading,
     createdBy: t.createdBy,
     assigner: t.assigner,
-    limits: t.limits,
+    limits: t.limits ?? rangesToLimitSet(t.ranges),
     scoreDescriptions: Array.isArray(t.scoreDescriptions)
       ? t.scoreDescriptions.map((s: any) => ({
         score: Number(s.score) || 0,
