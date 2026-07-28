@@ -601,6 +601,23 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         (d.individualEmployees || []).forEach(v => { const n = stripName(v); if (n) list.add(n); });
       } else {
         (d.bulkSelections?.persons || []).forEach(v => { const n = stripName(v); if (n) list.add(n); });
+        const allTeams = getTeams();
+        const empsAll = getEmployees();
+        (d.bulkSelections?.teams || []).forEach(name => {
+          const tm = allTeams.find(x => x.name === name || String(x.id) === String(name));
+          if (!tm) return;
+          if (tm.leader) list.add(stripName(tm.leader));
+          tm.members.forEach((m: any) => m?.name && list.add(stripName(m.name)));
+        });
+        (d.bulkSelections?.positions || []).forEach(pos => {
+          empsAll.filter(e => e.positionName === pos).forEach(e => list.add(`${e.firstName} ${e.lastName}`));
+        });
+        (d.bulkSelections?.structures || []).forEach(struct => {
+          const key = String(struct || "");
+          empsAll
+            .filter(e => String((e as any).structureId ?? "") === key || String((e as any).structurePath ?? "").includes(key))
+            .forEach(e => list.add(`${e.firstName} ${e.lastName}`));
+        });
       }
       return Array.from(list);
     })();
@@ -630,6 +647,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         status: sharedStatus,
         matrixId: d.useMatrix ? (d.approvalMatrixId || null) : null,
         assigneeIds: sharedAssigneeIds,
+        teamIds: d.mode === "bulk" ? (d.bulkSelections?.teams || []) : [],
+        structureIds: d.mode === "bulk" ? (d.bulkSelections?.structures || []) : [],
+        positionIds: d.mode === "bulk" ? (d.bulkSelections?.positions || []) : [],
       }));
       void import("@/lib/kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
     } catch (err) { console.warn("shared kpi card sync failed", err); }
