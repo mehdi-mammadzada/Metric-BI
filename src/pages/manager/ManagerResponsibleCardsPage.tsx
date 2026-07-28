@@ -439,12 +439,13 @@ const AssignView = () => {
                                 <Button
                                   size="sm"
                                   variant={isDone ? "outline" : "default"}
-                                  onClick={() => openAssign(e)}
+                                  onClick={() => openAssign(e, isDone)}
                                   className="gap-1"
                                 >
-                                  <UserPlus className="w-3.5 h-3.5" />
-                                  {isDone ? "Yenilə" : "Təyin et"}
+                                  {isDone ? <Eye className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
+                                  {isDone ? "Bax" : "Təyin et"}
                                 </Button>
+
                               </div>
                             </td>
                           </tr>
