@@ -697,7 +697,7 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
                   </thead>
                   <tbody>
                     {targets.map(t => {
-                      const pct = Math.round((t.fakt / t.plan) * 100);
+                      const pct = safePct(t.fakt, t.plan);
                       const bar = pct >= 90 ? "bg-emerald-500" : pct >= 75 ? "bg-amber-500" : "bg-rose-500";
                       return (
                         <tr key={t.id} className="border-t border-border align-top hover:bg-secondary/20">
@@ -738,7 +738,7 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
             const targets = buildCardTargets(kpi);
             const completed = targets.filter(t => t.status === "achieved").length;
             const atRisk = targets.filter(t => t.status === "not_achieved").length;
-            const avgProg = targets.length ? Math.round(targets.reduce((s, t) => s + Math.round((t.fakt / t.plan) * 100), 0) / targets.length) : 0;
+            const avgProg = targets.length ? Math.round(targets.reduce((s, t) => s + safePct(t.fakt, t.plan), 0) / targets.length) : 0;
             return (
               <div className="space-y-4">
                 {/* Review Status */}
@@ -784,7 +784,7 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
                       </thead>
                       <tbody>
                         {targets.map((t, i) => {
-                          const pct = Math.round((t.fakt / t.plan) * 100);
+                          const pct = safePct(t.fakt, t.plan);
                           const bar = pct >= 90 ? "bg-emerald-500" : pct >= 75 ? "bg-amber-500" : "bg-rose-500";
                           return (
                             <tr key={t.id} className="border-t border-border hover:bg-secondary/20">
@@ -904,7 +904,7 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
     const realCards = getRealKpiCardsForEmployee(e.id);
     const targets = realCards.flatMap(c => c.targets || []);
     const avgPct = targets.length
-      ? Math.round(targets.reduce((sum, t) => sum + (t.plan ? Math.round((t.fakt / t.plan) * 100) : 0), 0) / targets.length)
+      ? Math.round(targets.reduce((sum, t) => sum + (t.plan ? safePct(t.fakt, t.plan) : 0), 0) / targets.length)
       : 0;
     return {
       id: `e${e.id}`, empId: e.id, kind: "employee", parent: parentId,
@@ -1518,7 +1518,7 @@ const SubDetailPanel = ({ node, tab, setTab, onClose }: {
                       </thead>
                       <tbody>
                         {empKpis.map(k => {
-                          const pct = Math.round((k.fakt / k.plan) * 100);
+                          const pct = safePct(k.fakt, k.plan);
                           const barColor = pct >= 100 ? "bg-emerald-500" : pct >= 90 ? "bg-emerald-500" : pct >= 75 ? "bg-amber-500" : "bg-rose-500";
                           return (
                             <tr key={k.id} className="border-t border-border align-top">
@@ -1758,7 +1758,7 @@ const CardTargetsDrawer = ({ data, onClose, onOpenTarget }: {
               </thead>
               <tbody>
                 {targets.map(t => {
-                  const pct = Math.round((t.fakt / t.plan) * 100);
+                  const pct = safePct(t.fakt, t.plan);
                   const bar = pct >= 100 ? "bg-emerald-500" : pct >= 90 ? "bg-emerald-500" : pct >= 75 ? "bg-amber-500" : "bg-rose-500";
                   return (
                     <tr key={t.id} className="border-t border-border align-top hover:bg-secondary/20">
@@ -1826,7 +1826,7 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
   const history = initialHistory(target.id);
   const reminders = initialReminders(target.id);
   const comments = commentsMap[target.id] || [];
-  const pct = Math.round((target.fakt / target.plan) * 100);
+  const pct = safePct(target.fakt, target.plan);
 
   const sendComment = () => {
     const t = draft.trim();
@@ -2185,7 +2185,7 @@ const ReviewsView = () => {
 
   const buildOverviewData = (r: ReviewRow): ReviewOverviewData => {
     const targets = r.targets.map((t) => {
-      const pct = Math.round((t.fakt / t.plan) * 100);
+      const pct = safePct(t.fakt, t.plan);
       return { name: t.name, progress: Number.isFinite(pct) ? pct : 0, status: toOverviewStatus(r.reviewStatus), lastScore: "—", note: r.outcomeComment || "" };
     });
     return {
