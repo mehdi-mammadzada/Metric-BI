@@ -233,7 +233,16 @@ export const decideApproval = async (
   // Mirror the decision onto the shared KPI card itself.
   if (item.status === "approved") {
     const deletion = isDeletionApproval(item);
-    syncCardStatus(item, deletion ? "silindi" : "aktiv", approverId, deletion ? "Silinmə sorğusu təsdiqləndi" : "Matris vasitəsilə təsdiq edildi");
+    // Silinmə təsdiqində approve zamanı yazılan səbəb kartın tarixçəsinə yazılır.
+    const approveNote = (note || "").trim();
+    syncCardStatus(
+      item,
+      deletion ? "silindi" : "aktiv",
+      approverId,
+      deletion
+        ? (approveNote || "Silinmə sorğusu təsdiqləndi")
+        : (approveNote || "Matris vasitəsilə təsdiq edildi"),
+    );
     flushCardsSoon();
     pushNotification({
       toEmployeeId: item.createdBy,
