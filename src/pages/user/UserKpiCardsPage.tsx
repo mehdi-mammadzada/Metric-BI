@@ -23,6 +23,7 @@ import { useSharedKpiCards } from "@/lib/kpiCardStore";
 import { getEmployees } from "@/lib/orgStore";
 import { getCurrentEmployeeId } from "@/lib/scope";
 import { TARGET_STATUS_BADGE, TARGET_STATUS_LABEL, type TargetStatus } from "@/lib/targetStatus";
+import { getRealTeamKpiCards } from "@/lib/managerKpiData";
 
 // ============================================================
 // Demo data model
@@ -115,7 +116,7 @@ const UserKpiCardsPage = () => {
       result.push({
         id: `cascade-${n.id}`,
         scope: "own",
-        name: `${n.cardName} — ${n.goalName || "Hədəf"}`,
+        name: n.cardName,
         description: n.parentId ? "Cascade Load ilə formalaşan hədəf" : "Müstəqil kaskadlanan hədəf",
         period: toDate(n.createdAt), deadline: "—",
         createdAt: toDate(n.createdAt), updatedAt: toDate(n.updatedAt),
