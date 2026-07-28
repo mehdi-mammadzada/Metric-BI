@@ -2083,21 +2083,20 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
             // Silinmə: aktoru və səbəbi kartın backend tarixçəsindən oxu (bütün cihazlarda eyni)
             const deletionRows = (() => {
-              const hist = (sharedCard?.history || []).filter(h =>
+              const hist = (sharedCard?.history || []);
+              const deletedEntry = [...hist].reverse().find(h =>
                 h.action === "status:silindi" || h.action === "status:legv_olundu");
-              const last = hist[hist.length - 1];
-              const deleterId = last?.actor || (st as any).rejected_by || "";
+              const requestEntry = [...hist].reverse().find(h => h.action === "deletion:request");
+              const deleterId = deletedEntry?.actor || requestEntry?.actor || (st as any).rejected_by || "";
               const deleterName = deleterId ? employeeNameById(deleterId) : (card?.responsible || "—");
-              const reason = (last?.note || "").trim()
-                || (approval && isDeletionApproval?.(approval) ? (approval as any).reason : "")
-                || (sharedCard as any)?.rejectedReason
-                || "";
-              const rows: { role: string; name: string; tone?: "ok" | "wait" | "err" }[] = [
-                { role: "Silən", name: deleterName || "—", tone: "err" },
+              const rawReason = (requestEntry?.note || "").trim() || (deletedEntry?.note || "").trim();
+              const reason = rawReason && rawReason !== "Silinmə sorğusu təsdiqləndi" ? rawReason : "";
+              return [
+                { role: "Silən", name: deleterName || "—", tone: "err" as const },
+                { role: "Silinmə səbəbi", name: reason || "Səbəb qeyd edilməyib", tone: "err" as const },
               ];
-              rows.push({ role: "Silinmə səbəbi", name: reason || "Səbəb qeyd edilməyib", tone: "err" });
-              return rows;
             })();
+
 
             const cfg: Record<string, { title: string; empty: string; rows: { role: string; name: string; tone?: "ok" | "wait" | "err" }[] }> = {
               qaralama:        { title: "Qaralama — hazırlanır", empty: "Kart yaradılıb, hələ təyinə göndərilməyib.", rows: [{ role: "Yaradan", name: card?.responsible || "—", tone: "wait" }] },
