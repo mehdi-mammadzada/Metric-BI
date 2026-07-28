@@ -221,6 +221,12 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
   for (const card of cards) {
     if (card.numericId == null) continue;
     if (card.status === "qaralama" || card.status === "silindi" || card.status === "legv_olundu") continue;
+    // "Silindi" terminaldır: backend status sətri silinmiş göstərirsə, heç vaxt başqa statusa keçmir.
+    const backendStatus = statusRows[card.numericId]?.status;
+    if (backendStatus === "silindi" || backendStatus === "legv_olundu") {
+      setSharedStatusIfNeeded(card, "silindi", "system");
+      continue;
+    }
 
     const setters = setterStateForCard(card.numericId);
     const hasSetterFlow = setters.length > 0;
