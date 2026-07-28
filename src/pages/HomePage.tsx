@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Header from "@/components/layout/Header";
-import { TrendingUp, Target, CheckCircle, AlertTriangle, Sparkles } from "lucide-react";
+import { TrendingUp, Target, CheckCircle, Sparkles } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { PageHero, FancyStatCard, FancyCard } from "@/components/ui/page-hero";
 import { AIChatSection } from "@/components/ai/AIChatSection";
@@ -68,7 +68,7 @@ const HomePage = () => {
         />
         <AIChatSection />
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {stats.map((s, i) => (
             <FancyStatCard key={i} icon={s.icon} label={s.label} value={s.value} sub={s.sub} accent={s.accent} />
           ))}
