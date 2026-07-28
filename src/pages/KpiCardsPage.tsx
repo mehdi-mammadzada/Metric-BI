@@ -2089,6 +2089,22 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
             const completedSetterRows = setterRows.length ? setterRows.map(r => ({ ...r, role: "Təyin etdi", tone: "ok" as const })) : [];
 
+            // "Aktiv" statusu: yalnız hədəfi təyin edən + kartı təsdiqləyən şəxslər.
+            // Kartın tətbiq olunduğu bütün əməkdaşlar göstərilmir.
+            const activeRows = (() => {
+              const seen = new Set<string>();
+              const out: { role: string; name: string; tone?: "ok" | "wait" | "err" }[] = [];
+              const push = (row: { role: string; name: string; tone?: "ok" | "wait" | "err" }) => {
+                const key = `${row.role}::${String(row.name).trim().toLowerCase()}`;
+                if (!row.name || seen.has(key)) return;
+                seen.add(key);
+                out.push(row);
+              };
+              completedSetterRows.forEach(r => push({ role: "Hədəfi təyin etdi", name: r.name, tone: "ok" }));
+              approvalRows.filter(r => r.tone === "ok").forEach(r => push({ role: "Təsdiqlədi", name: r.name, tone: "ok" }));
+              return out;
+            })();
+
             // Silinmə: aktoru və səbəbi əvvəlcə silinmə təsdiqindən (approve şərhi),
             // sonra kartın backend tarixçəsindən oxu (bütün cihazlarda eyni).
             const deletionRows = (() => {
