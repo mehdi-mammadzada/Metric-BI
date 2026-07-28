@@ -2283,15 +2283,20 @@ const ReviewsView = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => r.outcomeComment && setReasonDialog({
+                          title: withKartSuffix(r.cardName),
+                          label: r.reviewStatus === "deferred" ? "Təxirə salınma səbəbi" : "Review nəticəsi",
+                          text: r.outcomeComment,
+                        })}
+                        title={r.outcomeComment ? "Səbəbə bax" : undefined}
+                        className={r.outcomeComment ? "cursor-pointer" : "cursor-default"}
+                      >
                         <Badge className={`${reviewStyle.badge} inline-flex items-center gap-1`}><ReviewIcon className="w-3 h-3" />{reviewStyle.badgeLabel}</Badge>
-                        {r.outcomeComment && (
-                          <div className="text-[11px] text-muted-foreground max-w-[220px] truncate" title={r.outcomeComment}>
-                            {r.reviewStatus === "deferred" ? "Səbəb" : "Şərh"}: {r.outcomeComment}
-                          </div>
-                        )}
-                      </div>
+                      </button>
                     </td>
+
                     <td className="px-4 py-3 text-muted-foreground">{r.reviewStart}</td>
                     <td className="px-4 py-3 text-muted-foreground">{r.updatedAt}</td>
                     <td className="px-4 py-3 text-right">
