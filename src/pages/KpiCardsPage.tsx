@@ -2188,15 +2188,22 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                   <p className="text-sm text-muted-foreground py-4">{c.empty}</p>
                 ) : (
                   <ul className="space-y-2 py-2">
-                    {c.rows.map((r, i) => (
-                      <li key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg border ${toneCls[r.tone || "wait"]}`}>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-sm font-medium text-foreground truncate">{i + 1}. {r.name}</span>
-                          <span className="text-[11px] text-muted-foreground truncate">{r.role}</span>
-                        </div>
-                        <span className="text-xs font-medium shrink-0 ml-2">{badgeText[r.tone || "wait"]}</span>
-                      </li>
-                    ))}
+                    {c.rows.map((r, i) => {
+                      const isReasonRow = r.role === "Silinmə səbəbi";
+                      return (
+                        <li key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg border ${toneCls[r.tone || "wait"]}`}>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-medium text-foreground truncate">
+                              {isReasonRow ? r.name : `${i + 1}. ${r.name}`}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground truncate">{r.role}</span>
+                          </div>
+                          {!isReasonRow && (
+                            <span className="text-xs font-medium shrink-0 ml-2">{badgeText[r.tone || "wait"]}</span>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </>
