@@ -1246,13 +1246,15 @@ const StatusTab = () => {
   const [viewMode, setViewMode] = useState<"card" | "list">("card");
   const [search, setSearch] = useState("");
   const [openGroup, setOpenGroup] = useState<StatusGroup | null>(null);
-  const [, force] = useState(0);
+  const [tick, force] = useState(0);
   useEffect(() => {
     const r = () => force(t => t + 1);
-    window.addEventListener("shared-kpi-cards-updated", r);
-    return () => window.removeEventListener("shared-kpi-cards-updated", r);
+    const events = ["shared-kpi-cards-updated", "org-updated", "teams-updated", "teams-hydrated"];
+    events.forEach(e => window.addEventListener(e, r));
+    return () => events.forEach(e => window.removeEventListener(e, r));
   }, []);
-  const groups = useMemo(() => buildGroups(subTab), [subTab]);
+  const groups = useMemo(() => buildGroups(subTab), [subTab, tick]);
+
   const filtered = groups.filter(g => !search.trim() || g.name.toLowerCase().includes(search.toLowerCase()));
 
   const label = subTab === "individual" ? "Əməkdaş" : subTab === "team" ? "Komanda" : "Struktur";
