@@ -41,7 +41,10 @@ export interface DropdownCatalog {
   schema?: CatalogSchema;
   /** Strukturlaşdırılmış sətirlər (schema təyin olunmuşdursa) */
   rows?: CatalogRow[];
+  /** İstifadəçi tərəfindən silinmiş seed dəyərləri — bir daha bərpa olunmasın */
+  removed?: string[];
 }
+
 
 const KEY = "kpi_dropdown_catalogs_v6";
 
@@ -195,13 +198,17 @@ const ensureSystemCatalogs = (list: DropdownCatalog[]): { list: DropdownCatalog[
       return { ...seed };
     }
 
+    const removed = existing.removed ?? [];
+    const removedSet = new Set(removed.map(v => v.toLocaleLowerCase("az-AZ")));
     let values = existing.values ?? [];
     if (!seed.schema && seed.system) {
-      values = uniqueValues([...(seed.values ?? []), ...values]);
+      const seedValues = (seed.values ?? []).filter(v => !removedSet.has(v.toLocaleLowerCase("az-AZ")));
+      values = uniqueValues([...seedValues, ...values]);
       if (seed.id === "evaluator_types") {
         values = uniqueValues(values.map(v => EVALUATOR_TYPE_ALIASES[v.toLocaleLowerCase("az-AZ")] ?? v));
-        values = uniqueValues([...(seed.values ?? []), ...values]);
+        values = uniqueValues([...seedValues, ...values]);
       }
+      values = values.filter(v => !removedSet.has(v.toLocaleLowerCase("az-AZ")));
     }
 
     const merged: DropdownCatalog = {
@@ -211,6 +218,7 @@ const ensureSystemCatalogs = (list: DropdownCatalog[]): { list: DropdownCatalog[
       system: seed.system || existing.system,
       schema: seed.schema ?? existing.schema,
       values,
+      removed,
       rows: seed.schema && seed.schema !== "kpi_periods" ? (existing.rows ?? []) : existing.rows,
     };
 
@@ -232,10 +240,16 @@ const applyResetMigration = (list: DropdownCatalog[]): { list: DropdownCatalog[]
   const next = list.map(c => {
     const seed = seedById.get(c.id);
     if (!seed || seed.schema) return c;
-    return { ...c, values: uniqueValues([...(seed.values ?? []), ...(c.values ?? [])]) };
+    const removedSet = new Set((c.removed ?? []).map(v => v.toLocaleLowerCase("az-AZ")));
+    return {
+      ...c,
+      values: uniqueValues([...(seed.values ?? []), ...(c.values ?? [])])
+        .filter(v => !removedSet.has(v.toLocaleLowerCase("az-AZ"))),
+    };
   });
   return { list: [...next, META_ENTRY], changed: true };
 };
+
 
 const load = (): DropdownCatalog[] => {
   try {
@@ -341,7 +355,10 @@ export const addCatalogValue = (id: string, value: string): boolean => {
   const cat = list.find(c => c.id === id);
   if (!cat) return false;
   if (cat.values.some(x => x.toLowerCase() === v.toLowerCase())) return false;
-  persist(list.map(c => c.id === id ? { ...c, values: [...c.values, v] } : c));
+  persist(list.map(c => c.id === id
+    ? { ...c, values: [...c.values, v], removed: (c.removed ?? []).filter(x => x.toLowerCase() !== v.toLowerCase()) }
+    : c));
+
   return true;
 };
 
@@ -360,8 +377,14 @@ export const updateCatalogValue = (id: string, index: number, value: string): bo
 export const removeCatalogValue = (id: string, index: number) => {
   if (LOCKED_CATALOG_IDS.has(id)) return;
   const list = load();
-  persist(list.map(c => c.id === id ? { ...c, values: c.values.filter((_, i) => i !== index) } : c));
+  persist(list.map(c => {
+    if (c.id !== id) return c;
+    const victim = c.values[index];
+    const removed = uniqueValues([...(c.removed ?? []), ...(victim ? [victim] : [])]);
+    return { ...c, values: c.values.filter((_, i) => i !== index), removed };
+  }));
 };
+
 
 // ---------- Strukturlaşdırılmış sətirlər üçün CRUD ----------
 const newRowId = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));

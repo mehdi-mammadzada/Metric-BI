@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Header from "@/components/layout/Header";
-import { TrendingUp, Target, CheckCircle, AlertTriangle, Sparkles } from "lucide-react";
+import { TrendingUp, Target, CheckCircle, Sparkles } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { PageHero, FancyStatCard, FancyCard } from "@/components/ui/page-hero";
 import { AIChatSection } from "@/components/ai/AIChatSection";
@@ -40,7 +40,6 @@ const HomePage = () => {
     const visible = cards.filter(c => c.status !== "silindi" && c.status !== "legv_olundu");
     const total = visible.length;
     const active = visible.filter(c => c.status === "aktiv").length;
-    const pending = visible.filter(c => c.status === "tesdiq_gozlenilir" || c.status === "natamam").length;
     const met = visible.filter(c => {
       const states = Object.values(c.execution ?? {});
       return states.length > 0 && states.every(s => s === "tamamlandi");
@@ -51,8 +50,8 @@ const HomePage = () => {
       { icon: TrendingUp, label: t("home.stat_total_perf"), value: `${successRate}%`, sub: t("home.stat_total_perf_sub"), accent: "primary" as const },
       { icon: Target, label: t("home.stat_active_kpi"), value: String(active), sub: t("home.stat_active_kpi_sub", { total }), accent: "violet" as const },
       { icon: CheckCircle, label: t("home.stat_met_kpi"), value: String(met), sub: t("home.stat_met_kpi_sub", { rate: successRate }), accent: "emerald" as const },
-      { icon: AlertTriangle, label: t("home.stat_attention"), value: String(pending), sub: t("home.stat_attention_sub"), accent: "amber" as const },
     ];
+
   }, [cards, t]);
 
 
@@ -68,7 +67,7 @@ const HomePage = () => {
         />
         <AIChatSection />
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {stats.map((s, i) => (
             <FancyStatCard key={i} icon={s.icon} label={s.label} value={s.value} sub={s.sub} accent={s.accent} />
           ))}
