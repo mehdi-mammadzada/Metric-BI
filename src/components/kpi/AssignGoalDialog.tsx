@@ -46,10 +46,12 @@ interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   entry: KpiSetEntry | null;
+  /** Təyin edilmiş hədəf yalnız baxış rejimində açılır. */
+  readOnly?: boolean;
   onSaved?: (saved: { entryId: string; name: string; value: number; unit: string; cascadable: boolean; type: HedefType }) => void;
 }
 
-const AssignGoalDialog = ({ open, onOpenChange, entry, onSaved }: Props) => {
+const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved }: Props) => {
   const [name, setName] = useState("");
   const [type, setType] = useState<HedefType>("Məbləğ");
   const [target, setTarget] = useState("");
@@ -189,14 +191,16 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, onSaved }: Props) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TargetIcon className="w-5 h-5 text-primary" />
-            Hədəf təyin et — {entry ? withKartSuffix(entry.cardName) : ""}
+            {readOnly ? "Hədəf detalları" : "Hədəf təyin et"} — {entry ? withKartSuffix(entry.cardName) : ""}
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
             Əməkdaş: <span className="font-medium text-foreground">{entry?.assigneeName}</span>
           </p>
         </DialogHeader>
 
+        <fieldset disabled={readOnly} className="contents">
         <div className="grid grid-cols-12 gap-2">
+
           <div className="col-span-12">
             <label className="text-[11px] text-muted-foreground">Hədəfin adı *</label>
             <input value={name} onChange={e => setName(e.target.value)}
@@ -367,11 +371,13 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, onSaved }: Props) => {
             </div>
           </label>
         )}
+        </fieldset>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Ləğv et</Button>
-          <Button onClick={handleSave} disabled={!canSave}>Yadda saxla</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{readOnly ? "Bağla" : "Ləğv et"}</Button>
+          {!readOnly && <Button onClick={handleSave} disabled={!canSave}>Yadda saxla</Button>}
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );

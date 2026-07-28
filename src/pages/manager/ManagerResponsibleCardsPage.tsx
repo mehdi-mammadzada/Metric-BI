@@ -246,6 +246,7 @@ const AssignView = () => {
   const [open, setOpen] = useState<Record<number, boolean>>({});
   const [distribute, setDistribute] = useState<KpiSetEntry | null>(null);
   const [assignEntry, setAssignEntry] = useState<KpiSetEntry | null>(null);
+  const [assignReadOnly, setAssignReadOnly] = useState(false);
   const [cascadeConfirm, setCascadeConfirm] = useState<{ entry: KpiSetEntry; value: number; unit: string } | null>(null);
 
   const assignRows = useMemo(() => {
@@ -275,7 +276,8 @@ const AssignView = () => {
     );
   }, [assignRows, q]);
 
-  const openAssign = (e: KpiSetEntry) => {
+  const openAssign = (e: KpiSetEntry, readOnly = false) => {
+    setAssignReadOnly(readOnly);
     if (!String(e.id).startsWith("shared-")) {
       setAssignEntry(e);
       return;
@@ -437,12 +439,13 @@ const AssignView = () => {
                                 <Button
                                   size="sm"
                                   variant={isDone ? "outline" : "default"}
-                                  onClick={() => openAssign(e)}
+                                  onClick={() => openAssign(e, isDone)}
                                   className="gap-1"
                                 >
-                                  <UserPlus className="w-3.5 h-3.5" />
-                                  {isDone ? "Yenilə" : "Təyin et"}
+                                  {isDone ? <Eye className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
+                                  {isDone ? "Bax" : "Təyin et"}
                                 </Button>
+
                               </div>
                             </td>
                           </tr>
@@ -483,8 +486,9 @@ const AssignView = () => {
 
       <AssignGoalDialog
         open={!!assignEntry}
-        onOpenChange={(o) => !o && setAssignEntry(null)}
+        onOpenChange={(o) => { if (!o) { setAssignEntry(null); setAssignReadOnly(false); } }}
         entry={assignEntry}
+        readOnly={assignReadOnly}
         onSaved={(saved) => {
           const entry = assignEntry;
           setAssignEntry(null);
