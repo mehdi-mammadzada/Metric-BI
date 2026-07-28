@@ -486,8 +486,9 @@ const AssignView = () => {
 
       <AssignGoalDialog
         open={!!assignEntry}
-        onOpenChange={(o) => !o && setAssignEntry(null)}
+        onOpenChange={(o) => { if (!o) { setAssignEntry(null); setAssignReadOnly(false); } }}
         entry={assignEntry}
+        readOnly={assignReadOnly}
         onSaved={(saved) => {
           const entry = assignEntry;
           setAssignEntry(null);
