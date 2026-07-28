@@ -9,6 +9,7 @@
 //   • kpi_card_meta_v1     (numeric card ↔ shared id bridge)
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import {
   getSharedKpiCards, upsertSharedKpiCard,
   dedupeSharedKpiCards,
@@ -22,6 +23,8 @@ const META_KEY   = "kpi_card_meta_v1";
 const LEGACY_ROWS_KEY = "kpi_cards_v1";
 const EVT_SHARED = "shared-kpi-cards-updated";
 const EVT_ALL    = "kpi-cards-updated";
+
+const asJson = (value: unknown): Json => JSON.parse(JSON.stringify(value ?? null)) as Json;
 
 // ── local raw helpers (bypass the store's own events during hydration) ────────
 const rawWrite = (key: string, value: unknown) =>
@@ -86,6 +89,7 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
     assigneeIds: c.assignee_ids ?? [],
     structureIds: c.structure_ids ?? [],
     teamIds: c.team_ids ?? [],
+    positionIds: c.position_ids ?? [],
     assignmentMode: c.assignment_mode === "bulk" ? "bulk" : "individual",
     matrixId: c.matrix_id ?? null,
     status: (c.status as SharedKpiStatus) ?? "natamam",
@@ -105,6 +109,10 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
       cascading: !!t.cascading,
       createdBy: t.created_by_mode ?? undefined,
       assigner: t.assigner ?? undefined,
+      limits: t.limits && Object.keys(t.limits).length ? t.limits : undefined,
+      scoreDescriptions: Array.isArray(t.score_descriptions) ? t.score_descriptions : [],
+      evaluator: t.evaluator ?? undefined,
+      ranges: Array.isArray(t.ranges) ? t.ranges : [],
     })),
     execution: (c.execution ?? {}) as Record<string, ExecutionStatus>,
     history: (historyByCard.get(c.id) ?? []).map((h: any) => ({
@@ -141,6 +149,7 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
         ownerId: c.owner_employee_id ?? "",
         assigneeIds: c.assignee_ids ?? [],
         createdAt: Date.parse(c.created_at) || Date.now(),
+      positionIds: c.position_ids ?? [],
       });
     }
   }
@@ -179,6 +188,7 @@ const seedCloudFromLocal = async (orgId: string) => {
       assignee_ids: c.assigneeIds,
       structure_ids: c.structureIds,
       team_ids: c.teamIds,
+      position_ids: c.positionIds ?? [],
       assignment_mode: c.assignmentMode,
       execution: c.execution ?? {},
       assignees: s?.assignees ?? [],
@@ -204,6 +214,10 @@ const seedCloudFromLocal = async (orgId: string) => {
           cascading: !!t.cascading,
           created_by_mode: t.createdBy ?? null,
           assigner: t.assigner ?? null,
+          limits: asJson(t.limits ?? {}),
+          score_descriptions: asJson(t.scoreDescriptions ?? []),
+          evaluator: asJson(t.evaluator ?? null),
+          ranges: asJson(t.ranges ?? []),
           sort_order: i,
         })),
       );
@@ -278,6 +292,7 @@ export const flushLocalKpiCardsToCloud = async () => {
       assignee_ids: c.assigneeIds,
       structure_ids: c.structureIds,
       team_ids: c.teamIds,
+      position_ids: c.positionIds ?? [],
       assignment_mode: assignmentMode,
       execution: c.execution ?? {},
       assignees: s?.assignees ?? [],
@@ -327,6 +342,10 @@ export const flushLocalKpiCardsToCloud = async () => {
           cascading: !!t.cascading,
           created_by_mode: t.createdBy ?? null,
           assigner: t.assigner ?? null,
+          limits: asJson(t.limits ?? {}),
+          score_descriptions: asJson(t.scoreDescriptions ?? []),
+          evaluator: asJson(t.evaluator ?? null),
+          ranges: asJson(t.ranges ?? []),
           sort_order: i,
         })),
       );
