@@ -51,8 +51,8 @@ const HomePage = () => {
       { icon: TrendingUp, label: t("home.stat_total_perf"), value: `${successRate}%`, sub: t("home.stat_total_perf_sub"), accent: "primary" as const },
       { icon: Target, label: t("home.stat_active_kpi"), value: String(active), sub: t("home.stat_active_kpi_sub", { total }), accent: "violet" as const },
       { icon: CheckCircle, label: t("home.stat_met_kpi"), value: String(met), sub: t("home.stat_met_kpi_sub", { rate: successRate }), accent: "emerald" as const },
-      { icon: AlertTriangle, label: t("home.stat_attention"), value: String(pending), sub: t("home.stat_attention_sub"), accent: "amber" as const },
     ];
+
   }, [cards, t]);
 
 
