@@ -276,7 +276,8 @@ const AssignView = () => {
     );
   }, [assignRows, q]);
 
-  const openAssign = (e: KpiSetEntry) => {
+  const openAssign = (e: KpiSetEntry, readOnly = false) => {
+    setAssignReadOnly(readOnly);
     if (!String(e.id).startsWith("shared-")) {
       setAssignEntry(e);
       return;
