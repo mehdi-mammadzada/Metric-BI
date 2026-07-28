@@ -374,11 +374,15 @@ export type Database = {
           cascading: boolean
           created_at: string
           created_by_mode: string | null
+          evaluator: Json | null
           id: string
           kpi_card_id: string
           legacy_id: string | null
+          limits: Json
           name: string
           organization_id: string
+          ranges: Json
+          score_descriptions: Json
           score_limit: number | null
           sort_order: number
           target_value: string | null
@@ -392,11 +396,15 @@ export type Database = {
           cascading?: boolean
           created_at?: string
           created_by_mode?: string | null
+          evaluator?: Json | null
           id?: string
           kpi_card_id: string
           legacy_id?: string | null
+          limits?: Json
           name: string
           organization_id: string
+          ranges?: Json
+          score_descriptions?: Json
           score_limit?: number | null
           sort_order?: number
           target_value?: string | null
@@ -410,11 +418,15 @@ export type Database = {
           cascading?: boolean
           created_at?: string
           created_by_mode?: string | null
+          evaluator?: Json | null
           id?: string
           kpi_card_id?: string
           legacy_id?: string | null
+          limits?: Json
           name?: string
           organization_id?: string
+          ranges?: Json
+          score_descriptions?: Json
           score_limit?: number | null
           sort_order?: number
           target_value?: string | null
@@ -457,6 +469,7 @@ export type Database = {
           name: string
           organization_id: string
           owner_employee_id: string | null
+          position_ids: string[]
           rejected_at: string | null
           rejected_by: string | null
           rejected_reason: string | null
@@ -485,6 +498,7 @@ export type Database = {
           name: string
           organization_id: string
           owner_employee_id?: string | null
+          position_ids?: string[]
           rejected_at?: string | null
           rejected_by?: string | null
           rejected_reason?: string | null
@@ -513,6 +527,7 @@ export type Database = {
           name?: string
           organization_id?: string
           owner_employee_id?: string | null
+          position_ids?: string[]
           rejected_at?: string | null
           rejected_by?: string | null
           rejected_reason?: string | null

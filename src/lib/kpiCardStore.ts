@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from "react";
 import type { CreateKpiWizardDraft } from "@/components/kpi/CreateKpiWizard";
+import type { LimitSet, ScoreDescRow } from "@/lib/kpiSetStore";
 
 export type SharedKpiStatus = "qaralama" | "natamam" | "tesdiq_gozlenilir" | "imtina" | "aktiv" | "silindi" | "legv_olundu";
 // Hədəf icra statusu — sistem üzrə yalnız 3 status:
@@ -20,6 +21,7 @@ export interface SharedKpiCard {
   assigneeIds: string[];       // hədəfin icra olunacağı şəxslər
   structureIds: string[];
   teamIds: string[];
+  positionIds?: string[];
   assignmentMode: SharedKpiAssignmentMode; // Fərdi / Toplu — backend source of truth
   matrixId: string | null;     // seçilmiş təsdiqləmə matrisi
   status: SharedKpiStatus;
@@ -40,6 +42,16 @@ export interface SharedKpiCard {
     createdBy?: "self" | "other";
     /** Target-Setter modunda: təyin edən şəxsin adı */
     assigner?: string;
+    limits?: LimitSet;
+    scoreDescriptions?: ScoreDescRow[];
+    evaluator?: {
+      type?: string | null;
+      persons?: { name: string; weight: number }[];
+      integrationName?: string;
+      integrationWeight?: number;
+      integrationFields?: string[];
+    };
+    ranges?: { id: string; min: string; max: string; score: string; weight?: string }[];
   }[];
   execution: Record<string, ExecutionStatus>; // assigneeId → status
   history: { ts: string; actor: string; action: string; note?: string }[];
@@ -88,6 +100,7 @@ const normalizeSharedKpiCard = (card: SharedKpiCard): SharedKpiCard => ({
   assigneeIds: card.assigneeIds ?? [],
   structureIds: card.structureIds ?? [],
   teamIds: card.teamIds ?? [],
+  positionIds: card.positionIds ?? [],
   assignmentMode: inferSharedCardAssignmentMode(card),
   targets: card.targets ?? [],
   execution: card.execution ?? {},
@@ -190,6 +203,7 @@ export const buildSharedCardFromDraft = (
     assigneeIds?: string[];
     teamIds?: string[];
     structureIds?: string[];
+    positionIds?: string[];
   },
 ): SharedKpiCard => ({
   id: meta.id || crypto.randomUUID(),
@@ -206,6 +220,7 @@ export const buildSharedCardFromDraft = (
     : Array.from(new Set(d.targets.map(t => t.assigner).filter(Boolean))),
   structureIds: meta.structureIds || [],
   teamIds: meta.teamIds || [],
+  positionIds: meta.positionIds || [],
   assignmentMode: d.mode === "bulk" ? "bulk" : "individual",
   matrixId: meta.matrixId,
   status: meta.status,
@@ -220,6 +235,20 @@ export const buildSharedCardFromDraft = (
     cascading: !!t.cascading,
     createdBy: t.createdBy,
     assigner: t.assigner,
+    limits: t.limits,
+    scoreDescriptions: Array.isArray(t.scoreDescriptions)
+      ? t.scoreDescriptions.map((s: any) => ({
+        score: Number(s.score) || 0,
+        description: s.description || "",
+        timeStart: s.timeStart,
+        timeEnd: s.timeEnd,
+        isMinBonus: !!s.isMinBonus,
+      }))
+      : [],
+    evaluator: Array.isArray(t.evaluators) && t.evaluators.length
+      ? { type: "person", persons: t.evaluators.map((e: any) => ({ name: e.name, weight: Number(e.weight) || 0 })) }
+      : undefined,
+    ranges: Array.isArray(t.ranges) ? t.ranges : [],
   })),
   execution: {},
   history: [{ ts: new Date().toISOString(), actor: meta.ownerId, action: `created:${meta.status}` }],
