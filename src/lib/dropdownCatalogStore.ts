@@ -374,8 +374,14 @@ export const updateCatalogValue = (id: string, index: number, value: string): bo
 export const removeCatalogValue = (id: string, index: number) => {
   if (LOCKED_CATALOG_IDS.has(id)) return;
   const list = load();
-  persist(list.map(c => c.id === id ? { ...c, values: c.values.filter((_, i) => i !== index) } : c));
+  persist(list.map(c => {
+    if (c.id !== id) return c;
+    const victim = c.values[index];
+    const removed = uniqueValues([...(c.removed ?? []), ...(victim ? [victim] : [])]);
+    return { ...c, values: c.values.filter((_, i) => i !== index), removed };
+  }));
 };
+
 
 // ---------- Strukturlaşdırılmış sətirlər üçün CRUD ----------
 const newRowId = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
