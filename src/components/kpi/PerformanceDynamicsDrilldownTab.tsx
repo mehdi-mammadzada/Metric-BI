@@ -45,7 +45,7 @@ const statusFromPct = (pct: number): DayStatus => {
 const parseTargetNumber = (value?: string) => {
   const raw = String(value || "").trim();
   const n = Number.parseFloat(raw.replace(/,/g, ".").replace(/[^\d.-]/g, ""));
-  if (!Number.isFinite(n) || n <= 0) return 100;
+  if (!Number.isFinite(n) || n <= 0) return 0;
   if (/\bm\b|m\s*azn|milyon/i.test(raw)) return Math.round(n * 1_000_000);
   if (/\bk\b|min/i.test(raw)) return Math.round(n * 1_000);
   return n;
@@ -77,7 +77,7 @@ const aggregateBucket = (key: string, label: string, buckets: PeriodBucket[], is
   const pct = Math.round(buckets.reduce((sum, b) => sum + b.pct, 0) / Math.max(1, buckets.length));
   const current = Math.round(buckets.reduce((sum, b) => sum + b.current, 0) / Math.max(1, buckets.length));
   const trend = Math.round(buckets.reduce((sum, b) => sum + b.trend, 0) / Math.max(1, buckets.length));
-  return { key, label, year: buckets[0]?.year || new Date().getFullYear(), month: 0, isCurrent, current, target: buckets[0]?.target || 100, pct, trend, status: statusFromPct(pct), lastUpdate: buckets[buckets.length - 1]?.lastUpdate || "—", daysInMonth: 0, monthStartWeekday: 0, points: [] };
+  return { key, label, year: buckets[0]?.year || new Date().getFullYear(), month: 0, isCurrent, current, target: buckets[0]?.target ?? 0, pct, trend, status: statusFromPct(pct), lastUpdate: buckets[buckets.length - 1]?.lastUpdate || "—", daysInMonth: 0, monthStartWeekday: 0, points: [] };
 };
 
 const normalizeFrequency = (frequency: string) => {

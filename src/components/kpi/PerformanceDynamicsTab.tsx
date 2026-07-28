@@ -91,9 +91,9 @@ const buildMonthBucket = (
 
 
 const parseTargetNumber = (t?: string): number => {
-  if (!t) return 100;
+  if (!t) return 0;
   const n = parseFloat(String(t).replace(/[^\d.\-]/g, ""));
-  return isNaN(n) || n <= 0 ? 100 : n;
+  return isNaN(n) || n <= 0 ? 0 : n;
 };
 
 // Build periods for a target based on card frequency.
