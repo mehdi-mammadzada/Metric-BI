@@ -84,7 +84,7 @@ export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
       seen.add(key);
       return true;
     });
-  }, [kpi.id, kpi.subKpis]);
+  }, [kpi.id, kpi.subKpis, tick]);
 
   return (
     <div className="space-y-3">
