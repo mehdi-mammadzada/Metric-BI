@@ -355,7 +355,10 @@ export const addCatalogValue = (id: string, value: string): boolean => {
   const cat = list.find(c => c.id === id);
   if (!cat) return false;
   if (cat.values.some(x => x.toLowerCase() === v.toLowerCase())) return false;
-  persist(list.map(c => c.id === id ? { ...c, values: [...c.values, v] } : c));
+  persist(list.map(c => c.id === id
+    ? { ...c, values: [...c.values, v], removed: (c.removed ?? []).filter(x => x.toLowerCase() !== v.toLowerCase()) }
+    : c));
+
   return true;
 };
 
