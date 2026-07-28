@@ -2339,7 +2339,20 @@ const ReviewsView = () => {
         currentStatus={statusDialog ? toOverviewStatus(statusDialog.row.reviewStatus) : "in_progress"}
         onSave={saveStatus}
       />
+
+      <Dialog open={!!reasonDialog} onOpenChange={(o) => !o && setReasonDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{reasonDialog?.label || "Səbəb"}</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground -mt-2">{reasonDialog?.title}</p>
+          <div className="rounded-lg border border-border bg-secondary/40 p-3 max-h-[50vh] overflow-y-auto">
+            <p className="text-sm text-foreground whitespace-pre-wrap break-words">{reasonDialog?.text}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
+
   );
 };
 
