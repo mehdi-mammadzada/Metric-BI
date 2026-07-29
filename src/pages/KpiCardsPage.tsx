@@ -1995,7 +1995,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
           {employeeDrilldown && (() => {
             const cards = filteredCards.filter(c => {
               const names = assigneeNamesForCard(c);
-              return (names.length ? names : ["Təyin olunmayıb"]).includes(employeeDrilldown);
+              const isAssigned = (names.length ? names : ["Təyin olunmayıb"]).includes(employeeDrilldown);
+              if (!isAssigned) return false;
+              const st = getStatusFor(c.id);
+              return st.status === "aktiv";
             });
 
             if (cards.length === 0) return <p className="text-sm text-muted-foreground py-4">Kart tapılmadı.</p>;
