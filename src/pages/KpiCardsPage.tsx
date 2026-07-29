@@ -2029,17 +2029,6 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         </DialogContent>
       </Dialog>
 
-      <EmployeeCardDetailDialog
-        card={employeeCardView?.card ?? null}
-        employeeName={employeeCardView?.employee}
-        open={employeeCardView !== null}
-        onOpenChange={(o) => !o && setEmployeeCardView(null)}
-        onOpenFullDetails={() => {
-          const c = employeeCardView?.card;
-          setEmployeeCardView(null);
-          if (c) setSelectedKpi(c);
-        }}
-      />
 
       <Dialog open={statusDialogCardId !== null} onOpenChange={(o) => !o && setStatusDialogCardId(null)}>
         <DialogContent className="max-w-md">
