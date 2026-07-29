@@ -2579,11 +2579,22 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                 const n = parseFloat(s);
                                 return isNaN(n) ? NaN : n;
                               };
+                              const hasVal = (v: any) => v !== null && v !== undefined && String(v).trim() !== "" && String(v).trim() !== "—";
+                              const unitLbl = sk.unit || (selectedKpi as any).unit || "";
+                              const rawTarget = hasVal(sk.target)
+                                ? sk.target
+                                : hasVal((selectedKpi as any).generalTarget)
+                                ? (selectedKpi as any).generalTarget
+                                : hasVal((selectedKpi as any).target)
+                                ? (selectedKpi as any).target
+                                : "";
+                              const targetLabel = hasVal(rawTarget) ? `${rawTarget}${unitLbl ? ` ${unitLbl}` : ""}` : "—";
                               const cur = parseNum(sk.current);
-                              const tgt = parseNum(sk.target);
+                              const tgt = parseNum(rawTarget);
                               const pct = !isNaN(cur) && !isNaN(tgt) && tgt !== 0
                                 ? Math.min(100, Math.round((cur / tgt) * 100))
                                 : (typeof sk.progress === "number" ? sk.progress : 0);
+                              const weightLbl = sk.weight ? `${sk.weight}%` : (merged.length === 1 ? "100%" : "—");
                               const icons = [ShoppingCart, Store, Monitor, BarChart3, Target];
                               const Icon = icons[i % icons.length];
                               return (
