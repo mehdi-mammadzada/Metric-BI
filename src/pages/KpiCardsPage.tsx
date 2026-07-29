@@ -2645,7 +2645,11 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 const initials = (n: string) => n.split(" ").filter(Boolean).slice(0, 2).map(s => s[0]?.toUpperCase() || "").join("");
                 const team = selectedKpi.team && selectedKpi.team.length > 0
                   ? selectedKpi.team
-                  : (selectedKpi.responsible ? [{ name: selectedKpi.responsible, role: "Lider / Məsul", avatar: initials(selectedKpi.responsible) }] : []);
+                  : (selectedKpi.responsible ? [{ name: selectedKpi.responsible, role: "Məsul", avatar: initials(selectedKpi.responsible) }] : []);
+                // Lider yalnız komanda yaradılarkən təyin edilmiş Komanda Lideri ola bilər.
+                const norm = (s: string) => (s || "").trim().toLowerCase();
+                let leaderNames = new Set<string>();
+                try { leaderNames = new Set(getTeams().map(t => norm(t.leader)).filter(Boolean)); } catch {}
                 return (
                   <div className="bg-card rounded-lg border border-border p-4">
                     <h4 className="font-semibold text-foreground mb-4">KPI Üzvləri</h4>
@@ -2656,7 +2660,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">{m.avatar}</div>
                             <div><p className="text-sm font-medium text-foreground">{m.name}</p><p className="text-xs text-muted-foreground">{m.role}</p></div>
                           </div>
-                          {i === 0 && <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-zone-green-bg text-zone-green-text">Lider</span>}
+                          {leaderNames.has(norm(m.name)) && <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-zone-green-bg text-zone-green-text">Lider</span>}
                         </div>
                       ))}
                     </div>
