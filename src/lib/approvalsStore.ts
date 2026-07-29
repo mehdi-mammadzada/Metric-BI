@@ -87,6 +87,9 @@ const cardAliases = (cardId: string) => {
 const isDeletionApproval = (item: Pick<ApprovalItem, "matrixId">) =>
   String(item.matrixId || "").startsWith("deletion:");
 
+const firstPendingApprover = (item: Pick<ApprovalItem, "approverIds" | "decisions">): string | null =>
+  (item.approverIds || []).find(id => (item.decisions?.[id]?.decision || "pending") === "pending") || null;
+
 const syncCardStatus = (item: ApprovalItem, status: SharedKpiStatus, actor: string, note?: string) => {
   const { canonicalId, numericId } = cardAliases(item.kpiCardId);
   setKpiStatus(canonicalId, status, actor, note);
@@ -153,15 +156,16 @@ export const enqueueApproval = (input: {
     })
     .catch(() => undefined);
 
-  firstStep.forEach(approverId => {
+  const activeApprover = firstPendingApprover(item);
+  if (activeApprover) {
     pushNotification({
-      toEmployeeId: approverId,
+      toEmployeeId: activeApprover,
       type: "approval_request",
       title: `Təsdiq tələbi: ${input.kpiName}`,
       body: "Sistem Təsdiqləri modulunda kart sizi gözləyir.",
       link: "/manager/sistem-tesdiq",
     });
-  });
+  }
   return item;
 };
 
@@ -201,7 +205,8 @@ export const decideApproval = async (
         if (!item.decisions[id]) item.decisions[id] = { decision: "pending" };
       });
       item.status = "pending";
-      nextStep.forEach(nextApprover => {
+      const nextApprover = firstPendingApprover(item);
+      if (nextApprover) {
         pushNotification({
           toEmployeeId: nextApprover,
           type: "approval_request",
@@ -209,12 +214,22 @@ export const decideApproval = async (
           body: "Sistem Təsdiqləri modulunda kart sizi gözləyir.",
           link: "/manager/sistem-tesdiq",
         });
-      });
+      }
     } else {
       item.status = "approved";
     }
   } else {
     item.status = "pending";
+    const nextApprover = firstPendingApprover(item);
+    if (nextApprover) {
+      pushNotification({
+        toEmployeeId: nextApprover,
+        type: "approval_request",
+        title: `Təsdiq tələbi: ${item.kpiName}`,
+        body: "Sistem Təsdiqləri modulunda kart sizi gözləyir.",
+        link: "/manager/sistem-tesdiq",
+      });
+    }
   }
 
   item.updatedAt = new Date().toISOString();
