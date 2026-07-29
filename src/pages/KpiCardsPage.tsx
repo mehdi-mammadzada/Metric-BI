@@ -2017,7 +2017,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                         onClick={() => {
                           setEmployeeCardView({ card, employee: employeeDrilldown });
                           setSelectedKpi(card);
-                          setDetailTab("empTargets");
+                          setDetailTab("general");
                           setEmployeeDrilldown(null);
                         }}
                         className="p-1.5 rounded border border-border hover:bg-secondary text-muted-foreground hover:text-foreground shrink-0"
@@ -2281,9 +2281,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 {(() => {
                   const hasMatrix = !!selectedKpi.matrixId;
                   const empTabs: readonly (readonly [string, string])[] = employeeCardView
-                    ? [["empTargets", "Hədəflər"], ["empDynamics", "Performans dinamikası"], ["empReviews", "Reviewlər"]]
+                    ? [["empDynamics", "Performans dinamikası"], ["empReviews", "Reviewlər"]]
                     : [];
-                  const allTabs: readonly (readonly [string, string])[] = [...empTabs, ["general", "Ümumi"], ["bsc", "Balanced Scorecard"], ["lifecycle", "Lifecycle"], ["reviewTrack", "Review İzləmə"], ["history", "Performans Dinamikası"], ["team", "KPI Üzvləri"], ["comments", "Şərhlər"], ["status", "Təsdiqləmə Matrisi"], ["setStatus", "Təyin Statusu"]];
+                  const allTabs: readonly (readonly [string, string])[] = [["general", "Ümumi"], ["bsc", "Balanced Scorecard"], ["lifecycle", "Lifecycle"], ["reviewTrack", "Review İzləmə"], ["history", "Performans Dinamikası"], ["team", "KPI Üzvləri"], ["comments", "Şərhlər"], ...empTabs, ["status", "Təsdiqləmə Matrisi"], ["setStatus", "Təyin Statusu"]];
                   const isPersonalCard = getAssignKindFor(selectedKpi.id) === "Fərdi";
                   const tabs = allTabs
                     .filter(([k]) => k !== "status" || hasMatrix)
@@ -2296,7 +2296,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 pt-4 space-y-4">
-              {employeeCardView && (detailTab === "empTargets" || detailTab === "empDynamics" || detailTab === "empReviews") && (
+              {employeeCardView && (detailTab === "empDynamics" || detailTab === "empReviews") && (
                 <EmployeeCardTabs card={selectedKpi} tab={detailTab} />
               )}
               {detailTab === "bsc" && <BscScorecardTab kpi={selectedKpi} />}
@@ -2490,7 +2490,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
               {detailTab === "general" && (
                 <>
-                  <div className={getAssignKindFor(selectedKpi.id) === "Fərdi" ? "space-y-4" : "grid grid-cols-2 gap-4"}>
+                  <div className={(getAssignKindFor(selectedKpi.id) === "Fərdi" && !employeeCardView) ? "space-y-4" : "grid grid-cols-2 gap-4"}>
                     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                       <div className="flex items-center gap-2.5 px-5 py-4">
                         <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -2533,7 +2533,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                         })()}
                       </div>
                     </div>
-                    {getAssignKindFor(selectedKpi.id) !== "Fərdi" && (() => {
+                    {(getAssignKindFor(selectedKpi.id) !== "Fərdi" || !!employeeCardView) && (() => {
                       const own = selectedKpi.subKpis || [];
                       const entries = selectedKpi.id ? getEntriesForCard(selectedKpi.id) : [];
                       const ownIds = new Set(own.map(s => s.id));
@@ -2579,11 +2579,22 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                 const n = parseFloat(s);
                                 return isNaN(n) ? NaN : n;
                               };
+                              const hasVal = (v: any) => v !== null && v !== undefined && String(v).trim() !== "" && String(v).trim() !== "—";
+                              const unitLbl = sk.unit || (selectedKpi as any).unit || "";
+                              const rawTarget = hasVal(sk.target)
+                                ? sk.target
+                                : hasVal((selectedKpi as any).generalTarget)
+                                ? (selectedKpi as any).generalTarget
+                                : hasVal((selectedKpi as any).target)
+                                ? (selectedKpi as any).target
+                                : "";
+                              const targetLabel = hasVal(rawTarget) ? `${rawTarget}${unitLbl ? ` ${unitLbl}` : ""}` : "—";
                               const cur = parseNum(sk.current);
-                              const tgt = parseNum(sk.target);
+                              const tgt = parseNum(rawTarget);
                               const pct = !isNaN(cur) && !isNaN(tgt) && tgt !== 0
                                 ? Math.min(100, Math.round((cur / tgt) * 100))
                                 : (typeof sk.progress === "number" ? sk.progress : 0);
+                              const weightLbl = sk.weight ? `${sk.weight}%` : (merged.length === 1 ? "100%" : "—");
                               const icons = [ShoppingCart, Store, Monitor, BarChart3, Target];
                               const Icon = icons[i % icons.length];
                               return (
@@ -2597,11 +2608,11 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                         {sk.name}
                                         {sk._fromSet && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">KPI Set</span>}
                                       </p>
-                                      <p className="text-xs text-muted-foreground truncate">Dəyər: {sk.target}{sk.unit ? ` ${sk.unit}` : ""}</p>
+                                      <p className="text-xs text-muted-foreground truncate">Dəyər: {targetLabel}</p>
                                     </div>
                                   </div>
                                   <div className="col-span-4">
-                                    <p className="text-sm font-bold text-primary tabular-nums">{sk.current && String(sk.current).trim() !== "" ? `${sk.current}${sk.unit ? ` ${sk.unit}` : ""}` : "—"}</p>
+                                    <p className="text-sm font-bold text-primary tabular-nums">{sk.current && String(sk.current).trim() !== "" ? `${sk.current}${unitLbl ? ` ${unitLbl}` : ""}` : "—"}</p>
                                     <div className="mt-1.5 flex items-center gap-2">
                                       <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
                                         <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
@@ -2609,8 +2620,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                       <span className="text-[11px] font-semibold text-primary tabular-nums">{pct}%</span>
                                     </div>
                                   </div>
-                                  <div className="col-span-2 text-sm font-medium text-foreground tabular-nums">{sk.target}{sk.unit ? ` ${sk.unit}` : ""}</div>
-                                  <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{sk.weight ? `${sk.weight}%` : "—"}</div>
+                                  <div className="col-span-2 text-sm font-medium text-foreground tabular-nums">{targetLabel}</div>
+                                  <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{weightLbl}</div>
                                 </div>
                               );
                             })}
