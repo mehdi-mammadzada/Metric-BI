@@ -874,7 +874,8 @@ const RolesPermissionsTab = () => {
                 </button>
               </div>
             </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
