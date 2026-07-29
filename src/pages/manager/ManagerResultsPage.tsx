@@ -12,6 +12,8 @@ import KpiScoresPage from "@/pages/KpiScoresPage";
 import { getEmployees, getSubordinatesOfStarHolder, getStructures } from "@/lib/orgStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { SubordinatesView } from "@/pages/manager/ManagerKpiTrackingPage";
+import { useSharedKpiCards } from "@/lib/kpiCardStore";
+import { getSubKpis, isEvaluated } from "@/lib/kpiEvaluationStore";
 
 type View = "hub" | "own" | "team" | "sub";
 
