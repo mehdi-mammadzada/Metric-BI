@@ -2608,11 +2608,11 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                         {sk.name}
                                         {sk._fromSet && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">KPI Set</span>}
                                       </p>
-                                      <p className="text-xs text-muted-foreground truncate">Dəyər: {sk.target}{sk.unit ? ` ${sk.unit}` : ""}</p>
+                                      <p className="text-xs text-muted-foreground truncate">Dəyər: {targetLabel}</p>
                                     </div>
                                   </div>
                                   <div className="col-span-4">
-                                    <p className="text-sm font-bold text-primary tabular-nums">{sk.current && String(sk.current).trim() !== "" ? `${sk.current}${sk.unit ? ` ${sk.unit}` : ""}` : "—"}</p>
+                                    <p className="text-sm font-bold text-primary tabular-nums">{sk.current && String(sk.current).trim() !== "" ? `${sk.current}${unitLbl ? ` ${unitLbl}` : ""}` : "—"}</p>
                                     <div className="mt-1.5 flex items-center gap-2">
                                       <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
                                         <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
@@ -2620,8 +2620,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                       <span className="text-[11px] font-semibold text-primary tabular-nums">{pct}%</span>
                                     </div>
                                   </div>
-                                  <div className="col-span-2 text-sm font-medium text-foreground tabular-nums">{sk.target}{sk.unit ? ` ${sk.unit}` : ""}</div>
-                                  <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{sk.weight ? `${sk.weight}%` : "—"}</div>
+                                  <div className="col-span-2 text-sm font-medium text-foreground tabular-nums">{targetLabel}</div>
+                                  <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{weightLbl}</div>
                                 </div>
                               );
                             })}
