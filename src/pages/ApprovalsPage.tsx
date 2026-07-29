@@ -11,7 +11,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useApprovals, decideApproval, type ApprovalItem } from "@/lib/approvalsStore";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
-import { getCurrentEmployeeId, getVisibleApprovals } from "@/lib/scope";
+import { getCurrentEmployeeId, getVisibleApprovals, getMyApprovalBucket } from "@/lib/scope";
 import { getIdentityAliases, findMyRef } from "@/lib/identity";
 import { getEmployeeDisplayName, getEnrichedEmployee } from "@/data/mockExtras";
 import { toast } from "sonner";
