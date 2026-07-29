@@ -124,12 +124,21 @@ export const getVisibleApprovals = (
   if (!user) return [];
   const aliases = getIdentityAliases(user);
   if (aliases.size === 0) return [];
-  const belongsToMe = (a: ApprovalItem) =>
-    (a.approverIds || []).some(id => matchesIdentity(aliases, id))
-    || matchesIdentity(aliases, a.createdBy)
-    || Object.keys(a.decisions || {}).some(id => matchesIdentity(aliases, id))
-    || (a.stepsChain || []).some(step => (step || []).some(id => matchesIdentity(aliases, id)));
+  const belongsToMe = (a: ApprovalItem) => {
+    // 1) Hazırkı addımın təsdiqçisiyəmsə.
+    if ((a.approverIds || []).some(id => matchesIdentity(aliases, id))) return true;
+    // 2) Sorğunu mən yaratmışamsa (öz sorğumun vəziyyətini görürəm).
+    if (matchesIdentity(aliases, a.createdBy)) return true;
+    // 3) Artıq qərar vermişəmsə (tarixçə üçün).
+    if (Object.entries(a.decisions || {}).some(([id, d]) =>
+      matchesIdentity(aliases, id) && d?.decision && d.decision !== "pending")) return true;
+    // 4) Sorğu bağlanıbsa, zəncirdə adı keçən bütün təsdiqçilər nəticəni görür.
+    if (a.status !== "pending"
+      && (a.stepsChain || []).some(step => (step || []).some(id => matchesIdentity(aliases, id)))) return true;
+    return false;
+  };
   return all.filter(belongsToMe);
 };
+
 
 
