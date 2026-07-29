@@ -37,7 +37,7 @@ import { getLimitsFor, getEntriesForCard, addPendingEntry, suggestLimitsFromTarg
 import LifecycleWizardStep from "@/components/kpi/LifecycleWizardStep";
 import LifecycleView, { REVIEW_STATUS_STYLES } from "@/components/kpi/LifecycleView";
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
-import EmployeeCardDetailDialog from "@/components/kpi/EmployeeCardDetailDialog";
+import EmployeeCardTabs from "@/components/kpi/EmployeeCardTabs";
 import { setCardLifecycle, emptyLifecycleDraft, getLifecycle, getLifecycleWithFallback, computeReviewStatus, setReviewOutcome, type CardLifecycle } from "@/lib/kpiLifecycleStore";
 import { flushLifecycleToCloud } from "@/lib/lifecycleService";
 
