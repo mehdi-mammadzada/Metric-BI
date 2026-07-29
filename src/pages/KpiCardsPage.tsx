@@ -22,7 +22,7 @@ import { validateTarget, getTargetPlaceholder, getTargetUnitSuffix } from "@/lib
 import { getApprovalMatrices, getDeletionMatrix, getDeletionMatrices, addDeletionRequest, getDeletedKpiIds, formatAssignee, formatUserWithRole, type ApprovalMatrix, type DeletionMatrix } from "@/lib/matrixStore";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { getStructures, findStructureById, findOccupantsByPosition, getEmployees, type OrgStructure } from "@/lib/orgStore";
-import { getPositions } from "@/lib/catalogStore";
+import { usePositions } from "@/lib/usePositions";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import KpiExtraTabContent, { isExtraTab } from "@/components/kpi/KpiExtraTabs";
@@ -227,7 +227,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   const kpiStatusOptions = useCatalogValues("kpi_statuses", ["Təsdiq gözləyən", "Təsdiq edilmiş"]);
   // zone catalog removed
   const subKpiUnits = useCatalogValues("sub_kpi_units", ["Valyuta (AZN)", "Faiz (%)", "Qiymət", "Zaman (Gün)", "Nisbət", "Boolean (Hə/Yox)"]);
-  const positionOptions = getPositions();
+  const positionOptions = usePositions();
   const [kpiCards, setKpiCards] = useState<KpiCard[]>(() => {
     const deleted = getDeletedKpiIds();
     // Backend/shared registry is authoritative. Do not hydrate this page from

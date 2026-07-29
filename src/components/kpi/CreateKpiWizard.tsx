@@ -545,11 +545,11 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
   );
   const structureTree = useMemo(() => getStructures(), [open]);
   const structureOptions = useMemo(() => flattenStructures(structureTree).map(s => ({ value: s.label, label: s.label })), [structureTree]);
-  const positionOptions = useMemo(() => {
-    const set = new Set<string>();
-    employeesRaw.forEach(e => { if (e.positionName) set.add(e.positionName); });
-    return Array.from(set).sort().map(p => ({ value: p, label: p }));
-  }, [employeesRaw]);
+  const allPositions = usePositions();
+  const positionOptions = useMemo(
+    () => allPositions.map(p => ({ value: p, label: p })),
+    [allPositions],
+  );
 
   /** Toplu rejimdə avtomatik komandanın üzvləri: birbaşa seçilmiş şəxslər,
    *  yaxud seçilmiş vəzifələrə uyğun gələn əməkdaşlar. */

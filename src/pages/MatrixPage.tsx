@@ -16,10 +16,11 @@ import {
 import { getOperationsLog, addOperationLog, type OperationLogEntry } from "@/lib/operationsLogStore";
 import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import { DataTable } from "@/components/common/DataTable";
+import { usePositions } from "@/lib/usePositions";
 import { useCatalogValues } from "@/lib/dropdownCatalogStore";
 import { getEmployees as getLiveEmployees } from "@/lib/orgStore";
 
-const POSITION_ROLE_DEFAULTS = ["Departament Rəhbəri", "Şöbə Müdiri", "Departament Direktoru", "Komanda Lideri", "HR Direktoru", "CFO", "CEO", "Kurator"];
+
 
 const LEGACY_DEMO_USERS = [];
 
@@ -399,7 +400,7 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
   const [search, setSearch] = useState<Record<string, string>>({});
 
   const ordinal = (n: number) => `${n}-ci təsdiqləyici`;
-  const positionRoles = useCatalogValues("approver_roles", POSITION_ROLE_DEFAULTS);
+  const positionRoles = usePositions();
   const allUsers = useAllUsers();
 
   useEffect(() => {
@@ -595,7 +596,7 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
 
 // ===== Deletion Matrix Dialog =====
 const DeletionDialog = ({ open, onClose, initial, onSaved }: { open: boolean; onClose: () => void; initial: DeletionMatrix | null; onSaved: () => void }) => {
-  const positionRoles = useCatalogValues("approver_roles", POSITION_ROLE_DEFAULTS);
+  const positionRoles = usePositions();
   const allUsers = useAllUsers();
   const [name, setName] = useState("");
   const [mode, setMode] = useState<"position" | "user">("user");
