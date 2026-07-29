@@ -82,9 +82,9 @@ const ManagerResultsPage = () => {
           <>
             <PageHero badge="Rəhbər Paneli" icon={Trophy} title="Nəticələr" subtitle="Fərdi, komanda və tabeçilik üzrə KPI nəticələri." />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-2">
-              <HubCard icon={User} title="Fərdi nəticələrim" subtitle="Sizin şəxsi KPI nəticələriniz." count={own.length} gradient="from-indigo-500/15 via-indigo-500/5 to-transparent border-indigo-400/40" onClick={() => setView("own")} />
-              <HubCard icon={Users} title="Komanda nəticələri" subtitle="Komandanızın KPI nəticələri." count={team.length} gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40" onClick={() => setView("team")} />
-              <HubCard icon={Network} title="Tabeçiliyimdəki nəticələr" subtitle="Tabeliyinizdəki şəxslərin nəticələri." count={sub.length} gradient="from-amber-500/15 via-amber-500/5 to-transparent border-amber-400/40" onClick={() => setView("sub")} />
+              <HubCard icon={User} title="Fərdi nəticələrim" subtitle="Sizin şəxsi KPI nəticələriniz." count={ownCount} gradient="from-indigo-500/15 via-indigo-500/5 to-transparent border-indigo-400/40" onClick={() => setView("own")} />
+              <HubCard icon={Users} title="Komanda nəticələri" subtitle="Komandanızın KPI nəticələri." count={teamCount} gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40" onClick={() => setView("team")} />
+              <HubCard icon={Network} title="Tabeçiliyimdəki nəticələr" subtitle="Tabeliyinizdəki şəxslərin nəticələri." count={subCount} gradient="from-amber-500/15 via-amber-500/5 to-transparent border-amber-400/40" onClick={() => setView("sub")} />
             </div>
           </>
         )}
