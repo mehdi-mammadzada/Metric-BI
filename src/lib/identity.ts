@@ -23,7 +23,12 @@ export const resolveEmployeeIdForUser = (user: AuthUser | null): string | null =
   return null;
 };
 
-/** İstifadəçini təmsil edən bütün alias-lar (hamısı kiçik hərflə normallaşdırılıb). */
+/**
+ * İstifadəçini təmsil edən bütün alias-lar (hamısı kiçik hərflə normallaşdırılıb).
+ * DİQQƏT: yalnız ŞƏXSƏ məxsus dəyərlər əlavə olunur (email, auth UUID, əməkdaş id-si,
+ * əməkdaş tam adı). Rol/vəzifə adı kimi ümumi dəyərlər ("HR", "Manager") alias sayılmır —
+ * əks halda eyni rolda olan bütün istifadəçilər eyni sorğuları görərdi.
+ */
 export const getIdentityAliases = (user: AuthUser | null): Set<string> => {
   const aliases = new Set<string>();
   const add = (v: unknown) => {
@@ -33,7 +38,6 @@ export const getIdentityAliases = (user: AuthUser | null): Set<string> => {
 
   if (!user) return aliases;
   add(user.email);
-  add(user.name);
   add(user.supabaseUserId);
 
   const empId = resolveEmployeeIdForUser(user);
@@ -48,6 +52,7 @@ export const getIdentityAliases = (user: AuthUser | null): Set<string> => {
   }
   return aliases;
 };
+
 
 /** Verilmiş referens (id/email/ad) istifadəçiyə aiddirmi? */
 export const matchesIdentity = (aliases: Set<string>, ref: unknown): boolean => {
