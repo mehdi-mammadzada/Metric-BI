@@ -125,13 +125,34 @@ export const getVisibleApprovals = (
   const aliases = getIdentityAliases(user);
   if (aliases.size === 0) return [];
   return all.filter(a => {
-    if (a.status !== "pending") return false;
+    // 1) Aktiv addımda gözləyən təsdiqçi — "Gözləyir" sütununda görür.
     const activeApprover = (a.approverIds || []).find(id =>
       (a.decisions?.[id]?.decision || "pending") === "pending",
     );
-    return !!activeApprover && matchesIdentity(aliases, activeApprover);
+    if (a.status === "pending" && activeApprover && matchesIdentity(aliases, activeApprover)) return true;
+    // 2) Öz qərarını vermiş təsdiqçi — qərar arxivində (təsdiq/imtina) görür.
+    return Object.entries(a.decisions || {}).some(([id, d]) =>
+      d?.decision && d.decision !== "pending" && matchesIdentity(aliases, id),
+    );
   });
 };
+
+/**
+ * İstifadəçinin sütunu: öz qərarı varsa ona görə, yoxsa sorğunun ümumi statusuna görə.
+ */
+export const getMyApprovalBucket = (
+  user: AuthUser | null,
+  a: ApprovalItem,
+): "pending" | "approved" | "rejected" => {
+  const aliases = getIdentityAliases(user);
+  const mine = Object.entries(a.decisions || {}).find(([id, d]) =>
+    d?.decision && d.decision !== "pending" && matchesIdentity(aliases, id),
+  );
+  const dec = mine?.[1]?.decision;
+  if (dec === "approved" || dec === "rejected") return dec;
+  return a.status === "approved" || a.status === "rejected" ? a.status : "pending";
+};
+
 
 
 
