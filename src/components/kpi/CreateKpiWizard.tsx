@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { usePositions } from "@/lib/usePositions";
 import { useCatalogValues } from "@/lib/dropdownCatalogStore";
 import { getEmployees } from "@/lib/orgStore";
 import { getStructures, type OrgStructure } from "@/lib/orgStore";
