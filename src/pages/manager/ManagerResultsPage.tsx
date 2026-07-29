@@ -42,6 +42,21 @@ const ManagerResultsPage = () => {
     return { own: [me], team: teamMembers, sub: subs, mePath: me.structurePath || null };
   }, [user?.email, user?.name]);
 
+  // Kartlarda göstərilən say — real nəticəsi olan əməkdaşların sayı olmalıdır.
+  const cards = useSharedKpiCards();
+  const countWithResults = (list: any[]) => {
+    try {
+      return list.filter(e => {
+        const subs = getSubKpis(String(e.id));
+        return subs.some(k => isEvaluated(k) && cards.some(c => c.id === k.cardId || c.name === k.cardId));
+      }).length;
+    } catch { return 0; }
+  };
+  const ownCount = useMemo(() => countWithResults(own), [own, cards]);
+  const teamCount = useMemo(() => countWithResults(team), [team, cards]);
+  const subCount = useMemo(() => countWithResults(sub as any[]), [sub, cards]);
+
+
   // Struktur əhatəsi: HR/SuperAdmin → bütün şirkət; Rəhbər → yalnız öz strukturu.
   const scopePath = user?.role === "HR" || user?.role === "SUPER_ADMIN" ? null : mePath;
 
