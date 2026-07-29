@@ -4312,8 +4312,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                   const meId = getCurrentEmployeeId(user) || "1";
                   const srcShared = sharedCards.find(s => s.numericId === card.id || s.id === `kpi-${card.id}` || s.id === String(card.id));
                   const nowIso = new Date().toISOString();
+                  const copyHistory = [{ ts: nowIso, actor: meId, action: "copied", note: `Kopya: ${withKartSuffix(card.name)}` }];
                   if (copiedDraft) {
-                    upsertSharedKpiCard(buildSharedCardFromDraft(copiedDraft, {
+                    upsertSharedKpiCard({ ...buildSharedCardFromDraft(copiedDraft, {
                       id: `kpi-${newId}`,
                       numericId: newId,
                       ownerId: srcShared?.ownerId || meId,
@@ -4323,7 +4324,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                       teamIds: srcShared?.teamIds || [],
                       structureIds: srcShared?.structureIds || [],
                       positionIds: srcShared?.positionIds || [],
-                    }));
+                    }), history: copyHistory });
                   } else if (srcShared) {
                     upsertSharedKpiCard({
                       ...JSON.parse(JSON.stringify(srcShared)),
@@ -4333,7 +4334,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                       status: "natamam",
                       matrixId: null,
                       execution: {},
-                      history: [{ ts: nowIso, actor: meId, action: "created:natamam", note: `Kopya: ${withKartSuffix(card.name)}` }],
+                      history: copyHistory,
                       createdAt: nowIso,
                       updatedAt: nowIso,
                     } as SharedKpiCard);

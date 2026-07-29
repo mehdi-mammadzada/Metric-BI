@@ -165,11 +165,26 @@ export const upsertSharedKpiCard = (card: SharedKpiCard) => {
   save(list);
 };
 
+/** Kopyalanmış kart: istifadəçi özü təsdiqə göndərməyincə avtomatik "aktiv" ola bilməz. */
+export const isCopyLockedCard = (card: Pick<SharedKpiCard, "history">): boolean => {
+  const h = card.history ?? [];
+  const copied = h.some(e => String(e.action || "").startsWith("copied"));
+  if (!copied) return false;
+  const submitted = h.some(e => {
+    const a = String(e.action || "");
+    return a === "status:tesdiq_gozlenilir" || a === "submitted" || (a.startsWith("status:") && e.actor && e.actor !== "system" && a !== "status:natamam");
+  });
+  return !submitted;
+};
+
 export const setKpiStatus = (id: string, status: SharedKpiStatus, actor: string, note?: string) => {
   const list = load();
   const idx = list.findIndex(c => c.id === id || (c.numericId != null && (`kpi-${c.numericId}` === id || String(c.numericId) === id)));
   if (idx < 0) return;
   if (isDeletedSharedStatus(list[idx].status) && !isDeletedSharedStatus(status)) return;
+  // Kopya kartlar sistem tərəfindən avtomatik aktivləşdirilməməlidir.
+  if (status === "aktiv" && actor === "system" && isCopyLockedCard(list[idx])) return;
+
   list[idx] = {
     ...list[idx],
     status,
