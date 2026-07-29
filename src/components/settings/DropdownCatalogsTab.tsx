@@ -597,37 +597,39 @@ const DropdownCatalogsTab = () => {
               />
             )}
 
-            {!active.schema && (
+            {!active.schema && (() => {
+              const locked = LOCKED_CATALOG_IDS.has(active.id);
+              return (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-muted-foreground text-left border-b border-border">
                     <th className="py-3 w-16 font-medium">#</th>
                     <th className="py-3 font-medium"><span className="inline-flex items-center gap-2"><Search className="w-3.5 h-3.5" /> Dəyər</span></th>
-                    <th className="py-3 w-32 font-medium text-right pr-2">Əməliyyat</th>
+                    {!locked && <th className="py-3 w-32 font-medium text-right pr-2">Əməliyyat</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredSimpleValues.length === 0 ? (
-                    <tr><td colSpan={3} className="py-10 text-center text-sm text-muted-foreground">Dəyər yoxdur</td></tr>
+                    <tr><td colSpan={locked ? 2 : 3} className="py-10 text-center text-sm text-muted-foreground">Dəyər yoxdur</td></tr>
                   ) : filteredSimpleValues.map(({ v, i }, displayIndex) => (
                     <tr key={i} className="border-b border-border last:border-b-0">
                       <td className="py-4 text-muted-foreground">{displayIndex + 1}</td>
                       <td className="py-4 text-foreground">{v}</td>
-                      <td className="py-4">
-                        <div className="flex items-center justify-end gap-2 pr-2">
-                          {!LOCKED_CATALOG_IDS.has(active.id) && (
-                            <>
-                              <button onClick={() => setValueDialog({ mode: "edit", index: i, value: v })} className="p-1.5 rounded hover:bg-secondary"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
-                              <button onClick={() => { if (confirm("Bu dəyər silinsin?")) { removeCatalogValue(active.id, i); refresh(); } }} className="p-1.5 rounded hover:bg-zone-red-bg"><Trash2 className="w-4 h-4 text-destructive" /></button>
-                            </>
-                          )}
-                        </div>
-                      </td>
+                      {!locked && (
+                        <td className="py-4">
+                          <div className="flex items-center justify-end gap-2 pr-2">
+                            <button onClick={() => setValueDialog({ mode: "edit", index: i, value: v })} className="p-1.5 rounded hover:bg-secondary"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
+                            <button onClick={() => { if (confirm("Bu dəyər silinsin?")) { removeCatalogValue(active.id, i); refresh(); } }} className="p-1.5 rounded hover:bg-zone-red-bg"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
               </table>
-              )}
+              );
+            })()}
+
           </>
         )}
       </div>
