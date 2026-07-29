@@ -788,7 +788,21 @@ const RolesPermissionsTab = () => {
               <span className="text-foreground"> — İstifadəçiləri idarə et</span>
             </DialogTitle>
           </DialogHeader>
-          {usersRole && (
+          {usersRole && (() => {
+            const q = userSearch.toLowerCase();
+            const visible = members.filter(m =>
+              !q ||
+              m.fullName.toLowerCase().includes(q) ||
+              m.email.toLowerCase().includes(q) ||
+              m.positionName.toLowerCase().includes(q));
+            const allVisibleOn = visible.length > 0 && visible.every(m => pendingMembers.has(m.memberId));
+            const toggleAllVisible = () => setPendingMembers(prev => {
+              const next = new Set(prev);
+              if (allVisibleOn) visible.forEach(m => next.delete(m.memberId));
+              else visible.forEach(m => next.add(m.memberId));
+              return next;
+            });
+            return (
             <div className="space-y-3">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" />
@@ -799,15 +813,19 @@ const RolesPermissionsTab = () => {
                   className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg bg-background"
                 />
               </div>
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={toggleAllVisible}
+                  disabled={visible.length === 0}
+                  className="text-xs font-medium text-primary hover:underline disabled:opacity-50"
+                >
+                  {allVisibleOn ? "Seçimi ləğv et" : "Hamısını seç"}
+                </button>
+                <span className="text-[11px] text-muted-foreground">{pendingMembers.size} seçilib</span>
+              </div>
               <div className="max-h-[420px] overflow-y-auto space-y-1 border border-border rounded-lg p-2">
-                {members
-                  .filter(m => {
-                    const q = userSearch.toLowerCase();
-                    return !q ||
-                      m.fullName.toLowerCase().includes(q) ||
-                      m.email.toLowerCase().includes(q) ||
-                      m.positionName.toLowerCase().includes(q);
-                  })
+                {visible
                   .map(m => {
                     const on = pendingMembers.has(m.memberId);
                     const assignedRoleNames = roles.filter(r => m.roleIds.includes(r.id)).map(r => r.name).join(", ");
@@ -856,7 +874,8 @@ const RolesPermissionsTab = () => {
                 </button>
               </div>
             </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

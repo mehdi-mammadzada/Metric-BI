@@ -12,6 +12,8 @@ import KpiScoresPage from "@/pages/KpiScoresPage";
 import { getEmployees, getSubordinatesOfStarHolder, getStructures } from "@/lib/orgStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { SubordinatesView } from "@/pages/manager/ManagerKpiTrackingPage";
+import { useSharedKpiCards } from "@/lib/kpiCardStore";
+import { getSubKpis, isEvaluated } from "@/lib/kpiEvaluationStore";
 
 type View = "hub" | "own" | "team" | "sub";
 
@@ -42,6 +44,21 @@ const ManagerResultsPage = () => {
     return { own: [me], team: teamMembers, sub: subs, mePath: me.structurePath || null };
   }, [user?.email, user?.name]);
 
+  // Kartlarda göstərilən say — real nəticəsi olan əməkdaşların sayı olmalıdır.
+  const cards = useSharedKpiCards();
+  const countWithResults = (list: any[]) => {
+    try {
+      return list.filter(e => {
+        const subs = getSubKpis(String(e.id));
+        return subs.some(k => isEvaluated(k) && cards.some(c => c.id === k.cardId || c.name === k.cardId));
+      }).length;
+    } catch { return 0; }
+  };
+  const ownCount = useMemo(() => countWithResults(own), [own, cards]);
+  const teamCount = useMemo(() => countWithResults(team), [team, cards]);
+  const subCount = useMemo(() => countWithResults(sub as any[]), [sub, cards]);
+
+
   // Struktur əhatəsi: HR/SuperAdmin → bütün şirkət; Rəhbər → yalnız öz strukturu.
   const scopePath = user?.role === "HR" || user?.role === "SUPER_ADMIN" ? null : mePath;
 
@@ -65,9 +82,9 @@ const ManagerResultsPage = () => {
           <>
             <PageHero badge="Rəhbər Paneli" icon={Trophy} title="Nəticələr" subtitle="Fərdi, komanda və tabeçilik üzrə KPI nəticələri." />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-2">
-              <HubCard icon={User} title="Fərdi nəticələrim" subtitle="Sizin şəxsi KPI nəticələriniz." count={own.length} gradient="from-indigo-500/15 via-indigo-500/5 to-transparent border-indigo-400/40" onClick={() => setView("own")} />
-              <HubCard icon={Users} title="Komanda nəticələri" subtitle="Komandanızın KPI nəticələri." count={team.length} gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40" onClick={() => setView("team")} />
-              <HubCard icon={Network} title="Tabeçiliyimdəki nəticələr" subtitle="Tabeliyinizdəki şəxslərin nəticələri." count={sub.length} gradient="from-amber-500/15 via-amber-500/5 to-transparent border-amber-400/40" onClick={() => setView("sub")} />
+              <HubCard icon={User} title="Fərdi nəticələrim" subtitle="Sizin şəxsi KPI nəticələriniz." count={ownCount} gradient="from-indigo-500/15 via-indigo-500/5 to-transparent border-indigo-400/40" onClick={() => setView("own")} />
+              <HubCard icon={Users} title="Komanda nəticələri" subtitle="Komandanızın KPI nəticələri." count={teamCount} gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40" onClick={() => setView("team")} />
+              <HubCard icon={Network} title="Tabeçiliyimdəki nəticələr" subtitle="Tabeliyinizdəki şəxslərin nəticələri." count={subCount} gradient="from-amber-500/15 via-amber-500/5 to-transparent border-amber-400/40" onClick={() => setView("sub")} />
             </div>
           </>
         )}
