@@ -59,11 +59,23 @@ export default function EmployeeCardDetailDialog({ card, employeeName, open, onO
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[88vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-base">
-            {withKartSuffix(card.name)}
-            {employeeName ? <span className="text-muted-foreground font-normal"> · {employeeName}</span> : null}
-          </DialogTitle>
+          <div className="flex items-start justify-between gap-3 pr-8">
+            <DialogTitle className="text-base">
+              {withKartSuffix(card.name)}
+              {employeeName ? <span className="text-muted-foreground font-normal"> · {employeeName}</span> : null}
+            </DialogTitle>
+            {onOpenFullDetails && (
+              <button
+                type="button"
+                onClick={onOpenFullDetails}
+                className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                <ExternalLink className="w-3.5 h-3.5" /> Tam kart detalları
+              </button>
+            )}
+          </div>
         </DialogHeader>
+
 
         <Tabs defaultValue="targets" className="flex-1 min-h-0 flex flex-col">
           <TabsList className="grid grid-cols-3 w-full">
