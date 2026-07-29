@@ -2017,7 +2017,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                         onClick={() => {
                           setEmployeeCardView({ card, employee: employeeDrilldown });
                           setSelectedKpi(card);
-                          setDetailTab("empTargets");
+                          setDetailTab("general");
                           setEmployeeDrilldown(null);
                         }}
                         className="p-1.5 rounded border border-border hover:bg-secondary text-muted-foreground hover:text-foreground shrink-0"
@@ -2281,9 +2281,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 {(() => {
                   const hasMatrix = !!selectedKpi.matrixId;
                   const empTabs: readonly (readonly [string, string])[] = employeeCardView
-                    ? [["empTargets", "Hədəflər"], ["empDynamics", "Performans dinamikası"], ["empReviews", "Reviewlər"]]
+                    ? [["empDynamics", "Performans dinamikası"], ["empReviews", "Reviewlər"]]
                     : [];
-                  const allTabs: readonly (readonly [string, string])[] = [...empTabs, ["general", "Ümumi"], ["bsc", "Balanced Scorecard"], ["lifecycle", "Lifecycle"], ["reviewTrack", "Review İzləmə"], ["history", "Performans Dinamikası"], ["team", "KPI Üzvləri"], ["comments", "Şərhlər"], ["status", "Təsdiqləmə Matrisi"], ["setStatus", "Təyin Statusu"]];
+                  const allTabs: readonly (readonly [string, string])[] = [["general", "Ümumi"], ["bsc", "Balanced Scorecard"], ["lifecycle", "Lifecycle"], ["reviewTrack", "Review İzləmə"], ["history", "Performans Dinamikası"], ["team", "KPI Üzvləri"], ["comments", "Şərhlər"], ...empTabs, ["status", "Təsdiqləmə Matrisi"], ["setStatus", "Təyin Statusu"]];
                   const isPersonalCard = getAssignKindFor(selectedKpi.id) === "Fərdi";
                   const tabs = allTabs
                     .filter(([k]) => k !== "status" || hasMatrix)
@@ -2296,7 +2296,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 pt-4 space-y-4">
-              {employeeCardView && (detailTab === "empTargets" || detailTab === "empDynamics" || detailTab === "empReviews") && (
+              {employeeCardView && (detailTab === "empDynamics" || detailTab === "empReviews") && (
                 <EmployeeCardTabs card={selectedKpi} tab={detailTab} />
               )}
               {detailTab === "bsc" && <BscScorecardTab kpi={selectedKpi} />}
