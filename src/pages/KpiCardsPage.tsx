@@ -2280,8 +2280,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               <div className="flex gap-2 border-b border-border overflow-x-auto">
                 {(() => {
                   const hasMatrix = !!selectedKpi.matrixId;
-                  const allTabs = [["general", "Ümumi"], ["bsc", "Balanced Scorecard"], ["lifecycle", "Lifecycle"], ["reviewTrack", "Review İzləmə"], ["history", "Performans Dinamikası"], ["team", "KPI Üzvləri"], ["comments", "Şərhlər"], ["status", "Təsdiqləmə Matrisi"], ["setStatus", "Təyin Statusu"]] as const;
-                  const isPersonalCard = getAssignKindFor(selectedKpi.id) === "Fərdi";
+                  const empTabs: readonly (readonly [string, string])[] = employeeCardView
+                    ? [["empTargets", "Hədəflər"], ["empDynamics", "Performans dinamikası"], ["empReviews", "Reviewlər"]]
+                    : [];
+                  const allTabs: readonly (readonly [string, string])[] = [...empTabs, ["general", "Ümumi"], ["bsc", "Balanced Scorecard"], ["lifecycle", "Lifecycle"], ["reviewTrack", "Review İzləmə"], ["history", "Performans Dinamikası"], ["team", "KPI Üzvləri"], ["comments", "Şərhlər"], ["status", "Təsdiqləmə Matrisi"], ["setStatus", "Təyin Statusu"]];
                   const tabs = allTabs
                     .filter(([k]) => k !== "status" || hasMatrix)
                     .filter(([k]) => !isPersonalCard || (k !== "reviewTrack" && k !== "history"));
