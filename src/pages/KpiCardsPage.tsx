@@ -2089,6 +2089,35 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
             const completedSetterRows = setterRows.length ? setterRows.map(r => ({ ...r, role: "Təyin etdi", tone: "ok" as const })) : [];
 
+            // "Aktiv" pəncərəsi: yalnız hədəfi təyin edən şəxs(lər) və kartı təsdiqləyən(lər).
+            // Kartın tətbiq olunduğu əməkdaşlar burada göstərilmir.
+            const activeRows = (() => {
+              const rows: { role: string; name: string; tone?: "ok" | "wait" | "err" }[] = [];
+              const seen = new Set<string>();
+              const push = (name: string, role: string, tone: "ok" | "wait" | "err") => {
+                const n = String(name || "").split(" — ")[0].trim();
+                if (!n || n === "—") return;
+                const key = `${role}::${n.toLowerCase()}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                rows.push({ name: n, role, tone });
+              };
+              // Hədəfi təyin edənlər — kart draft-ı / shared card hədəflərindən
+              const draftTargets: any[] = (draft as any)?.targets || sharedCard?.targets || [];
+              draftTargets.forEach((t: any) => {
+                if (t?.assigner) push(t.assigner, "Hədəfi təyin etdi", "ok");
+              });
+              // kpiSetStore-dan tamamlanmış təyinlər (backend mənbəyi)
+              setEntries.filter(e => e.status === "completed").forEach(e => push(e.assigneeName || "", "Hədəfi təyin etdi", "ok"));
+              if (rows.length === 0) {
+                (st.assignees || []).filter(a => a.ok).forEach(a => push(a.name, "Hədəfi təyin etdi", "ok"));
+              }
+              // Təsdiqləyənlər
+              approvalRows.filter(r => r.tone === "ok").forEach(r => push(r.name, "Təsdiqlədi", "ok"));
+              return rows;
+            })();
+
+
             // Silinmə: aktoru və səbəbi əvvəlcə silinmə təsdiqindən (approve şərhi),
             // sonra kartın backend tarixçəsindən oxu (bütün cihazlarda eyni).
             const deletionRows = (() => {
@@ -2134,7 +2163,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               natamam:         { title: "Təyin edənlər", empty: "Təyin edənlər tapılmadı.", rows: setterRows },
               tesdiq_gozlenilir: { title: "Təsdiqləyəcək şəxslər", empty: "Təsdiq zənciri təyin edilməyib.", rows: approvalRows },
               imtina:          { title: "İmtina edən", empty: "—", rows: rejectedRows.length ? rejectedRows : [{ role: (st as any).rejection_reason || "İmtina edildi", name: (st as any).rejected_by || "Təsdiq mərhələsi", tone: "err" }] },
-              aktiv:           { title: card?.matrixId ? "Təsdiq tamamlandı" : "Təyin edənlər tamamlandı", empty: "Bu kart üçün tamamlanmış iştirakçı tapılmadı.", rows: completedSetterRows.length ? completedSetterRows : (st.assignees || []).map(a => ({ role: a.ok ? "Tamamladı" : "İcraçı", name: a.name, tone: "ok" })) },
+              aktiv:           { title: "Hədəfi təyin edən və təsdiqləyənlər", empty: "Təyin edən və ya təsdiqləyən tapılmadı.", rows: activeRows },
               qiymetlendirme:  { title: "Qiymətləndirəcək şəxslər", empty: "Qiymətləndirici təyin edilməyib.", rows: evaluators.map(e => ({ ...e, tone: "wait" as const })) },
               tamamlanib:      { title: "Tamamlanıb — qiymətləndirənlər", empty: "—", rows: evaluators.map(e => ({ ...e, tone: "ok" as const })) },
                silindi:         { title: "Silindi", empty: "—", rows: deletionRows },
@@ -4221,20 +4250,68 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 const card = copyConfirm;
                 setCopyConfirm(null);
                 if (!card) return;
-                const newId = Math.max(0, ...kpiCards.map(c => c.id)) + 1;
-                const copy: KpiCard = { ...card, id: newId, name: `${withKartSuffix(card.name)} (kopya)`, approvalStatus: "pending" };
+                const newId = Math.max(Date.now(), Math.max(0, ...kpiCards.map(c => c.id)) + 1);
+                const newName = `${withKartSuffix(card.name)} (kopya)`;
+                const copy: KpiCard = { ...card, id: newId, name: newName, approvalStatus: "pending" };
                 setKpiCards(prev => [copy, ...prev]);
+
+                // Draft-ı da kopyala ki, bütün detallar (BSC limitləri, hədəflər, üzvlər)
+                // buludda saxlanılsın və digər brauzerlərdə görünsün.
+                const srcDraft = cardDrafts[card.id];
+                const copiedDraft = srcDraft
+                  ? ({ ...JSON.parse(JSON.stringify(srcDraft)), name: newName, action: "draft" } as CreateKpiWizardDraft)
+                  : null;
+                if (copiedDraft) setCardDrafts(prev => ({ ...prev, [newId]: copiedDraft }));
+
                 try {
                   await upsertStatus({ card_id: newId, status: "natamam", use_matrix: false, submitted_for_approval: false, assignees: [] });
+                } catch {}
+
+                // Shared registry (backend mənbəyi) — kopyalanmış kart daimi saxlanılır.
+                try {
+                  const meId = getCurrentEmployeeId(user) || "1";
+                  const srcShared = sharedCards.find(s => s.numericId === card.id || s.id === `kpi-${card.id}` || s.id === String(card.id));
+                  const nowIso = new Date().toISOString();
+                  if (copiedDraft) {
+                    upsertSharedKpiCard(buildSharedCardFromDraft(copiedDraft, {
+                      id: `kpi-${newId}`,
+                      numericId: newId,
+                      ownerId: srcShared?.ownerId || meId,
+                      status: "natamam",
+                      matrixId: null,
+                      assigneeIds: srcShared?.assigneeIds || [],
+                      teamIds: srcShared?.teamIds || [],
+                      structureIds: srcShared?.structureIds || [],
+                      positionIds: srcShared?.positionIds || [],
+                    }));
+                  } else if (srcShared) {
+                    upsertSharedKpiCard({
+                      ...JSON.parse(JSON.stringify(srcShared)),
+                      id: `kpi-${newId}`,
+                      numericId: newId,
+                      name: newName,
+                      status: "natamam",
+                      matrixId: null,
+                      execution: {},
+                      history: [{ ts: nowIso, actor: meId, action: "created:natamam", note: `Kopya: ${withKartSuffix(card.name)}` }],
+                      createdAt: nowIso,
+                      updatedAt: nowIso,
+                    } as SharedKpiCard);
+                  }
+                  await import("@/lib/kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
+                } catch (err) { console.warn("copy card sync failed", err); }
+
+                try {
                   const mod = await import("@/lib/kpiCardStatusStore");
                   const next = await mod.fetchAllStatuses();
-                  setStatusMap(next);
+                  setStatusMap(prev => ({ ...prev, ...next }));
                 } catch {}
                 toast.success("Kart kopyalandı (Natamam)");
               }}
             >
               Təsdiq et
             </Button>
+
           </div>
         </DialogContent>
       </Dialog>
