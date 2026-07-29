@@ -11,7 +11,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useApprovals, decideApproval, type ApprovalItem } from "@/lib/approvalsStore";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
-import { getCurrentEmployeeId, getVisibleApprovals } from "@/lib/scope";
+import { getCurrentEmployeeId, getVisibleApprovals, getMyApprovalBucket } from "@/lib/scope";
 import { getIdentityAliases, findMyRef } from "@/lib/identity";
 import { getEmployeeDisplayName, getEnrichedEmployee } from "@/data/mockExtras";
 import { toast } from "sonner";
@@ -175,7 +175,7 @@ const ApprovalsPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {columns.map(col => {
-            const items = visible.filter(a => a.status === col.key);
+            const items = visible.filter(a => getMyApprovalBucket(user, a) === col.key);
             const Icon = col.icon;
             const headerColor = col.color === "amber"
               ? "from-amber-500/10 to-amber-500/5 border-amber-400/40"
