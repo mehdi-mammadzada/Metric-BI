@@ -124,7 +124,13 @@ export const getVisibleApprovals = (
   if (!user) return [];
   const aliases = getIdentityAliases(user);
   if (aliases.size === 0) return [];
-  return all.filter(a => (a.approverIds || []).some(id => matchesIdentity(aliases, id)));
+  return all.filter(a => {
+    if (a.status !== "pending") return false;
+    const activeApprover = (a.approverIds || []).find(id =>
+      (a.decisions?.[id]?.decision || "pending") === "pending",
+    );
+    return !!activeApprover && matchesIdentity(aliases, activeApprover);
+  });
 };
 
 
