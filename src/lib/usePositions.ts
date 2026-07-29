@@ -27,6 +27,20 @@ const employeeNameSet = (): Set<string> => {
   return set;
 };
 
+const normalize = (value: string): string => value.trim().toLowerCase().replace(/\s+/g, " ");
+
+const looksLikeEmployeeLabel = (position: string, names: Set<string>): boolean => {
+  const value = normalize(position);
+  if (!value) return false;
+  if (names.has(value)) return true;
+
+  const withoutParentheses = normalize(value.replace(/\s*\([^)]*\)\s*$/, ""));
+  if (names.has(withoutParentheses)) return true;
+
+  const beforeDash = normalize(value.split(/\s+[—–-]\s+/)[0] || "");
+  return names.has(beforeDash);
+};
+
 /** Kataloqdakı vəzifələr + təşkilat strukturunda faktiki istifadə olunanlar */
 export const getAllPositions = (): string[] => {
   const set = new Set<string>();
@@ -38,7 +52,7 @@ export const getAllPositions = (): string[] => {
   } catch {}
   const names = employeeNameSet();
   return Array.from(set)
-    .filter(p => !names.has(p.toLowerCase()))
+    .filter(p => !looksLikeEmployeeLabel(p, names))
     .sort((a, b) => a.localeCompare(b, "az"));
 };
 
