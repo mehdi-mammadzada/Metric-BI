@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock } from "lucide-react";
+import { Clock, ExternalLink } from "lucide-react";
 import { withKartSuffix } from "@/lib/utils";
 import KpiAccordionList, { type AccordionKpi } from "@/components/kpi/KpiAccordionList";
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
