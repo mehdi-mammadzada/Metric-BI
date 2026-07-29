@@ -2490,7 +2490,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
               {detailTab === "general" && (
                 <>
-                  <div className={getAssignKindFor(selectedKpi.id) === "Fərdi" ? "space-y-4" : "grid grid-cols-2 gap-4"}>
+                  <div className={(getAssignKindFor(selectedKpi.id) === "Fərdi" && !employeeCardView) ? "space-y-4" : "grid grid-cols-2 gap-4"}>
                     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                       <div className="flex items-center gap-2.5 px-5 py-4">
                         <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -2533,7 +2533,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                         })()}
                       </div>
                     </div>
-                    {getAssignKindFor(selectedKpi.id) !== "Fərdi" && (() => {
+                    {(getAssignKindFor(selectedKpi.id) !== "Fərdi" || !!employeeCardView) && (() => {
                       const own = selectedKpi.subKpis || [];
                       const entries = selectedKpi.id ? getEntriesForCard(selectedKpi.id) : [];
                       const ownIds = new Set(own.map(s => s.id));
