@@ -37,7 +37,7 @@ import { getLimitsFor, getEntriesForCard, addPendingEntry, suggestLimitsFromTarg
 import LifecycleWizardStep from "@/components/kpi/LifecycleWizardStep";
 import LifecycleView, { REVIEW_STATUS_STYLES } from "@/components/kpi/LifecycleView";
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
-import EmployeeCardDetailDialog from "@/components/kpi/EmployeeCardDetailDialog";
+import EmployeeCardTabs from "@/components/kpi/EmployeeCardTabs";
 import { setCardLifecycle, emptyLifecycleDraft, getLifecycle, getLifecycleWithFallback, computeReviewStatus, setReviewOutcome, type CardLifecycle } from "@/lib/kpiLifecycleStore";
 import { flushLifecycleToCloud } from "@/lib/lifecycleService";
 
@@ -257,7 +257,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     return () => window.removeEventListener("kpi:deleted", onDeleted);
   }, []);
   const [selectedKpi, setSelectedKpi] = useState<KpiCard | null>(null);
-  const [detailTab, setDetailTab] = useState<"general" | "bsc" | "history" | "team" | "comments" | "status" | "setStatus" | "lifecycle" | "reviewTrack">("general");
+  const [detailTab, setDetailTab] = useState<"general" | "bsc" | "history" | "team" | "comments" | "status" | "setStatus" | "lifecycle" | "reviewTrack" | "empTargets" | "empDynamics" | "empReviews">("general");
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
   const [reviewCommentFilters, setReviewCommentFilters] = useState<Record<string, { author: string; date: string }>>({});
   const [reviewOutcomeDialog, setReviewOutcomeDialog] = useState<{ reviewId: string; status: "held" | "deferred"; comment: string } | null>(null);
@@ -1313,7 +1313,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   };
   const handleDragEnd = () => setDragIndex(null);
 
-  const openDetail = (card: KpiCard) => { setSelectedKpi(card); setDetailTab("general"); };
+  const openDetail = (card: KpiCard) => { setEmployeeCardView(null); setSelectedKpi(card); setDetailTab("general"); };
   const resetFilters = () => { setFilterDepartment("Hamısı"); setFilterSubdivision("Hamısı"); setFilterGroup("Hamısı"); setFilterTeamId(null); setFilterStatus("Hamısı"); setSearchText(""); };
 
   const handleDeleteCard = (card: KpiCard) => {
@@ -2014,7 +2014,12 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                         <div className="w-full bg-secondary rounded-full h-1.5 mt-1.5"><div className="bg-emerald-500 rounded-full h-1.5" style={{ width: `${card.progress}%` }} /></div>
                       </div>
                       <button
-                        onClick={() => setEmployeeCardView({ card, employee: employeeDrilldown })}
+                        onClick={() => {
+                          setEmployeeCardView({ card, employee: employeeDrilldown });
+                          setSelectedKpi(card);
+                          setDetailTab("empTargets");
+                          setEmployeeDrilldown(null);
+                        }}
                         className="p-1.5 rounded border border-border hover:bg-secondary text-muted-foreground hover:text-foreground shrink-0"
                         title="Bax"
                       >
@@ -2029,17 +2034,6 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         </DialogContent>
       </Dialog>
 
-      <EmployeeCardDetailDialog
-        card={employeeCardView?.card ?? null}
-        employeeName={employeeCardView?.employee}
-        open={employeeCardView !== null}
-        onOpenChange={(o) => !o && setEmployeeCardView(null)}
-        onOpenFullDetails={() => {
-          const c = employeeCardView?.card;
-          setEmployeeCardView(null);
-          if (c) setSelectedKpi(c);
-        }}
-      />
 
       <Dialog open={statusDialogCardId !== null} onOpenChange={(o) => !o && setStatusDialogCardId(null)}>
         <DialogContent className="max-w-md">
@@ -2253,14 +2247,17 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       </Dialog>
 
       {/* KPI Detail Dialog */}
-      <Dialog open={!!selectedKpi} onOpenChange={() => setSelectedKpi(null)}>
+      <Dialog open={!!selectedKpi} onOpenChange={() => { setSelectedKpi(null); setEmployeeCardView(null); }}>
         <DialogContent className="w-[90vw] max-w-[1500px] h-[88vh] min-h-[88vh] max-h-[88vh] p-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-3 shrink-0 border-b border-border">
             <div className="flex items-center gap-3">
-              <DialogTitle className="text-xl">{withKartSuffix(selectedKpi?.name)}</DialogTitle>
-              {/* zone badge removed */}
+              <DialogTitle className="text-xl">
+                {withKartSuffix(selectedKpi?.name)}
+                {employeeCardView ? <span className="text-muted-foreground font-normal text-base"> · {employeeCardView.employee}</span> : null}
+              </DialogTitle>
             </div>
           </DialogHeader>
+
 
           {selectedKpi && (
             <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -2283,7 +2280,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               <div className="flex gap-2 border-b border-border overflow-x-auto">
                 {(() => {
                   const hasMatrix = !!selectedKpi.matrixId;
-                  const allTabs = [["general", "Ümumi"], ["bsc", "Balanced Scorecard"], ["lifecycle", "Lifecycle"], ["reviewTrack", "Review İzləmə"], ["history", "Performans Dinamikası"], ["team", "KPI Üzvləri"], ["comments", "Şərhlər"], ["status", "Təsdiqləmə Matrisi"], ["setStatus", "Təyin Statusu"]] as const;
+                  const empTabs: readonly (readonly [string, string])[] = employeeCardView
+                    ? [["empTargets", "Hədəflər"], ["empDynamics", "Performans dinamikası"], ["empReviews", "Reviewlər"]]
+                    : [];
+                  const allTabs: readonly (readonly [string, string])[] = [...empTabs, ["general", "Ümumi"], ["bsc", "Balanced Scorecard"], ["lifecycle", "Lifecycle"], ["reviewTrack", "Review İzləmə"], ["history", "Performans Dinamikası"], ["team", "KPI Üzvləri"], ["comments", "Şərhlər"], ["status", "Təsdiqləmə Matrisi"], ["setStatus", "Təyin Statusu"]];
                   const isPersonalCard = getAssignKindFor(selectedKpi.id) === "Fərdi";
                   const tabs = allTabs
                     .filter(([k]) => k !== "status" || hasMatrix)
@@ -2296,6 +2296,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 pt-4 space-y-4">
+              {employeeCardView && (detailTab === "empTargets" || detailTab === "empDynamics" || detailTab === "empReviews") && (
+                <EmployeeCardTabs card={selectedKpi} tab={detailTab} />
+              )}
               {detailTab === "bsc" && <BscScorecardTab kpi={selectedKpi} />}
               {detailTab === "lifecycle" && (() => {
                 const st = getStatusFor(selectedKpi.id).status;
