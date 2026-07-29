@@ -2089,6 +2089,35 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
 
             const completedSetterRows = setterRows.length ? setterRows.map(r => ({ ...r, role: "Təyin etdi", tone: "ok" as const })) : [];
 
+            // "Aktiv" pəncərəsi: yalnız hədəfi təyin edən şəxs(lər) və kartı təsdiqləyən(lər).
+            // Kartın tətbiq olunduğu əməkdaşlar burada göstərilmir.
+            const activeRows = (() => {
+              const rows: { role: string; name: string; tone?: "ok" | "wait" | "err" }[] = [];
+              const seen = new Set<string>();
+              const push = (name: string, role: string, tone: "ok" | "wait" | "err") => {
+                const n = String(name || "").split(" — ")[0].trim();
+                if (!n || n === "—") return;
+                const key = `${role}::${n.toLowerCase()}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                rows.push({ name: n, role, tone });
+              };
+              // Hədəfi təyin edənlər — kart draft-ı / shared card hədəflərindən
+              const draftTargets: any[] = (draft as any)?.targets || sharedCard?.targets || [];
+              draftTargets.forEach((t: any) => {
+                if (t?.assigner) push(t.assigner, "Hədəfi təyin etdi", "ok");
+              });
+              // kpiSetStore-dan tamamlanmış təyinlər (backend mənbəyi)
+              setEntries.filter(e => e.status === "completed").forEach(e => push(e.assigneeName || "", "Hədəfi təyin etdi", "ok"));
+              if (rows.length === 0) {
+                (st.assignees || []).filter(a => a.ok).forEach(a => push(a.name, "Hədəfi təyin etdi", "ok"));
+              }
+              // Təsdiqləyənlər
+              approvalRows.filter(r => r.tone === "ok").forEach(r => push(r.name, "Təsdiqlədi", "ok"));
+              return rows;
+            })();
+
+
             // Silinmə: aktoru və səbəbi əvvəlcə silinmə təsdiqindən (approve şərhi),
             // sonra kartın backend tarixçəsindən oxu (bütün cihazlarda eyni).
             const deletionRows = (() => {
