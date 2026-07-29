@@ -4,13 +4,27 @@
 
 import { useEffect, useState } from "react";
 import { getPositions } from "./catalogStore";
-import { getStructures, type OrgStructure } from "./orgStore";
+import { getStructures, getEmployees, type OrgStructure } from "./orgStore";
 
 const collect = (list: OrgStructure[], out: Set<string>) => {
   for (const n of list) {
     for (const p of n.positions) if (p.name) out.add(p.name.trim());
     if (n.children.length) collect(n.children, out);
   }
+};
+
+/** Əməkdaş adları vəzifə siyahısında görünməməlidir */
+const employeeNameSet = (): Set<string> => {
+  const set = new Set<string>();
+  try {
+    for (const e of getEmployees()) {
+      const full = `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim().toLowerCase();
+      if (full) set.add(full);
+      const rev = `${e.lastName ?? ""} ${e.firstName ?? ""}`.trim().toLowerCase();
+      if (rev) set.add(rev);
+    }
+  } catch {}
+  return set;
 };
 
 /** Kataloqdakı vəzifələr + təşkilat strukturunda faktiki istifadə olunanlar */
@@ -22,8 +36,12 @@ export const getAllPositions = (): string[] => {
   try {
     collect(getStructures(), set);
   } catch {}
-  return Array.from(set).sort((a, b) => a.localeCompare(b, "az"));
+  const names = employeeNameSet();
+  return Array.from(set)
+    .filter(p => !names.has(p.toLowerCase()))
+    .sort((a, b) => a.localeCompare(b, "az"));
 };
+
 
 /** Reaktiv hook — kataloq və ya struktur dəyişdikdə avtomatik yenilənir */
 export const usePositions = (): string[] => {
