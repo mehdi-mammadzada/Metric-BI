@@ -1313,7 +1313,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   };
   const handleDragEnd = () => setDragIndex(null);
 
-  const openDetail = (card: KpiCard) => { setSelectedKpi(card); setDetailTab("general"); };
+  const openDetail = (card: KpiCard) => { setEmployeeCardView(null); setSelectedKpi(card); setDetailTab("general"); };
   const resetFilters = () => { setFilterDepartment("Hamısı"); setFilterSubdivision("Hamısı"); setFilterGroup("Hamısı"); setFilterTeamId(null); setFilterStatus("Hamısı"); setSearchText(""); };
 
   const handleDeleteCard = (card: KpiCard) => {
