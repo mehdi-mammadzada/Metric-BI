@@ -195,14 +195,6 @@ const MatrixPage = () => {
           subtitle="Təsdiqləmə və silinmə matrislərini yaradın və idarə edin"
         />
 
-        <div className="flex justify-end">
-          <button
-            onClick={() => setShowOperationsDialog(true)}
-            className="px-4 py-2 text-sm rounded-lg bg-card border border-border font-medium flex items-center gap-2 hover:bg-secondary"
-          >
-            <ClipboardList className="w-4 h-4" /> Əməliyyatlar reyestri
-          </button>
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Approval Matrices — pending (blue) */}
