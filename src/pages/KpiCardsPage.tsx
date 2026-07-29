@@ -257,7 +257,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     return () => window.removeEventListener("kpi:deleted", onDeleted);
   }, []);
   const [selectedKpi, setSelectedKpi] = useState<KpiCard | null>(null);
-  const [detailTab, setDetailTab] = useState<"general" | "bsc" | "history" | "team" | "comments" | "status" | "setStatus" | "lifecycle" | "reviewTrack">("general");
+  const [detailTab, setDetailTab] = useState<"general" | "bsc" | "history" | "team" | "comments" | "status" | "setStatus" | "lifecycle" | "reviewTrack" | "empTargets" | "empDynamics" | "empReviews">("general");
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(new Set());
   const [reviewCommentFilters, setReviewCommentFilters] = useState<Record<string, { author: string; date: string }>>({});
   const [reviewOutcomeDialog, setReviewOutcomeDialog] = useState<{ reviewId: string; status: "held" | "deferred"; comment: string } | null>(null);
