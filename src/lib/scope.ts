@@ -113,10 +113,10 @@ export const getVisibleKpiCards = (
 };
 
 // ---------- Approvals ----------
-// Təsdiq qutusu HƏMİŞƏ şəxsidir: sorğu yalnız onu yaradan və matris addımlarında
-// adı keçən şəxslərə görünür. Uyğunlaşdırma id / "e{id}" / email / ad-soyad /
-// auth UUID formatlarının hamısını əhatə edir ki, istənilən brauzer və cihazda
-// eyni nəticə alınsın (icazə kodundan asılı olmadan).
+// Təsdiq qutusu HƏMİŞƏ aktiv addımdakı təsdiqçiyə məxsusdur.
+// Sorğunu yaradan şəxs təsdiqləmə zəncirində aktiv təsdiqçi deyilsə, həmin sorğunu
+// Sistem Təsdiqlərində görməməlidir. Növbəti addım yalnız əvvəlki addım təsdiqləndikdən
+// sonra approverIds-ə keçir və yalnız həmin istifadəçilərə görünür.
 export const getVisibleApprovals = (
   user: AuthUser | null,
   all: ApprovalItem[],
@@ -124,20 +124,13 @@ export const getVisibleApprovals = (
   if (!user) return [];
   const aliases = getIdentityAliases(user);
   if (aliases.size === 0) return [];
-  const belongsToMe = (a: ApprovalItem) => {
-    // 1) Hazırkı addımın təsdiqçisiyəmsə.
-    if ((a.approverIds || []).some(id => matchesIdentity(aliases, id))) return true;
-    // 2) Sorğunu mən yaratmışamsa (öz sorğumun vəziyyətini görürəm).
-    if (matchesIdentity(aliases, a.createdBy)) return true;
-    // 3) Artıq qərar vermişəmsə (tarixçə üçün).
-    if (Object.entries(a.decisions || {}).some(([id, d]) =>
-      matchesIdentity(aliases, id) && d?.decision && d.decision !== "pending")) return true;
-    // 4) Sorğu bağlanıbsa, zəncirdə adı keçən bütün təsdiqçilər nəticəni görür.
-    if (a.status !== "pending"
-      && (a.stepsChain || []).some(step => (step || []).some(id => matchesIdentity(aliases, id)))) return true;
-    return false;
-  };
-  return all.filter(belongsToMe);
+  return all.filter(a => {
+    if (a.status !== "pending") return false;
+    const activeApprover = (a.approverIds || []).find(id =>
+      (a.decisions?.[id]?.decision || "pending") === "pending",
+    );
+    return !!activeApprover && matchesIdentity(aliases, activeApprover);
+  });
 };
 
 
