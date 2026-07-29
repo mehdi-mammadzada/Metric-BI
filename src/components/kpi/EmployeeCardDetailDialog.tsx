@@ -20,9 +20,11 @@ interface Props {
   employeeName?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Əvvəlki (tam) kart detalları görünüşünü açır. */
+  onOpenFullDetails?: () => void;
 }
 
-export default function EmployeeCardDetailDialog({ card, employeeName, open, onOpenChange }: Props) {
+export default function EmployeeCardDetailDialog({ card, employeeName, open, onOpenChange, onOpenFullDetails }: Props) {
   const accordionItems: AccordionKpi[] = useMemo(() => {
     if (!card) return [];
     return [{
