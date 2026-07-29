@@ -5,7 +5,7 @@
 // və kart statusunu "tesdiq_gozlenilir" olaraq təyin edir.
 
 import { getKpiSetEntries } from "./kpiSetStore";
-import { getSharedKpiCards, setKpiStatus, type SharedKpiCard, type SharedKpiStatus } from "./kpiCardStore";
+import { getSharedKpiCards, setKpiStatus, isCopyLockedCard, type SharedKpiCard, type SharedKpiStatus } from "./kpiCardStore";
 import { getApprovalMatrices } from "./matrixStore";
 import { enqueueApproval, getApprovals } from "./approvalsStore";
 import { getKpiCardMeta } from "./kpiCardMetaStore";
@@ -143,6 +143,10 @@ export const triggerCardApprovalIfComplete = (cardId: number): void => {
 
     const ctx = resolveCardContext(cardId);
     if (!ctx) return;
+
+    // Kopyalanmış kart istifadəçi təsdiqə göndərməyincə "Natamam" qalır.
+    const sharedForCard = getSharedKpiCards().find(c => c.numericId === cardId || c.id === ctx.id);
+    if (sharedForCard && isCopyLockedCard(sharedForCard)) return;
 
     if (ctx.currentStatus === "aktiv" || ctx.currentStatus === "silindi" || ctx.currentStatus === "legv_olundu") return;
 
