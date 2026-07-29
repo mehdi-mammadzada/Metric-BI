@@ -2014,7 +2014,12 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                         <div className="w-full bg-secondary rounded-full h-1.5 mt-1.5"><div className="bg-emerald-500 rounded-full h-1.5" style={{ width: `${card.progress}%` }} /></div>
                       </div>
                       <button
-                        onClick={() => setEmployeeCardView({ card, employee: employeeDrilldown })}
+                        onClick={() => {
+                          setEmployeeCardView({ card, employee: employeeDrilldown });
+                          setSelectedKpi(card);
+                          setDetailTab("empTargets");
+                          setEmployeeDrilldown(null);
+                        }}
                         className="p-1.5 rounded border border-border hover:bg-secondary text-muted-foreground hover:text-foreground shrink-0"
                         title="Bax"
                       >
