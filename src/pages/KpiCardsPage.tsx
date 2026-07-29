@@ -2671,12 +2671,6 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                     </div>
                   </div>
                 );
-
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
               })()}
 
               {detailTab === "setStatus" && (() => {
