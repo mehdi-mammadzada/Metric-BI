@@ -2647,9 +2647,14 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                   ? selectedKpi.team
                   : (selectedKpi.responsible ? [{ name: selectedKpi.responsible, role: "Məsul", avatar: initials(selectedKpi.responsible) }] : []);
                 // Lider yalnız komanda yaradılarkən təyin edilmiş Komanda Lideri ola bilər.
+                // Kartı yaradan / KPI sahibi olması avtomatik lider demək deyil.
                 const norm = (s: string) => (s || "").trim().toLowerCase();
                 let leaderNames = new Set<string>();
                 try { leaderNames = new Set(getTeams().map(t => norm(t.leader)).filter(Boolean)); } catch {}
+                const OWNER_ROLES = ["kpi sahibi", "kart sahibi", "təyin edici", "teyin edici", "yaradan"];
+                const isLeader = (m: any) =>
+                  norm(m.role) === "komanda lideri" ||
+                  (leaderNames.has(norm(m.name)) && !OWNER_ROLES.includes(norm(m.role)));
                 return (
                   <div className="bg-card rounded-lg border border-border p-4">
                     <h4 className="font-semibold text-foreground mb-4">KPI Üzvləri</h4>
@@ -2660,7 +2665,13 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">{m.avatar}</div>
                             <div><p className="text-sm font-medium text-foreground">{m.name}</p><p className="text-xs text-muted-foreground">{m.role}</p></div>
                           </div>
-                          {leaderNames.has(norm(m.name)) && <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-zone-green-bg text-zone-green-text">Lider</span>}
+                          {isLeader(m) && <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-zone-green-bg text-zone-green-text">Lider</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+
                         </div>
                       ))}
                     </div>
