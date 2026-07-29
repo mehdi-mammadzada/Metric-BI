@@ -37,6 +37,7 @@ import { getLimitsFor, getEntriesForCard, addPendingEntry, suggestLimitsFromTarg
 import LifecycleWizardStep from "@/components/kpi/LifecycleWizardStep";
 import LifecycleView, { REVIEW_STATUS_STYLES } from "@/components/kpi/LifecycleView";
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
+import EmployeeCardDetailDialog from "@/components/kpi/EmployeeCardDetailDialog";
 import { setCardLifecycle, emptyLifecycleDraft, getLifecycle, getLifecycleWithFallback, computeReviewStatus, setReviewOutcome, type CardLifecycle } from "@/lib/kpiLifecycleStore";
 import { flushLifecycleToCloud } from "@/lib/lifecycleService";
 
@@ -823,6 +824,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   }>(null);
   const [hrCascadeDistribute, setHrCascadeDistribute] = useState<typeof hrCascade>(null);
   const [employeeDrilldown, setEmployeeDrilldown] = useState<string | null>(null);
+  const [employeeCardView, setEmployeeCardView] = useState<{ card: any; employee: string } | null>(null);
   useEffect(() => {
     let timer: number | null = null;
     const refresh = () => import("@/lib/kpiCardStatusStore").then(m => m.fetchAllStatuses().then(setStatusMap));
@@ -2012,7 +2014,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                         <div className="w-full bg-secondary rounded-full h-1.5 mt-1.5"><div className="bg-emerald-500 rounded-full h-1.5" style={{ width: `${card.progress}%` }} /></div>
                       </div>
                       <button
-                        onClick={() => { setEmployeeDrilldown(null); openDetail(card); }}
+                        onClick={() => setEmployeeCardView({ card, employee: employeeDrilldown })}
                         className="p-1.5 rounded border border-border hover:bg-secondary text-muted-foreground hover:text-foreground shrink-0"
                         title="Bax"
                       >
@@ -2026,6 +2028,13 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
           })()}
         </DialogContent>
       </Dialog>
+
+      <EmployeeCardDetailDialog
+        card={employeeCardView?.card ?? null}
+        employeeName={employeeCardView?.employee}
+        open={employeeCardView !== null}
+        onOpenChange={(o) => !o && setEmployeeCardView(null)}
+      />
 
       <Dialog open={statusDialogCardId !== null} onOpenChange={(o) => !o && setStatusDialogCardId(null)}>
         <DialogContent className="max-w-md">
