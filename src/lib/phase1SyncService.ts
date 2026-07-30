@@ -108,36 +108,46 @@ const normalizeStoreValue = (localKey: string, value: unknown): unknown => {
 };
 
 let suppressFlush = false;
+let suppressFlushUntil = 0;
+let lastLocalWriteAt = 0;
+let hydrating: Promise<void> | null = null;
 const lastWrittenJson = new Map<string, string>();
 
 // ── Hydrate ─────────────────────────────────────────────────────────────────
 export const hydratePhase1FromCloud = async (orgId: string): Promise<void> => {
-  const cloudKeys = STORES.map(s => s.cloudKey);
-  const { data, error } = await supabase
-    .from("org_catalogs")
-    .select("catalog_key, entries")
-    .eq("organization_id", orgId)
-    .in("catalog_key", cloudKeys);
-  if (error || !data) return;
+  if (hydrating) return hydrating;
+  hydrating = (async () => {
+    const cloudKeys = STORES.map(s => s.cloudKey);
+    const { data, error } = await supabase
+      .from("org_catalogs")
+      .select("catalog_key, entries")
+      .eq("organization_id", orgId)
+      .in("catalog_key", cloudKeys);
+    if (error || !data) return;
 
-  const byKey = new Map<string, unknown>(data.map(r => [r.catalog_key as string, r.entries]));
-  const touchedEvents = new Set<string>();
-  suppressFlush = true;
-  try {
-    for (const store of STORES) {
-      const val = byKey.get(store.cloudKey);
-      if (val !== undefined && val !== null) {
-        const normalized = normalizeStoreValue(store.localKey, val);
-        writeLocal(store.localKey, normalized);
-        lastWrittenJson.set(store.localKey, JSON.stringify(normalized));
-        touchedEvents.add(store.event);
+    const byKey = new Map<string, unknown>(data.map(r => [r.catalog_key as string, r.entries]));
+    const touchedEvents = new Set<string>();
+    suppressFlush = true;
+    try {
+      for (const store of STORES) {
+        const val = byKey.get(store.cloudKey);
+        if (val !== undefined && val !== null) {
+          const normalized = normalizeStoreValue(store.localKey, val);
+          writeLocal(store.localKey, normalized);
+          lastWrittenJson.set(store.localKey, JSON.stringify(normalized));
+          touchedEvents.add(store.event);
+        }
       }
+    } finally {
+      suppressFlush = false;
+      // Hidratasiyadan sonra event-lərlə tetiklənən store yazılarının
+      // dərhal buluda geri axmasının qarşısını alırıq (echo loop).
+      suppressFlushUntil = Date.now() + 2500;
     }
-  } finally {
-    suppressFlush = false;
-  }
-  // Notify UI hooks so they re-read their stores.
-  touchedEvents.forEach(evt => window.dispatchEvent(new Event(evt)));
+    // Notify UI hooks so they re-read their stores.
+    touchedEvents.forEach(evt => window.dispatchEvent(new Event(evt)));
+  })().finally(() => { hydrating = null; });
+  return hydrating;
 };
 
 // ── Flush ───────────────────────────────────────────────────────────────────
