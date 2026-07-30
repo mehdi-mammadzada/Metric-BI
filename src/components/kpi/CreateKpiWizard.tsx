@@ -2530,15 +2530,6 @@ function EvaluatorPickerDialog({ target, employeeOptions, onClose, onSave }: {
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
                 Qiymətləndirici(lər){personEvs.length > 1 && <span className="text-amber-600"> — faiz cəmi 100%</span>}
               </div>
-              <div className="relative mb-2">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <input
-                  value={personSearch}
-                  onChange={e => setPersonSearch(e.target.value)}
-                  placeholder="Əməkdaş axtar (ad, vəzifə)..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded bg-background"
-                />
-              </div>
               <UnifiedEvaluatorsEditor
                 employeeOptions={filteredEmployeeOptions}
                 evaluators={personEvs}
