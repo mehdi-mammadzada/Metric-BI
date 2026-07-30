@@ -231,13 +231,21 @@ let rehydrateTimer: number | null = null;
 let refreshInterval: number | null = null;
 let onFocusHandler: (() => void) | null = null;
 
-const scheduleRehydrate = () => {
+let lastHydrateAt = 0;
+
+const scheduleRehydrate = (opts?: { minIntervalMs?: number }) => {
   if (!currentOrgId) return;
+  const minInterval = opts?.minIntervalMs ?? 0;
+  if (minInterval && Date.now() - lastHydrateAt < minInterval) return;
   if (rehydrateTimer) window.clearTimeout(rehydrateTimer);
   rehydrateTimer = window.setTimeout(() => {
     rehydrateTimer = null;
-    if (currentOrgId) void hydratePhase1FromCloud(currentOrgId);
-  }, 500);
+    // Öz yazımızın echo-su üçün yenidən çəkmirik (sonsuz döngə/yük).
+    if (Date.now() - lastLocalWriteAt < 4000) return;
+    if (!currentOrgId) return;
+    lastHydrateAt = Date.now();
+    void hydratePhase1FromCloud(currentOrgId);
+  }, 1500);
 };
 
 export const activatePhase1Sync = async (orgId: string) => {
@@ -257,8 +265,8 @@ export const activatePhase1Sync = async (orgId: string) => {
   }
   installStoragePatch();
   await hydratePhase1FromCloud(orgId);
+  lastHydrateAt = Date.now();
   getAllDropdownCatalogs();
-  scheduleFlush("kpi_dropdown_catalogs_v6");
 
   if (realtimeChannel) supabase.removeChannel(realtimeChannel);
   realtimeChannel = supabase
