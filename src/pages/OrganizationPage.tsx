@@ -1213,7 +1213,7 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
                 />
               </div>
             </div>
-            <div className="max-h-64 overflow-y-auto py-1">
+            <div className="max-h-64 overflow-y-auto overscroll-contain py-1" onWheel={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
               {current && (
                 <button
                   onClick={async () => {
