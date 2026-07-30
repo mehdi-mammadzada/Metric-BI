@@ -1200,7 +1200,7 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
               <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" sideOffset={4} className="p-0 w-[--radix-popover-trigger-width] min-w-[320px]">
+          <PopoverContent align="start" sideOffset={4} collisionPadding={12} className="p-0 w-[--radix-popover-trigger-width] min-w-[320px]" onWheel={e => e.stopPropagation()}>
             <div className="p-2 border-b border-border">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
