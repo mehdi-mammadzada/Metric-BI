@@ -148,12 +148,16 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Seçin", di
                 autoFocus
                 value={q}
                 onChange={e => setQ(e.target.value)}
+                onKeyDown={e => { if (e.key !== "Escape") e.stopPropagation(); }}
+                onKeyUp={e => e.stopPropagation()}
+                onKeyPress={e => e.stopPropagation()}
                 placeholder="Axtar..."
                 className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded bg-background"
               />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto py-1">
+          <div className="flex-1 overflow-y-auto overscroll-contain py-1">
+
             {filtered.length === 0 ? (
               <div className="px-3 py-2 text-xs text-muted-foreground text-center">Nəticə yoxdur</div>
             ) : (
