@@ -176,7 +176,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Seçin", di
             )}
           </div>
         </div>,
-        document.body,
+        portalTarget ?? document.body,
       )}
     </div>
   );
