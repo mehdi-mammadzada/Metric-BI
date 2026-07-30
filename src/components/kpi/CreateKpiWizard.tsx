@@ -2010,12 +2010,15 @@ function UnifiedEvaluatorsEditor({ employeeOptions, evaluators, onChange }: {
     <div className="space-y-1.5">
       {evaluators.map(ev => (
         <div key={ev.id} className="grid grid-cols-12 gap-1.5 items-center">
-          <select value={ev.name}
-            onChange={e => onChange(evaluators.map(x => x.id === ev.id ? { ...x, name: e.target.value } : x))}
-            className="col-span-8 px-2 py-1.5 text-xs border border-border rounded bg-background">
-            <option value="">— Əməkdaş seçin —</option>
-            {employeeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <SearchableSelect
+            className="col-span-8"
+            size="sm"
+            value={ev.name}
+            onChange={v => onChange(evaluators.map(x => x.id === ev.id ? { ...x, name: v } : x))}
+            options={employeeOptions.map(o => ({ value: o.value, label: o.label }))}
+            placeholder="Əməkdaş seçin"
+            allowClear
+          />
           <WeightInput value={ev.weight}
             onChange={n => onChange(evaluators.map(x => x.id === ev.id ? { ...x, weight: n } : x))}
             placeholder="%"
