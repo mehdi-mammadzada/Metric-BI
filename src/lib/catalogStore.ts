@@ -9,12 +9,13 @@ const seedStructTypes: string[] = [];
 const seedPositions: string[] = [];
 const seedCriteria: string[] = [];
 
+// Qeyd: fallback DƏYƏRİ localStorage-a YAZILMIR — əks halda buludan
+// hidratasiya bitməmiş boş massiv buluda geri yazılır və kataloq silinir.
 const load = (key: string, fallback: string[]): string[] => {
   try {
     const raw = localStorage.getItem(key);
     if (raw) return JSON.parse(raw);
   } catch {}
-  localStorage.setItem(key, JSON.stringify(fallback));
   return fallback;
 };
 
