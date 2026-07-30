@@ -91,9 +91,18 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Seçin", di
 
   const pick = (v: string) => { onChange(v); setOpen(false); setQ(""); };
 
+  // Radix Dialog/Popover focus-trap-larından qaçmaq üçün paneli ən yaxın
+  // dialog/popover konteynerinə portal edirik — əks halda search input-a yazmaq olmur.
+  const portalTarget = (() => {
+    if (typeof document === "undefined") return null;
+    const host = ref.current?.closest("[role='dialog'], [data-radix-popper-content-wrapper]") as HTMLElement | null;
+    return host ?? document.body;
+  })();
+
   const btnCls = size === "sm"
     ? "w-full min-h-[32px] px-2 py-1.5 text-xs"
     : "w-full min-h-[38px] px-3 py-2 text-sm";
+
 
   const row = (o: SearchableOption) => (
     <div key={o.value} onClick={() => pick(o.value)}
@@ -139,12 +148,16 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Seçin", di
                 autoFocus
                 value={q}
                 onChange={e => setQ(e.target.value)}
+                onKeyDown={e => { if (e.key !== "Escape") e.stopPropagation(); }}
+                onKeyUp={e => e.stopPropagation()}
+                onKeyPress={e => e.stopPropagation()}
                 placeholder="Axtar..."
                 className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded bg-background"
               />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto py-1">
+          <div className="flex-1 overflow-y-auto overscroll-contain py-1">
+
             {filtered.length === 0 ? (
               <div className="px-3 py-2 text-xs text-muted-foreground text-center">Nəticə yoxdur</div>
             ) : (
@@ -163,7 +176,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Seçin", di
             )}
           </div>
         </div>,
-        document.body,
+        portalTarget ?? document.body,
       )}
     </div>
   );

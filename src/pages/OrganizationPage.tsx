@@ -1200,7 +1200,7 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
               <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="start" sideOffset={4} className="p-0 w-[--radix-popover-trigger-width] min-w-[320px]">
+          <PopoverContent align="start" sideOffset={4} collisionPadding={12} className="p-0 w-[--radix-popover-trigger-width] min-w-[320px]" onWheel={e => e.stopPropagation()}>
             <div className="p-2 border-b border-border">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -1213,7 +1213,7 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
                 />
               </div>
             </div>
-            <div className="max-h-64 overflow-y-auto py-1">
+            <div className="max-h-64 overflow-y-auto overscroll-contain py-1" onWheel={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
               {current && (
                 <button
                   onClick={async () => {
@@ -1300,14 +1300,15 @@ const PositionPicker = ({ value, onChange }: { value: string; onChange: (v: stri
           <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" sideOffset={4} className="p-0 w-[--radix-popover-trigger-width] min-w-[280px]">
+      <PopoverContent align="start" sideOffset={4} collisionPadding={12} className="p-0 w-[--radix-popover-trigger-width] min-w-[280px]" onWheel={e => e.stopPropagation()}>
         <div className="p-2 border-b border-border">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Axtar..." className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded bg-background" />
+            <input autoFocus value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key !== "Escape") e.stopPropagation(); }} placeholder="Axtar..." className="w-full pl-7 pr-2 py-1.5 text-sm border border-border rounded bg-background" />
           </div>
         </div>
-        <div className="max-h-56 overflow-y-auto py-1">
+        <div className="max-h-56 overflow-y-auto overscroll-contain py-1" onWheel={e => e.stopPropagation()} onTouchMove={e => e.stopPropagation()}>
+
           {filtered.length === 0 ? (
             <div className="px-3 py-2 text-xs text-muted-foreground text-center">Nəticə yoxdur</div>
           ) : filtered.map(o => (

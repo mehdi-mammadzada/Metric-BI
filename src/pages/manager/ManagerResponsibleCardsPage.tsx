@@ -428,15 +428,7 @@ const AssignView = () => {
                             <td className="px-4 py-3 text-right">
                               <div className="inline-flex items-center gap-1 justify-end">
                                 <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  title="Bax"
-                                  onClick={() => setDistribute(e)}
-                                  className="h-8 w-8"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                                <Button
+
                                   size="sm"
                                   variant={isDone ? "outline" : "default"}
                                   onClick={() => openAssign(e, isDone)}
