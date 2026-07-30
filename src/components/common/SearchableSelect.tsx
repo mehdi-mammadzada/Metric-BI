@@ -91,9 +91,18 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Seçin", di
 
   const pick = (v: string) => { onChange(v); setOpen(false); setQ(""); };
 
+  // Radix Dialog/Popover focus-trap-larından qaçmaq üçün paneli ən yaxın
+  // dialog/popover konteynerinə portal edirik — əks halda search input-a yazmaq olmur.
+  const portalTarget = (() => {
+    if (typeof document === "undefined") return null;
+    const host = ref.current?.closest("[role='dialog'], [data-radix-popper-content-wrapper]") as HTMLElement | null;
+    return host ?? document.body;
+  })();
+
   const btnCls = size === "sm"
     ? "w-full min-h-[32px] px-2 py-1.5 text-xs"
     : "w-full min-h-[38px] px-3 py-2 text-sm";
+
 
   const row = (o: SearchableOption) => (
     <div key={o.value} onClick={() => pick(o.value)}
