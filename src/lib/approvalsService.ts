@@ -210,14 +210,17 @@ export const activateApprovalsSync = async (orgId: string) => {
     .on("postgres_changes", { event: "*", schema: "public", table: "cascade_matrices", filter: `organization_id=eq.${orgId}` }, scheduleRehydrate)
     .subscribe();
 
-  onFocusHandler = () => scheduleRehydrate();
+  onFocusHandler = () => { if (document.visibilityState === "visible") scheduleRehydrate(); };
   window.addEventListener("focus", onFocusHandler);
   document.addEventListener("visibilitychange", onFocusHandler);
 
   // Polling fallback — bəzi brauzer/şəbəkələrdə (Safari, korporativ proxy)
-  // websocket bağlantısı kəsilir; 20 saniyəlik yoxlama sinxronluğu qoruyur.
+  // websocket bağlantısı kəsilir. Yükü azaltmaq üçün 60 saniyə və yalnız
+  // görünən tab üçün işləyir.
   if (pollTimer) window.clearInterval(pollTimer);
-  pollTimer = window.setInterval(() => scheduleRehydrate(), 20000);
+  pollTimer = window.setInterval(() => {
+    if (document.visibilityState === "visible") scheduleRehydrate();
+  }, 60000);
 };
 
 export const deactivateApprovalsSync = () => {
