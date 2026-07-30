@@ -1905,16 +1905,14 @@ function Step2Targets({
                   <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Təyin edici *</span>
                   <button type="button" onClick={() => setAssignerPickerFor(null)} className="text-[11px] text-primary hover:underline">Bağla</button>
                 </div>
-                <input
-                  list={`assigner-list-${t.id}`}
+                <SearchableSelect
+                  size="sm"
                   value={t.assigner}
-                  onChange={e => updHedef(t.id, { assigner: e.target.value })}
-                  placeholder="Əməkdaş axtar (ad, vəzifə)…"
-                  className="w-full px-2 py-1.5 text-xs border border-border rounded bg-background"
+                  onChange={v => updHedef(t.id, { assigner: v })}
+                  options={employeeOptions.map(o => ({ value: o.value, label: o.label }))}
+                  placeholder="Əməkdaş seçin"
+                  allowClear
                 />
-                <datalist id={`assigner-list-${t.id}`}>
-                  {employeeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </datalist>
               </div>
             )}
 
