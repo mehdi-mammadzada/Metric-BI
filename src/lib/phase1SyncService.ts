@@ -113,39 +113,58 @@ let lastLocalWriteAt = 0;
 let hydrating: Promise<void> | null = null;
 const lastWrittenJson = new Map<string, string>();
 
+// Ağır (böyük JSON) kataloqlar — login-i bloklamamaq üçün arxa planda çəkilir.
+const HEAVY_CLOUD_KEYS = new Set(["wb_reports", "operations_log", "kpi_card_drafts"]);
+
+const applyRows = (rows: { catalog_key: string; entries: unknown }[]) => {
+  const byKey = new Map<string, unknown>(rows.map(r => [r.catalog_key, r.entries]));
+  const touchedEvents = new Set<string>();
+  suppressFlush = true;
+  try {
+    for (const store of STORES) {
+      const val = byKey.get(store.cloudKey);
+      if (val !== undefined && val !== null) {
+        const normalized = normalizeStoreValue(store.localKey, val);
+        writeLocal(store.localKey, normalized);
+        lastWrittenJson.set(store.localKey, JSON.stringify(normalized));
+        touchedEvents.add(store.event);
+      }
+    }
+  } finally {
+    suppressFlush = false;
+    // Hidratasiyadan sonra event-lərlə tetiklənən store yazılarının
+    // dərhal buluda geri axmasının qarşısını alırıq (echo loop).
+    suppressFlushUntil = Date.now() + 2500;
+  }
+  // Notify UI hooks so they re-read their stores.
+  touchedEvents.forEach(evt => window.dispatchEvent(new Event(evt)));
+};
+
+const fetchKeys = async (orgId: string, keys: string[]) => {
+  const { data, error } = await supabase
+    .from("org_catalogs")
+    .select("catalog_key, entries")
+    .eq("organization_id", orgId)
+    .in("catalog_key", keys);
+  if (error || !data) return null;
+  return data as { catalog_key: string; entries: unknown }[];
+};
+
 // ── Hydrate ─────────────────────────────────────────────────────────────────
 export const hydratePhase1FromCloud = async (orgId: string): Promise<void> => {
   if (hydrating) return hydrating;
   hydrating = (async () => {
-    const cloudKeys = STORES.map(s => s.cloudKey);
-    const { data, error } = await supabase
-      .from("org_catalogs")
-      .select("catalog_key, entries")
-      .eq("organization_id", orgId)
-      .in("catalog_key", cloudKeys);
-    if (error || !data) return;
+    const light = STORES.map(s => s.cloudKey).filter(k => !HEAVY_CLOUD_KEYS.has(k));
+    const heavy = STORES.map(s => s.cloudKey).filter(k => HEAVY_CLOUD_KEYS.has(k));
 
-    const byKey = new Map<string, unknown>(data.map(r => [r.catalog_key as string, r.entries]));
-    const touchedEvents = new Set<string>();
-    suppressFlush = true;
-    try {
-      for (const store of STORES) {
-        const val = byKey.get(store.cloudKey);
-        if (val !== undefined && val !== null) {
-          const normalized = normalizeStoreValue(store.localKey, val);
-          writeLocal(store.localKey, normalized);
-          lastWrittenJson.set(store.localKey, JSON.stringify(normalized));
-          touchedEvents.add(store.event);
-        }
-      }
-    } finally {
-      suppressFlush = false;
-      // Hidratasiyadan sonra event-lərlə tetiklənən store yazılarının
-      // dərhal buluda geri axmasının qarşısını alırıq (echo loop).
-      suppressFlushUntil = Date.now() + 2500;
-    }
-    // Notify UI hooks so they re-read their stores.
-    touchedEvents.forEach(evt => window.dispatchEvent(new Event(evt)));
+    const rows = await fetchKeys(orgId, light);
+    if (rows) applyRows(rows);
+
+    // Ağır kataloqlar arxa planda — UI gözləmir.
+    void (async () => {
+      const heavyRows = await fetchKeys(orgId, heavy);
+      if (heavyRows) applyRows(heavyRows);
+    })();
   })().finally(() => { hydrating = null; });
   return hydrating;
 };
