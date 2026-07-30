@@ -2118,11 +2118,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               draftTargets.forEach((t: any) => {
                 if (t?.assigner) push(t.assigner, "Hədəfi təyin etdi", "ok");
               });
-              // kpiSetStore-dan tamamlanmış təyinlər (backend mənbəyi)
-              setEntries.filter(e => e.status === "completed").forEach(e => push(e.assigneeName || "", "Hədəfi təyin etdi", "ok"));
-              if (rows.length === 0) {
-                (st.assignees || []).filter(a => a.ok).forEach(a => push(a.name, "Hədəfi təyin etdi", "ok"));
-              }
+              // kpiSetStore-dan tamamlanmış təyinlər (backend mənbəyi) — yalnız hədəfi təyin edənlər
+              setEntries
+                .filter(e => e.status === "completed")
+                .forEach(e => push((e as any).assignerName || e.assigneeName || "", "Hədəfi təyin etdi", "ok"));
               // Təsdiqləyənlər
               approvalRows.filter(r => r.tone === "ok").forEach(r => push(r.name, "Təsdiqlədi", "ok"));
               return rows;

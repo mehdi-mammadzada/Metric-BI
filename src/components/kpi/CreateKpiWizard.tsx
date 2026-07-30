@@ -1671,16 +1671,15 @@ function Step2Targets({
           <div className="space-y-3">
             <div>
               <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Təyin edici</label>
-              <input
-                list="unified-assigner-list"
-                value={unifiedAssigner}
-                onChange={e => setUnifiedAssigner(e.target.value)}
-                placeholder="Əməkdaş axtar (ad, vəzifə)…"
-                className="w-full mt-1 px-2.5 py-1.5 text-sm border border-border rounded bg-background"
-              />
-              <datalist id="unified-assigner-list">
-                {employeeOptions.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
-              </datalist>
+              <div className="mt-1">
+                <SearchableSelect
+                  value={unifiedAssigner}
+                  onChange={setUnifiedAssigner}
+                  options={employeeOptions.map(o => ({ value: o.value, label: o.label }))}
+                  placeholder="Əməkdaş seçin"
+                  allowClear
+                />
+              </div>
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Qiymətləndirici(lər) — çəkilər cəmi 100%</label>
@@ -1906,16 +1905,14 @@ function Step2Targets({
                   <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Təyin edici *</span>
                   <button type="button" onClick={() => setAssignerPickerFor(null)} className="text-[11px] text-primary hover:underline">Bağla</button>
                 </div>
-                <input
-                  list={`assigner-list-${t.id}`}
+                <SearchableSelect
+                  size="sm"
                   value={t.assigner}
-                  onChange={e => updHedef(t.id, { assigner: e.target.value })}
-                  placeholder="Əməkdaş axtar (ad, vəzifə)…"
-                  className="w-full px-2 py-1.5 text-xs border border-border rounded bg-background"
+                  onChange={v => updHedef(t.id, { assigner: v })}
+                  options={employeeOptions.map(o => ({ value: o.value, label: o.label }))}
+                  placeholder="Əməkdaş seçin"
+                  allowClear
                 />
-                <datalist id={`assigner-list-${t.id}`}>
-                  {employeeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </datalist>
               </div>
             )}
 
@@ -2010,12 +2007,15 @@ function UnifiedEvaluatorsEditor({ employeeOptions, evaluators, onChange }: {
     <div className="space-y-1.5">
       {evaluators.map(ev => (
         <div key={ev.id} className="grid grid-cols-12 gap-1.5 items-center">
-          <select value={ev.name}
-            onChange={e => onChange(evaluators.map(x => x.id === ev.id ? { ...x, name: e.target.value } : x))}
-            className="col-span-8 px-2 py-1.5 text-xs border border-border rounded bg-background">
-            <option value="">— Əməkdaş seçin —</option>
-            {employeeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <SearchableSelect
+            className="col-span-8"
+            size="sm"
+            value={ev.name}
+            onChange={v => onChange(evaluators.map(x => x.id === ev.id ? { ...x, name: v } : x))}
+            options={employeeOptions.map(o => ({ value: o.value, label: o.label }))}
+            placeholder="Əməkdaş seçin"
+            allowClear
+          />
           <WeightInput value={ev.weight}
             onChange={n => onChange(evaluators.map(x => x.id === ev.id ? { ...x, weight: n } : x))}
             placeholder="%"
@@ -2526,15 +2526,6 @@ function EvaluatorPickerDialog({ target, employeeOptions, onClose, onSave }: {
             <div>
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
                 Qiymətləndirici(lər){personEvs.length > 1 && <span className="text-amber-600"> — faiz cəmi 100%</span>}
-              </div>
-              <div className="relative mb-2">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <input
-                  value={personSearch}
-                  onChange={e => setPersonSearch(e.target.value)}
-                  placeholder="Əməkdaş axtar (ad, vəzifə)..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded bg-background"
-                />
               </div>
               <UnifiedEvaluatorsEditor
                 employeeOptions={filteredEmployeeOptions}
