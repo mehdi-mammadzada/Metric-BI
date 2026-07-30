@@ -1671,16 +1671,15 @@ function Step2Targets({
           <div className="space-y-3">
             <div>
               <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Təyin edici</label>
-              <input
-                list="unified-assigner-list"
-                value={unifiedAssigner}
-                onChange={e => setUnifiedAssigner(e.target.value)}
-                placeholder="Əməkdaş axtar (ad, vəzifə)…"
-                className="w-full mt-1 px-2.5 py-1.5 text-sm border border-border rounded bg-background"
-              />
-              <datalist id="unified-assigner-list">
-                {employeeOptions.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
-              </datalist>
+              <div className="mt-1">
+                <SearchableSelect
+                  value={unifiedAssigner}
+                  onChange={setUnifiedAssigner}
+                  options={employeeOptions.map(o => ({ value: o.value, label: o.label }))}
+                  placeholder="Əməkdaş seçin"
+                  allowClear
+                />
+              </div>
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Qiymətləndirici(lər) — çəkilər cəmi 100%</label>
