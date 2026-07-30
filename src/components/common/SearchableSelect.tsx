@@ -122,10 +122,16 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Seçin", di
       {open && createPortal(
         <div
           ref={panelRef}
-          style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, maxHeight: pos.maxH }}
+          style={{ position: "fixed", top: pos.top, left: pos.left, width: pos.width, maxHeight: pos.maxH, pointerEvents: "auto" }}
           className="z-[200] bg-card border border-border rounded-lg shadow-lg flex flex-col overflow-hidden"
           onMouseDown={e => e.stopPropagation()}
+          onPointerDown={e => e.stopPropagation()}
+          onTouchStart={e => e.stopPropagation()}
+          onFocus={e => e.stopPropagation()}
+          onWheel={e => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
+
           <div className="p-2 border-b border-border shrink-0">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
