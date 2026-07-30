@@ -155,7 +155,7 @@ let currentOrgId: string | null = null;
 const flushTimers = new Map<string, number>();
 
 const scheduleFlush = (localKey?: string) => {
-  if (suppressFlush || !currentOrgId) return;
+  if (suppressFlush || Date.now() < suppressFlushUntil || !currentOrgId) return;
   const key = localKey ?? "*";
   const existing = flushTimers.get(key);
   if (existing) window.clearTimeout(existing);
@@ -165,6 +165,9 @@ const scheduleFlush = (localKey?: string) => {
   }, 1200);
   flushTimers.set(key, t);
 };
+
+const isEmptyPayload = (v: unknown) =>
+  (Array.isArray(v) && v.length === 0) || (!!v && typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length === 0);
 
 export const flushPhase1ToCloud = async (localKey?: string) => {
   const orgId = currentOrgId;
@@ -177,6 +180,9 @@ export const flushPhase1ToCloud = async (localKey?: string) => {
     const rawEntries = readLocal<unknown>(s.localKey, null);
     const entries = normalizeStoreValue(s.localKey, rawEntries);
     if (entries === null || entries === undefined) continue;
+    // Bulud dəyəri hələ hidrat olunmayıbsa, boş massivi buluda yazmırıq —
+    // əks halda mövcud kataloqlar (struktur tipləri, vəzifələr) silinir.
+    if (isEmptyPayload(entries) && !lastWrittenJson.has(s.localKey)) continue;
     const json = JSON.stringify(entries);
     if (lastWrittenJson.get(s.localKey) === json) continue;
     rows.push({ organization_id: orgId, catalog_key: s.cloudKey, entries });
@@ -184,9 +190,11 @@ export const flushPhase1ToCloud = async (localKey?: string) => {
   }
   if (rows.length === 0) return;
 
+  lastLocalWriteAt = Date.now();
   const { error } = await supabase
     .from("org_catalogs")
     .upsert(rows as never, { onConflict: "organization_id,catalog_key" });
+  lastLocalWriteAt = Date.now();
   if (error) return;
   changedKeys.forEach((key, index) => lastWrittenJson.set(key, JSON.stringify(rows[index].entries)));
 };
