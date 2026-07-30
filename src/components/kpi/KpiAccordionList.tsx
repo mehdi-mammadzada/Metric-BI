@@ -158,8 +158,10 @@ const KpiAccordionList = ({ items, defaultExpandFirst = true, emptyLabel = "KPI 
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setTargetDetail({ kpi, target: t });
-                                  onAction?.(kpi, t, "view");
+                                  // Yalnız bir panel açılsın: səhifə drawer-i varsa onu,
+                                  // yoxdursa daxili detal pəncərəsini istifadə et.
+                                  if (onAction) onAction(kpi, t, "view");
+                                  else setTargetDetail({ kpi, target: t });
                                 }}
                                 className="w-8 h-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"
                                 aria-label="Hədəfə bax"
