@@ -1246,12 +1246,14 @@ export const activateOrgSync = async (orgId: string, userId: string) => {
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "organizations", filter: `id=eq.${orgId}` }, scheduleRehydrate)
     .subscribe();
 
-  // Fallback: refresh on window focus + every 15s so we recover from missed
-  // realtime broadcasts (e.g. sleeping tab, transient websocket drop).
-  onFocusHandler = () => scheduleRehydrate();
+  // Fallback: refresh on window focus + periodic poll (yalnız görünən tab)
+  // so we recover from missed realtime broadcasts.
+  onFocusHandler = () => { if (document.visibilityState === "visible") scheduleRehydrate(); };
   window.addEventListener("focus", onFocusHandler);
   if (refreshInterval) window.clearInterval(refreshInterval);
-  refreshInterval = window.setInterval(scheduleRehydrate, 60000);
+  refreshInterval = window.setInterval(() => {
+    if (document.visibilityState === "visible") scheduleRehydrate();
+  }, 180000);
 };
 
 export const deactivateOrgSync = () => {

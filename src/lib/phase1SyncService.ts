@@ -108,19 +108,16 @@ const normalizeStoreValue = (localKey: string, value: unknown): unknown => {
 };
 
 let suppressFlush = false;
+let suppressFlushUntil = 0;
+let lastLocalWriteAt = 0;
+let hydrating: Promise<void> | null = null;
 const lastWrittenJson = new Map<string, string>();
 
-// ── Hydrate ─────────────────────────────────────────────────────────────────
-export const hydratePhase1FromCloud = async (orgId: string): Promise<void> => {
-  const cloudKeys = STORES.map(s => s.cloudKey);
-  const { data, error } = await supabase
-    .from("org_catalogs")
-    .select("catalog_key, entries")
-    .eq("organization_id", orgId)
-    .in("catalog_key", cloudKeys);
-  if (error || !data) return;
+// Ağır (böyük JSON) kataloqlar — login-i bloklamamaq üçün arxa planda çəkilir.
+const HEAVY_CLOUD_KEYS = new Set(["wb_reports", "operations_log", "kpi_card_drafts"]);
 
-  const byKey = new Map<string, unknown>(data.map(r => [r.catalog_key as string, r.entries]));
+const applyRows = (rows: { catalog_key: string; entries: unknown }[]) => {
+  const byKey = new Map<string, unknown>(rows.map(r => [r.catalog_key, r.entries]));
   const touchedEvents = new Set<string>();
   suppressFlush = true;
   try {
@@ -135,9 +132,41 @@ export const hydratePhase1FromCloud = async (orgId: string): Promise<void> => {
     }
   } finally {
     suppressFlush = false;
+    // Hidratasiyadan sonra event-lərlə tetiklənən store yazılarının
+    // dərhal buluda geri axmasının qarşısını alırıq (echo loop).
+    suppressFlushUntil = Date.now() + 2500;
   }
   // Notify UI hooks so they re-read their stores.
   touchedEvents.forEach(evt => window.dispatchEvent(new Event(evt)));
+};
+
+const fetchKeys = async (orgId: string, keys: string[]) => {
+  const { data, error } = await supabase
+    .from("org_catalogs")
+    .select("catalog_key, entries")
+    .eq("organization_id", orgId)
+    .in("catalog_key", keys);
+  if (error || !data) return null;
+  return data as { catalog_key: string; entries: unknown }[];
+};
+
+// ── Hydrate ─────────────────────────────────────────────────────────────────
+export const hydratePhase1FromCloud = async (orgId: string): Promise<void> => {
+  if (hydrating) return hydrating;
+  hydrating = (async () => {
+    const light = STORES.map(s => s.cloudKey).filter(k => !HEAVY_CLOUD_KEYS.has(k));
+    const heavy = STORES.map(s => s.cloudKey).filter(k => HEAVY_CLOUD_KEYS.has(k));
+
+    const rows = await fetchKeys(orgId, light);
+    if (rows) applyRows(rows);
+
+    // Ağır kataloqlar arxa planda — UI gözləmir.
+    void (async () => {
+      const heavyRows = await fetchKeys(orgId, heavy);
+      if (heavyRows) applyRows(heavyRows);
+    })();
+  })().finally(() => { hydrating = null; });
+  return hydrating;
 };
 
 // ── Flush ───────────────────────────────────────────────────────────────────
@@ -145,7 +174,7 @@ let currentOrgId: string | null = null;
 const flushTimers = new Map<string, number>();
 
 const scheduleFlush = (localKey?: string) => {
-  if (suppressFlush || !currentOrgId) return;
+  if (suppressFlush || Date.now() < suppressFlushUntil || !currentOrgId) return;
   const key = localKey ?? "*";
   const existing = flushTimers.get(key);
   if (existing) window.clearTimeout(existing);
@@ -155,6 +184,9 @@ const scheduleFlush = (localKey?: string) => {
   }, 1200);
   flushTimers.set(key, t);
 };
+
+const isEmptyPayload = (v: unknown) =>
+  (Array.isArray(v) && v.length === 0) || (!!v && typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length === 0);
 
 export const flushPhase1ToCloud = async (localKey?: string) => {
   const orgId = currentOrgId;
@@ -167,6 +199,9 @@ export const flushPhase1ToCloud = async (localKey?: string) => {
     const rawEntries = readLocal<unknown>(s.localKey, null);
     const entries = normalizeStoreValue(s.localKey, rawEntries);
     if (entries === null || entries === undefined) continue;
+    // Bulud dəyəri hələ hidrat olunmayıbsa, boş massivi buluda yazmırıq —
+    // əks halda mövcud kataloqlar (struktur tipləri, vəzifələr) silinir.
+    if (isEmptyPayload(entries) && !lastWrittenJson.has(s.localKey)) continue;
     const json = JSON.stringify(entries);
     if (lastWrittenJson.get(s.localKey) === json) continue;
     rows.push({ organization_id: orgId, catalog_key: s.cloudKey, entries });
@@ -174,9 +209,11 @@ export const flushPhase1ToCloud = async (localKey?: string) => {
   }
   if (rows.length === 0) return;
 
+  lastLocalWriteAt = Date.now();
   const { error } = await supabase
     .from("org_catalogs")
     .upsert(rows as never, { onConflict: "organization_id,catalog_key" });
+  lastLocalWriteAt = Date.now();
   if (error) return;
   changedKeys.forEach((key, index) => lastWrittenJson.set(key, JSON.stringify(rows[index].entries)));
 };
@@ -213,13 +250,21 @@ let rehydrateTimer: number | null = null;
 let refreshInterval: number | null = null;
 let onFocusHandler: (() => void) | null = null;
 
-const scheduleRehydrate = () => {
+let lastHydrateAt = 0;
+
+const scheduleRehydrate = (opts?: { minIntervalMs?: number }) => {
   if (!currentOrgId) return;
+  const minInterval = opts?.minIntervalMs ?? 0;
+  if (minInterval && Date.now() - lastHydrateAt < minInterval) return;
   if (rehydrateTimer) window.clearTimeout(rehydrateTimer);
   rehydrateTimer = window.setTimeout(() => {
     rehydrateTimer = null;
-    if (currentOrgId) void hydratePhase1FromCloud(currentOrgId);
-  }, 500);
+    // Öz yazımızın echo-su üçün yenidən çəkmirik (sonsuz döngə/yük).
+    if (Date.now() - lastLocalWriteAt < 4000) return;
+    if (!currentOrgId) return;
+    lastHydrateAt = Date.now();
+    void hydratePhase1FromCloud(currentOrgId);
+  }, 1500);
 };
 
 export const activatePhase1Sync = async (orgId: string) => {
@@ -239,19 +284,19 @@ export const activatePhase1Sync = async (orgId: string) => {
   }
   installStoragePatch();
   await hydratePhase1FromCloud(orgId);
+  lastHydrateAt = Date.now();
   getAllDropdownCatalogs();
-  scheduleFlush("kpi_dropdown_catalogs_v6");
 
   if (realtimeChannel) supabase.removeChannel(realtimeChannel);
   realtimeChannel = supabase
     .channel(`catalogs-live-${orgId}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "org_catalogs", filter: `organization_id=eq.${orgId}` }, scheduleRehydrate)
+    .on("postgres_changes", { event: "*", schema: "public", table: "org_catalogs", filter: `organization_id=eq.${orgId}` }, () => scheduleRehydrate())
     .subscribe();
 
-  onFocusHandler = () => scheduleRehydrate();
+  onFocusHandler = () => scheduleRehydrate({ minIntervalMs: 60000 });
   window.addEventListener("focus", onFocusHandler);
   if (refreshInterval) window.clearInterval(refreshInterval);
-  refreshInterval = window.setInterval(scheduleRehydrate, 120000);
+  refreshInterval = window.setInterval(() => scheduleRehydrate(), 180000);
 };
 
 

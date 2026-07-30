@@ -51,21 +51,43 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Seçin", di
     const gap = 4;
     const spaceBelow = vh - r.bottom - 8;
     const spaceAbove = r.top - 8;
-    const openUp = spaceBelow < 180 && spaceAbove > spaceBelow;
+    const openUp = spaceBelow < 200 && spaceAbove > spaceBelow;
     const maxH = Math.max(160, Math.min(PANEL_MAX_H, openUp ? spaceAbove : spaceBelow));
-    const width = r.width;
-    const left = Math.min(Math.max(8, r.left), Math.max(8, vw - width - 8));
-    const top = openUp ? r.top - gap - maxH : r.bottom + gap;
+    const width = Math.min(Math.max(r.width, 220), Math.max(220, vw - 16));
+    let left = r.left;
+    // Sağ kənardan kənara çıxmasın — lazım olduqda trigger-in sağ kənarına hizala.
+    if (left + width > vw - 8) left = r.right - width;
+    left = Math.min(Math.max(8, left), Math.max(8, vw - width - 8));
+    let top = openUp ? r.top - gap - maxH : r.bottom + gap;
+    top = Math.min(Math.max(8, top), Math.max(8, vh - maxH - 8));
+
+    // Portal hədəfi transform/filter kimi containing block yaradarsa,
+    // `position: fixed` viewport-a görə hesablanmır — real fərqi ölçüb düzəldirik.
+    const panel = panelRef.current;
+    if (panel) {
+      const pr = panel.getBoundingClientRect();
+      const curTop = parseFloat(panel.style.top || "0");
+      const curLeft = parseFloat(panel.style.left || "0");
+      const dy = pr.top - curTop;
+      const dx = pr.left - curLeft;
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+        top -= dy;
+        left -= dx;
+      }
+    }
     setPos({ top, left, width, maxH });
   }, []);
 
   useLayoutEffect(() => {
     if (!open) return;
     reposition();
+    // Panel mount olduqdan sonra offset korreksiyası üçün ikinci ölçmə.
+    const raf = requestAnimationFrame(() => reposition());
     const onScroll = () => reposition();
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onScroll);
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onScroll);
     };
