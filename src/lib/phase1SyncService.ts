@@ -271,13 +271,13 @@ export const activatePhase1Sync = async (orgId: string) => {
   if (realtimeChannel) supabase.removeChannel(realtimeChannel);
   realtimeChannel = supabase
     .channel(`catalogs-live-${orgId}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "org_catalogs", filter: `organization_id=eq.${orgId}` }, scheduleRehydrate)
+    .on("postgres_changes", { event: "*", schema: "public", table: "org_catalogs", filter: `organization_id=eq.${orgId}` }, () => scheduleRehydrate())
     .subscribe();
 
-  onFocusHandler = () => scheduleRehydrate();
+  onFocusHandler = () => scheduleRehydrate({ minIntervalMs: 60000 });
   window.addEventListener("focus", onFocusHandler);
   if (refreshInterval) window.clearInterval(refreshInterval);
-  refreshInterval = window.setInterval(scheduleRehydrate, 120000);
+  refreshInterval = window.setInterval(() => scheduleRehydrate(), 180000);
 };
 
 
