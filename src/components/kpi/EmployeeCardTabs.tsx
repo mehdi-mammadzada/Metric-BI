@@ -7,6 +7,7 @@ import KpiAccordionList, { type AccordionKpi } from "@/components/kpi/KpiAccordi
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
 import { REVIEW_STATUS_STYLES } from "@/components/kpi/LifecycleView";
 import { computeReviewStatus, getLifecycleWithFallback } from "@/lib/kpiLifecycleStore";
+import { getAssignedTargetValues } from "@/lib/kpiSetStore";
 
 export type EmployeeCardTab = "empTargets" | "empDynamics" | "empReviews";
 
