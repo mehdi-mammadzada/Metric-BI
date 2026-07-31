@@ -1531,7 +1531,12 @@ const EmployeesTab = () => {
   const currentPage = Math.min(page, totalPages);
   const pageItems = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  useEffect(() => { setPage(1); }, [search, filterStructure, filterPosition, filterStatus, pageSize]);
+  useEffect(() => { setPage(1); }, [search, filterStructure, filterPosition, filterStatus, pageSize, showArchived]);
+
+  useEffect(() => {
+    setFilterStatus(showArchived ? "inactive" : "active");
+    localStorage.setItem(SHOW_ARCHIVED_KEY, String(showArchived));
+  }, [showArchived]);
 
   const emailsExcluding = (excludeId?: number) =>
     employees.filter(e => e.id !== excludeId).map(e => e.email.trim().toLowerCase());
