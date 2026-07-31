@@ -631,7 +631,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
 
-  const LOGIN_TIMEOUT_MS = 10000;
+  // Per-attempt budget. signInWithPasswordFast retries up to 3 times and then
+  // falls back to the official client, so a slow first attempt never fails login.
+  const LOGIN_TIMEOUT_MS = 15000;
+
 
   const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
     return Promise.race([
