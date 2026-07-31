@@ -1717,8 +1717,9 @@ const EmployeesTab = () => {
               rows={filtered}
               rowKey={(e) => e.id}
               storageKey="org-employees"
-              emptyMessage="Əməkdaş tapılmadı"
+              emptyMessage={showArchived ? "Passiv əməkdaş tapılmadı" : "Aktiv əməkdaş tapılmadı"}
               columns={cols}
+              toolbarRight={<ArchiveSwitch checked={showArchived} onCheckedChange={setShowArchived} />}
             />
           );
         })()}
