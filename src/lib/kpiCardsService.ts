@@ -230,6 +230,7 @@ const replaceLocalKpiCache = (shared: SharedKpiCard[] = [], status: Record<numbe
 
 // ── HYDRATE ───────────────────────────────────────────────────────────────────
 export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => {
+  captureTerminalStatuses();
   const [cardsRes, targetsRes, historyRes, draftsRes] = await Promise.all([
     supabase.from("kpi_cards").select("*").eq("organization_id", orgId),
     supabase.from("kpi_card_targets").select("*").eq("organization_id", orgId).order("sort_order"),
