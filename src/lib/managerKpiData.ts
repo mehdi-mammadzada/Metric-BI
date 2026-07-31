@@ -4,6 +4,7 @@ import { getEmployees } from "@/lib/orgStore";
 import { getSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
 import { getNodes, type CascadeTreeNode } from "@/lib/cascadeTreeStore";
 import { getTeams } from "@/lib/teamsStore";
+import { getAssignedTargetValues, type AssignedTargetValue } from "@/lib/kpiSetStore";
 
 export interface RealTarget {
   id: string;
@@ -45,26 +46,37 @@ const empKey = (id: number) => `e${id}`;
 /** Kartlar yalnız real statuslarda göstərilir (silinmiş/imtina olunmuş kartlar yox). */
 const VISIBLE = new Set(["aktiv", "natamam", "tesdiq_gozlenilir"]);
 
-const cardToReal = (c: SharedKpiCard): RealKpiCard => ({
-  id: `sk-${c.id}`,
-  cardId: c.numericId,
-  name: c.name,
-  createdAt: dt(c.startDate || (c.createdAt || "").slice(0, 10)),
-  deadline: dt(c.endDate),
-  status: "in_progress",
-  cardStatus: c.status,
-  scoringSystem: c.scoringSystem,
-  frequency: c.frequency,
-  targets: (c.targets || []).map((t, i) => ({
-    id: `${c.id}-${t.id ?? i}`,
-    name: t.name || `Hədəf ${i + 1}`,
-    plan: num(t.targetValue ?? t.scoreLimit),
-    fakt: 0,
-    unit: t.unit || "",
-    weight: Number(t.weight) || 0,
-    status: "in_progress" as const,
-  })),
-});
+const cardToReal = (c: SharedKpiCard): RealKpiCard => {
+  // Hədəf dəyərləri üçün vahid mənbə: "Məsul Olduğum Kartlar"-da təyin edilmiş dəyər
+  // (varsa) kartdakı ilkin dəyəri əvəz edir.
+  const assigned = c.numericId != null ? getAssignedTargetValues(c.numericId) : new Map();
+  const normName = (v: unknown) => String(v ?? "").split(" — ")[0].trim().toLowerCase().replace(/\s+/g, " ");
+  return {
+    id: `sk-${c.id}`,
+    cardId: c.numericId,
+    name: c.name,
+    createdAt: dt(c.startDate || (c.createdAt || "").slice(0, 10)),
+    deadline: dt(c.endDate),
+    status: "in_progress",
+    cardStatus: c.status,
+    scoringSystem: c.scoringSystem,
+    frequency: c.frequency,
+    targets: (c.targets || []).map((t, i) => {
+      const name = t.name || `Hədəf ${i + 1}`;
+      const a = assigned.get(normName(name));
+      return {
+        id: `${c.id}-${t.id ?? i}`,
+        name,
+        plan: a ? a.value : num(t.targetValue ?? t.scoreLimit),
+        fakt: 0,
+        unit: (a?.unit || t.unit || ""),
+        weight: Number(a?.weight ?? t.weight) || 0,
+        status: "in_progress" as const,
+      };
+    }),
+  };
+};
+
 
 /** Cascade node-larını kart formatına çevir (kart adı üzrə qruplaşdırılmış). */
 const cascadeToReal = (nodes: CascadeTreeNode[]): RealKpiCard[] => {
