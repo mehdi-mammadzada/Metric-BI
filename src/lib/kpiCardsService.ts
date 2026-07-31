@@ -264,6 +264,10 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
     historyByCard.set(h.kpi_card_id, arr);
   }
 
+  // Terminal statuslar (silindi / ləğv olunmuş) lokal ledger-dən bərpa olunur.
+  const ledger = readTerminalLedger();
+  let ledgerApplied = false;
+
   // Rebuild shared KPI card records.
   const shared: SharedKpiCard[] = dedupeSharedKpiCards(cards.map((c: any) => {
     const draft = draftForCard(drafts, c);
