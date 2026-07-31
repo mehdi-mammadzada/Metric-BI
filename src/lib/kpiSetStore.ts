@@ -287,6 +287,50 @@ export const getIncomingCascadeLoad = (
 export const getEntriesForCard = (cardId: number): KpiSetEntry[] =>
   load().filter(e => e.cardId === cardId);
 
+/**
+ * SINGLE SOURCE OF TRUTH: "Məsul Olduğum Kartlar"-da rəhbərin təyin etdiyi
+ * aktual hədəf dəyərləri. Digər modullar (KPI İzlənməsi, Əməkdaşlar üzrə
+ * kartlar) hədəf dəyərini əvvəlcə buradan oxumalıdır.
+ */
+export interface AssignedTargetValue {
+  target: string;
+  value: number;
+  unit: string;
+  weight?: number;
+  updatedAt: number;
+}
+
+const toNumber = (v: unknown): number => {
+  const n = parseFloat(String(v ?? "").replace(/[^\d.\-]/g, ""));
+  return isNaN(n) ? 0 : n;
+};
+
+/** Kart üzrə təyin edilmiş hədəf dəyərləri — açar: hədəf adı (normalizə olunmuş). */
+export const getAssignedTargetValues = (cardId: number): Map<string, AssignedTargetValue> => {
+  const map = new Map<string, AssignedTargetValue>();
+  load()
+    .filter(e => e.cardId === cardId && e.status === "completed")
+    .sort((a, b) => (Number(a.updatedAt) || 0) - (Number(b.updatedAt) || 0))
+    .forEach(e => {
+      const key = norm(e.subKpiName);
+      if (!key) return;
+      map.set(key, {
+        target: e.target || "",
+        value: toNumber(e.target),
+        unit: e.unit || "",
+        weight: e.weight,
+        updatedAt: Number(e.updatedAt) || 0,
+      });
+    });
+  return map;
+};
+
+/** Bir hədəf üçün aktual (təyin edilmiş) dəyər — yoxdursa undefined. */
+export const getAssignedTargetValue = (
+  cardId: number,
+  targetName: string,
+): AssignedTargetValue | undefined => getAssignedTargetValues(cardId).get(norm(targetName));
+
 export const clearEntryLimits = (id: string) => {
   persist(load().map(e => (e.id === id ? { ...e, limits: undefined, status: "pending", updatedAt: Date.now() } : e)));
 };

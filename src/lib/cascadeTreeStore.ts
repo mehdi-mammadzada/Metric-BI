@@ -54,7 +54,25 @@ export const dedupeCascadeNodes = (rows: CascadeTreeNode[]): CascadeTreeNode[] =
   return Array.from(byNode.values()).sort((a, b) => (Number(b.updatedAt || b.createdAt) || 0) - (Number(a.updatedAt || a.createdAt) || 0));
 };
 
-const load = (): CascadeTreeNode[] => {
+/**
+ * Silinmiş / ləğv olunmuş KPI kartlarının adları — həmin kartlara aid kaskad
+ * node-ları heç bir izləmə görünüşündə əks olunmamalıdır. Kart registrini
+ * birbaşa storage-dən oxuyuruq (circular import olmasın).
+ */
+const removedCardNames = (): Set<string> => {
+  const out = new Set<string>();
+  try {
+    const raw = localStorage.getItem("shared_kpi_cards_v1");
+    if (!raw) return out;
+    const rows = JSON.parse(raw);
+    (Array.isArray(rows) ? rows : []).forEach((c: any) => {
+      if (c?.status === "silindi" || c?.status === "legv_olundu") out.add(norm(c?.name));
+    });
+  } catch {}
+  return out;
+};
+
+const loadRaw = (): CascadeTreeNode[] => {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
@@ -69,8 +87,17 @@ const load = (): CascadeTreeNode[] => {
   return seed;
 };
 
+const load = (): CascadeTreeNode[] => {
+  const removed = removedCardNames();
+  if (removed.size === 0) return loadRaw();
+  return loadRaw().filter(n => !removed.has(norm(n.cardName)));
+};
+
 const persist = (rows: CascadeTreeNode[]) => {
-  localStorage.setItem(KEY, JSON.stringify(dedupeCascadeNodes(rows)));
+  // Gizlədilmiş (silinmiş kartlara aid) node-lar yazma zamanı itməsin.
+  const removed = removedCardNames();
+  const hidden = removed.size ? loadRaw().filter(n => removed.has(norm(n.cardName))) : [];
+  localStorage.setItem(KEY, JSON.stringify(dedupeCascadeNodes([...rows, ...hidden])));
   window.dispatchEvent(new Event(EVT));
 };
 
@@ -201,8 +228,13 @@ export const useCascadeTree = (): CascadeTreeNode[] => {
   useEffect(() => {
     const h = () => setRows(load());
     window.addEventListener(EVT, h);
+    window.addEventListener("shared-kpi-cards-updated", h);
     window.addEventListener("storage", h);
-    return () => { window.removeEventListener(EVT, h); window.removeEventListener("storage", h); };
+    return () => {
+      window.removeEventListener(EVT, h);
+      window.removeEventListener("shared-kpi-cards-updated", h);
+      window.removeEventListener("storage", h);
+    };
   }, []);
   return rows;
 };

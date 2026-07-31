@@ -41,7 +41,7 @@ export const STATUS_LABELS: Record<KpiCardStatus, string> = {
   silindi: "Silindi",
   qiymetlendirme: "Qiymətləndirmə",
   tamamlanib: "Tamamlanıb",
-  legv_olundu: "Silindi",
+  legv_olundu: "Ləğv olunmuş",
 };
 
 export const STATUS_STYLES: Record<KpiCardStatus, string> = {
@@ -53,7 +53,7 @@ export const STATUS_STYLES: Record<KpiCardStatus, string> = {
   silindi: "bg-slate-800 text-slate-100 border-slate-900 dark:bg-slate-900 dark:text-slate-200",
   qiymetlendirme: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30",
   tamamlanib: "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30",
-  legv_olundu: "bg-slate-800 text-slate-100 border-slate-900 dark:bg-slate-900 dark:text-slate-200",
+  legv_olundu: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
 };
 
 const isDeletedStatus = (status: KpiCardStatus | undefined | null) =>

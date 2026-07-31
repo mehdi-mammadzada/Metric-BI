@@ -59,7 +59,7 @@ import { getCardDrafts, saveCardDrafts, KPI_CARD_DRAFTS_EVENT } from "@/lib/kpiC
 const STATUS_LABELS = {
   qaralama: "Qaralama", natamam: "Natamam", tesdiq_gozlenilir: "Təsdiq gözlənilir",
   imtina: "İmtina", aktiv: "Aktiv", qiymetlendirme: "Qiymətləndirmə",
-  tamamlanib: "Tamamlanıb", silindi: "Silindi", legv_olundu: "Silindi",
+  tamamlanib: "Tamamlanıb", silindi: "Silindi", legv_olundu: "Ləğv olunmuş",
 } as const;
 const STATUS_STYLES: Record<string, string> = {
   qaralama: "bg-slate-200 text-slate-700 border-slate-300",
@@ -70,8 +70,9 @@ const STATUS_STYLES: Record<string, string> = {
   qiymetlendirme: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30",
   tamamlanib: "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30",
   silindi: "bg-slate-800 text-slate-100 border-slate-900",
-  legv_olundu: "bg-slate-800 text-slate-100 border-slate-900",
+  legv_olundu: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
 };
+
 
 interface EvaluatorPerson { name: string; weight: number; }
 interface EvaluatorConfig {
@@ -1232,7 +1233,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
     const STATUS_LBL: Record<string, string> = {
       qaralama: "Qaralama", natamam: "Natamam", tesdiq_gozlenilir: "Təsdiq gözlənilir",
       imtina: "İmtina", aktiv: "Aktiv", qiymetlendirme: "Qiymətləndirmə",
-      tamamlanib: "Tamamlanıb", silindi: "Silindi", legv_olundu: "Silindi",
+      tamamlanib: "Tamamlanıb", silindi: "Silindi", legv_olundu: "Ləğv olunmuş",
     };
     const matchesStatus = filterStatus === "Hamısı" || STATUS_LBL[st.status] === filterStatus;
     const kind = getAssignKindFor(c.id);
@@ -1537,6 +1538,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 <option>Qiymətləndirmə</option>
                 <option>Tamamlanıb</option>
                 <option>Silindi</option>
+                <option>Ləğv olunmuş</option>
               </select>
             </div>
             <button onClick={() => { resetFilters(); setFilterAssignKind("Hamısı"); setFilterBulkKind("Hamısı"); }} className="px-4 py-2 text-sm rounded-lg border border-border bg-card hover:bg-secondary">Sıfırla</button>
@@ -1624,13 +1626,13 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                 <button
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    if (!confirm(`"${withKartSuffix(card.name)}" kartı tamamən silinsin? Bu əməliyyat "Silindi" statusuna keçirəcək.`)) return;
+                                    if (!confirm(`"${withKartSuffix(card.name)}" kartı ləğv edilsin? Bu əməliyyat "Ləğv olunmuş" statusuna keçirəcək.`)) return;
                                     setStatusMap(prev => ({
                                       ...prev,
                                       [card.id]: {
                                         ...(prev[card.id] || {}),
                                         card_id: card.id,
-                                        status: "silindi",
+                                        status: "legv_olundu",
                                         use_matrix: false,
                                         submitted_for_approval: false,
                                         rejected_by: null,
@@ -1640,15 +1642,15 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                       } as any,
                                     }));
                                     try {
-                                      await upsertStatus({ card_id: card.id, status: "silindi" as any, use_matrix: false, submitted_for_approval: false, assignees: [] });
+                                      await upsertStatus({ card_id: card.id, status: "legv_olundu" as any, use_matrix: false, submitted_for_approval: false, assignees: [] });
                                       const sharedDel = sharedCards.find(s2 => s2.numericId === card.id || s2.id === `kpi-${card.id}` || s2.id === String(card.id));
-                                      if (sharedDel) setKpiStatus(sharedDel.id, "silindi", getCurrentEmployeeId(user) || user?.name || "HR", "İmtina edilmiş kart silindi");
+                                      if (sharedDel) setKpiStatus(sharedDel.id, "legv_olundu", getCurrentEmployeeId(user) || user?.name || "HR", "İmtina edilmiş kart ləğv olundu");
                                       await import("@/lib/kpiCardsService").then(m => m.flushLocalKpiCardsToCloud()).catch(() => undefined);
                                       const mod = await import("@/lib/kpiCardStatusStore");
                                       const next = await mod.fetchAllStatuses();
                                       setStatusMap(prev => ({ ...prev, ...next }));
                                     } catch {}
-                                    toast.success("Kart Silindi statusuna keçirildi");
+                                    toast.success("Kart Ləğv olunmuş statusuna keçirildi");
                                     try {
                                       const nmod = await import("@/lib/notificationsStore");
                                       const draft = cardDrafts[card.id];
@@ -2166,7 +2168,18 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               ];
             })();
 
-
+            // Ləğv olunmuş: kartı ləğv edən şəxs və səbəbi (silinmə ilə qarışdırılmır).
+            const cancellationRows = (() => {
+              const hist = (sharedCard?.history || []);
+              const entry = [...hist].reverse().find(h => h.action === "status:legv_olundu");
+              const actorId = entry?.actor || "";
+              const actorName = actorId && actorId !== "system" ? employeeNameById(actorId) : (card?.responsible || "—");
+              const note = (entry?.note || "").trim();
+              return [
+                { role: "Ləğv edən", name: actorName || "—", tone: "err" as const },
+                { role: "Ləğv səbəbi", name: note || "Səbəb qeyd edilməyib", tone: "err" as const },
+              ];
+            })();
 
             const cfg: Record<string, { title: string; empty: string; rows: { role: string; name: string; tone?: "ok" | "wait" | "err" }[] }> = {
               qaralama:        { title: "Qaralama — hazırlanır", empty: "Kart yaradılıb, hələ təyinə göndərilməyib.", rows: [{ role: "Yaradan", name: card?.responsible || "—", tone: "wait" }] },
@@ -2177,7 +2190,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               qiymetlendirme:  { title: "Qiymətləndirəcək şəxslər", empty: "Qiymətləndirici təyin edilməyib.", rows: evaluators.map(e => ({ ...e, tone: "wait" as const })) },
               tamamlanib:      { title: "Tamamlanıb — qiymətləndirənlər", empty: "—", rows: evaluators.map(e => ({ ...e, tone: "ok" as const })) },
                silindi:         { title: "Silindi", empty: "—", rows: deletionRows },
-               legv_olundu:     { title: "Silindi", empty: "—", rows: deletionRows },
+               legv_olundu:     { title: "Ləğv olunmuş", empty: "—", rows: cancellationRows },
             };
 
             if (st.status === "tesdiq_gozlenilir" && cfg.tesdiq_gozlenilir.rows.length === 0) {
