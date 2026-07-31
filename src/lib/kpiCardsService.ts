@@ -447,6 +447,8 @@ const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 export const flushLocalKpiCardsToCloud = async () => {
   const orgId = currentOrgId;
   if (!orgId) return;
+  captureTerminalStatuses();
+  const flushLedger = readTerminalLedger();
   const shared = getSharedKpiCards();
   const status = rawRead<Record<number, any>>(STATUS_KEY, {});
   const drafts = rawRead<Record<string, any>>(DRAFTS_KEY, {});
@@ -471,12 +473,16 @@ export const flushLocalKpiCardsToCloud = async () => {
     const s = numeric != null ? status[numeric] : undefined;
     const persistedMode = (numeric != null ? modeByNumeric.get(Number(numeric)) : undefined) ?? modeByUuid.get(c.id);
     const assignmentMode = persistedMode ?? (c.assignmentMode === "bulk" ? "bulk" : "individual");
+    // Lokal (ən son) terminal status prioritetdir, sonra bulud.
     const terminalStatus = [
+      terminalFor({ id: c.id, numericId: numeric }, flushLedger)?.status as SharedKpiStatus | undefined,
+      c.status,
+      s?.status,
       numeric != null ? statusByNumeric.get(Number(numeric)) : undefined,
       statusByUuid.get(c.id),
-      s?.status,
-      c.status,
     ].find(isDeletedStatus) as SharedKpiStatus | undefined;
+    const effectiveStatus = terminalStatus ?? c.status;
+
     const effectiveStatus = terminalStatus ?? c.status;
     if (terminalStatus && c.status !== terminalStatus) {
       upsertSharedKpiCard({ ...c, status: terminalStatus });
