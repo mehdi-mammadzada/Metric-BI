@@ -27,6 +27,43 @@ const EVT_ALL    = "kpi-cards-updated";
 
 const isDeletedStatus = (status: unknown) => status === "silindi" || status === "legv_olundu";
 
+// ── Terminal status ledger ────────────────────────────────────────────────────
+// "Silindi" / "Ləğv olunmuş" statusları terminaldır. Realtime rehydrate flush-dan
+// əvvəl işlədikdə status köhnə dəyərə qayıtmasın deyə terminal statuslar lokal
+// ledger-də saxlanılır və hydrate zamanı yenidən tətbiq olunur.
+const TERMINAL_KEY = "kpi_terminal_status_v1";
+type TerminalEntry = { status: string; reason?: string | null };
+const readTerminalLedger = (): Record<string, TerminalEntry> => {
+  try {
+    const raw = localStorage.getItem(TERMINAL_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch { return {}; }
+};
+const terminalKeys = (card: { id?: string; numericId?: number | null }) => {
+  const keys: string[] = [];
+  if (card.id) keys.push(`u:${String(card.id)}`);
+  if (card.numericId != null) keys.push(`n:${String(card.numericId)}`);
+  return keys;
+};
+const terminalFor = (card: { id?: string; numericId?: number | null }, ledger = readTerminalLedger()): TerminalEntry | undefined => {
+  for (const k of terminalKeys(card)) {
+    const hit = ledger[k];
+    if (hit && isDeletedStatus(hit.status)) return hit;
+  }
+  return undefined;
+};
+export const recordTerminalStatus = (card: { id?: string; numericId?: number | null; status?: unknown; rejectedReason?: string | null }) => {
+  if (!isDeletedStatus(card.status)) return;
+  const ledger = readTerminalLedger();
+  terminalKeys(card).forEach(k => { ledger[k] = { status: String(card.status), reason: card.rejectedReason ?? null }; });
+  try { localStorage.setItem(TERMINAL_KEY, JSON.stringify(ledger)); } catch {}
+};
+/** Lokal snapshot-dakı bütün terminal statusları ledger-ə yazır. */
+const captureTerminalStatuses = () => {
+  try { getSharedKpiCards().forEach(c => recordTerminalStatus(c)); } catch {}
+};
+
 const asJson = (value: unknown): Json => JSON.parse(JSON.stringify(value ?? null)) as Json;
 
 // ── local raw helpers (bypass the store's own events during hydration) ────────
@@ -193,6 +230,7 @@ const replaceLocalKpiCache = (shared: SharedKpiCard[] = [], status: Record<numbe
 
 // ── HYDRATE ───────────────────────────────────────────────────────────────────
 export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => {
+  captureTerminalStatuses();
   const [cardsRes, targetsRes, historyRes, draftsRes] = await Promise.all([
     supabase.from("kpi_cards").select("*").eq("organization_id", orgId),
     supabase.from("kpi_card_targets").select("*").eq("organization_id", orgId).order("sort_order"),
@@ -227,6 +265,10 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
     historyByCard.set(h.kpi_card_id, arr);
   }
 
+  // Terminal statuslar (silindi / ləğv olunmuş) lokal ledger-dən bərpa olunur.
+  const ledger = readTerminalLedger();
+  let ledgerApplied = false;
+
   // Rebuild shared KPI card records.
   const shared: SharedKpiCard[] = dedupeSharedKpiCards(cards.map((c: any) => {
     const draft = draftForCard(drafts, c);
@@ -246,6 +288,8 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
       evaluator: t.evaluator ?? undefined,
       ranges: Array.isArray(t.ranges) ? t.ranges : [],
     }));
+    const term = terminalFor({ id: c.id as string, numericId: c.legacy_numeric_id ?? undefined }, ledger);
+    if (term && !isDeletedStatus(c.status)) ledgerApplied = true;
     return {
       id: c.id as string,
       numericId: c.legacy_numeric_id ?? undefined,
@@ -258,8 +302,9 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
       positionIds: c.position_ids ?? [],
       assignmentMode: c.assignment_mode === "bulk" ? "bulk" : "individual",
       matrixId: c.matrix_id ?? null,
-      status: (c.status as SharedKpiStatus) ?? "natamam",
-      rejectedReason: c.rejected_reason ?? undefined,
+      status: (term?.status as SharedKpiStatus) ?? (c.status as SharedKpiStatus) ?? "natamam",
+      rejectedReason: (term?.reason ?? c.rejected_reason) ?? undefined,
+
       startDate: c.start_date ?? "",
       endDate: c.end_date ?? "",
       frequency: c.frequency ?? "",
@@ -295,14 +340,15 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
   const meta: any[] = [];
   for (const c of cards) {
     if (c.legacy_numeric_id != null) {
+      const term = terminalFor({ id: c.id as string, numericId: c.legacy_numeric_id }, ledger);
       status[c.legacy_numeric_id] = {
         card_id: c.legacy_numeric_id,
-        status: c.status,
+        status: term?.status ?? c.status,
         use_matrix: !!c.use_matrix,
         submitted_for_approval: !!c.submitted_for_approval,
         rejected_by: c.rejected_by ?? null,
         rejected_at: c.rejected_at ?? null,
-        rejection_reason: c.rejected_reason ?? null,
+        rejection_reason: (term?.reason ?? c.rejected_reason) ?? null,
         assignees: c.assignees ?? [],
         updated_at: c.updated_at,
       };
@@ -320,6 +366,9 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
   }
 
   replaceLocalKpiCache(shared, status, meta);
+  // Ledger buluddan fərqli idi — terminal statusu buluda geri yaz.
+  if (ledgerApplied) void flushLocalKpiCardsToCloud();
+
 };
 
 // ── SEED cloud from current local snapshot ────────────────────────────────────
@@ -398,6 +447,8 @@ const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 export const flushLocalKpiCardsToCloud = async () => {
   const orgId = currentOrgId;
   if (!orgId) return;
+  captureTerminalStatuses();
+  const flushLedger = readTerminalLedger();
   const shared = getSharedKpiCards();
   const status = rawRead<Record<number, any>>(STATUS_KEY, {});
   const drafts = rawRead<Record<string, any>>(DRAFTS_KEY, {});
@@ -422,11 +473,13 @@ export const flushLocalKpiCardsToCloud = async () => {
     const s = numeric != null ? status[numeric] : undefined;
     const persistedMode = (numeric != null ? modeByNumeric.get(Number(numeric)) : undefined) ?? modeByUuid.get(c.id);
     const assignmentMode = persistedMode ?? (c.assignmentMode === "bulk" ? "bulk" : "individual");
+    // Lokal (ən son) terminal status prioritetdir, sonra bulud.
     const terminalStatus = [
+      terminalFor({ id: c.id, numericId: numeric }, flushLedger)?.status as SharedKpiStatus | undefined,
+      c.status,
+      s?.status,
       numeric != null ? statusByNumeric.get(Number(numeric)) : undefined,
       statusByUuid.get(c.id),
-      s?.status,
-      c.status,
     ].find(isDeletedStatus) as SharedKpiStatus | undefined;
     const effectiveStatus = terminalStatus ?? c.status;
     if (terminalStatus && c.status !== terminalStatus) {
