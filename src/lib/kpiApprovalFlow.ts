@@ -229,7 +229,7 @@ export const reconcileKpiStatusFlow = async (): Promise<void> => {
     // "Silindi" terminaldır: backend status sətri silinmiş göstərirsə, heç vaxt başqa statusa keçmir.
     const backendStatus = statusRows[card.numericId]?.status;
     if (backendStatus === "silindi" || backendStatus === "legv_olundu") {
-      setSharedStatusIfNeeded(card, "silindi", "system");
+      setSharedStatusIfNeeded(card, backendStatus, "system");
       continue;
     }
 
