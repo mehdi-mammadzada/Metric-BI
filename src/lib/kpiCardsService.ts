@@ -482,8 +482,6 @@ export const flushLocalKpiCardsToCloud = async () => {
       statusByUuid.get(c.id),
     ].find(isDeletedStatus) as SharedKpiStatus | undefined;
     const effectiveStatus = terminalStatus ?? c.status;
-
-    const effectiveStatus = terminalStatus ?? c.status;
     if (terminalStatus && c.status !== terminalStatus) {
       upsertSharedKpiCard({ ...c, status: terminalStatus });
     }
