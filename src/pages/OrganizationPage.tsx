@@ -1423,6 +1423,23 @@ const ValidatedField = ({
   </div>
 );
 
+const SHOW_ARCHIVED_KEY = "org-employees-show-archived";
+
+const ArchiveSwitch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (v: boolean) => void }) => (
+  <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+    <input
+      type="checkbox"
+      className="sr-only"
+      checked={checked}
+      onChange={(e) => onCheckedChange(e.target.checked)}
+    />
+    <span className={`relative w-10 h-5 rounded-full transition-colors ${checked ? 'bg-primary' : 'bg-muted'}`}>
+      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-card shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
+    </span>
+    <span className="text-sm text-muted-foreground">Passiv əməkdaşları göstər</span>
+  </label>
+);
+
 const EmployeesTab = () => {
   const [employees, setEmployeesState] = useState<OrgEmployee[]>(() => getEmployees());
   useEffect(() => {
