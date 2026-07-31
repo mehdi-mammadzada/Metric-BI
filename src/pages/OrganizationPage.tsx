@@ -1509,6 +1509,8 @@ const EmployeesTab = () => {
     if (search && !`${e.firstName} ${e.lastName} ${e.fatherName || ""} ${e.fin} ${e.email}`.toLowerCase().includes(search.toLowerCase())) return false;
     if (filterStructure && e.structurePath !== filterStructure) return false;
     if (filterPosition && e.positionName !== filterPosition) return false;
+    // Switch: default OFF shows active employees, ON shows archived (passive) employees only
+    if (showArchived ? e.active : !e.active) return false;
     if (filterStatus === "active" && !e.active) return false;
     if (filterStatus === "inactive" && e.active) return false;
     const l = (s: string) => s.toLowerCase();
@@ -1523,7 +1525,7 @@ const EmployeesTab = () => {
     }
     if (cf.struct && !l(e.structurePath || "").includes(l(cf.struct))) return false;
     return true;
-  }), [employees, search, filterStructure, filterPosition, filterStatus, colFilters]);
+  }), [employees, search, filterStructure, filterPosition, filterStatus, colFilters, showArchived]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
