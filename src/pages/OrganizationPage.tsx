@@ -1449,6 +1449,7 @@ const EmployeesTab = () => {
   }, []);
 
   const [search, setSearch] = useState("");
+  const [showArchived, setShowArchived] = useState<boolean>(() => localStorage.getItem(SHOW_ARCHIVED_KEY) === "true");
   
 
   // Filters
