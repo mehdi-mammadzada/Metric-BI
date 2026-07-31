@@ -27,6 +27,43 @@ const EVT_ALL    = "kpi-cards-updated";
 
 const isDeletedStatus = (status: unknown) => status === "silindi" || status === "legv_olundu";
 
+// ── Terminal status ledger ────────────────────────────────────────────────────
+// "Silindi" / "Ləğv olunmuş" statusları terminaldır. Realtime rehydrate flush-dan
+// əvvəl işlədikdə status köhnə dəyərə qayıtmasın deyə terminal statuslar lokal
+// ledger-də saxlanılır və hydrate zamanı yenidən tətbiq olunur.
+const TERMINAL_KEY = "kpi_terminal_status_v1";
+type TerminalEntry = { status: string; reason?: string | null };
+const readTerminalLedger = (): Record<string, TerminalEntry> => {
+  try {
+    const raw = localStorage.getItem(TERMINAL_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch { return {}; }
+};
+const terminalKeys = (card: { id?: string; numericId?: number | null }) => {
+  const keys: string[] = [];
+  if (card.id) keys.push(`u:${String(card.id)}`);
+  if (card.numericId != null) keys.push(`n:${String(card.numericId)}`);
+  return keys;
+};
+const terminalFor = (card: { id?: string; numericId?: number | null }, ledger = readTerminalLedger()): TerminalEntry | undefined => {
+  for (const k of terminalKeys(card)) {
+    const hit = ledger[k];
+    if (hit && isDeletedStatus(hit.status)) return hit;
+  }
+  return undefined;
+};
+export const recordTerminalStatus = (card: { id?: string; numericId?: number | null; status?: unknown; rejectedReason?: string | null }) => {
+  if (!isDeletedStatus(card.status)) return;
+  const ledger = readTerminalLedger();
+  terminalKeys(card).forEach(k => { ledger[k] = { status: String(card.status), reason: card.rejectedReason ?? null }; });
+  try { localStorage.setItem(TERMINAL_KEY, JSON.stringify(ledger)); } catch {}
+};
+/** Lokal snapshot-dakı bütün terminal statusları ledger-ə yazır. */
+const captureTerminalStatuses = () => {
+  try { getSharedKpiCards().forEach(c => recordTerminalStatus(c)); } catch {}
+};
+
 const asJson = (value: unknown): Json => JSON.parse(JSON.stringify(value ?? null)) as Json;
 
 // ── local raw helpers (bypass the store's own events during hydration) ────────
