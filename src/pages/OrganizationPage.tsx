@@ -1423,6 +1423,23 @@ const ValidatedField = ({
   </div>
 );
 
+const SHOW_ARCHIVED_KEY = "org-employees-show-archived";
+
+const ArchiveSwitch = ({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (v: boolean) => void }) => (
+  <label className="inline-flex items-center gap-2.5 cursor-pointer select-none">
+    <input
+      type="checkbox"
+      className="sr-only"
+      checked={checked}
+      onChange={(e) => onCheckedChange(e.target.checked)}
+    />
+    <span className={`relative w-10 h-5 rounded-full transition-colors ${checked ? 'bg-primary' : 'bg-muted'}`}>
+      <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-card shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
+    </span>
+    <span className="text-sm text-muted-foreground">Passiv əməkdaşları göstər</span>
+  </label>
+);
+
 const EmployeesTab = () => {
   const [employees, setEmployeesState] = useState<OrgEmployee[]>(() => getEmployees());
   useEffect(() => {
@@ -1432,6 +1449,7 @@ const EmployeesTab = () => {
   }, []);
 
   const [search, setSearch] = useState("");
+  const [showArchived, setShowArchived] = useState<boolean>(() => localStorage.getItem(SHOW_ARCHIVED_KEY) === "true");
   
 
   // Filters
@@ -1491,6 +1509,8 @@ const EmployeesTab = () => {
     if (search && !`${e.firstName} ${e.lastName} ${e.fatherName || ""} ${e.fin} ${e.email}`.toLowerCase().includes(search.toLowerCase())) return false;
     if (filterStructure && e.structurePath !== filterStructure) return false;
     if (filterPosition && e.positionName !== filterPosition) return false;
+    // Switch: default OFF shows active employees, ON shows archived (passive) employees only
+    if (showArchived ? e.active : !e.active) return false;
     if (filterStatus === "active" && !e.active) return false;
     if (filterStatus === "inactive" && e.active) return false;
     const l = (s: string) => s.toLowerCase();
@@ -1505,13 +1525,18 @@ const EmployeesTab = () => {
     }
     if (cf.struct && !l(e.structurePath || "").includes(l(cf.struct))) return false;
     return true;
-  }), [employees, search, filterStructure, filterPosition, filterStatus, colFilters]);
+  }), [employees, search, filterStructure, filterPosition, filterStatus, colFilters, showArchived]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pageItems = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  useEffect(() => { setPage(1); }, [search, filterStructure, filterPosition, filterStatus, pageSize]);
+  useEffect(() => { setPage(1); }, [search, filterStructure, filterPosition, filterStatus, pageSize, showArchived]);
+
+  useEffect(() => {
+    setFilterStatus(showArchived ? "inactive" : "active");
+    localStorage.setItem(SHOW_ARCHIVED_KEY, String(showArchived));
+  }, [showArchived]);
 
   const emailsExcluding = (excludeId?: number) =>
     employees.filter(e => e.id !== excludeId).map(e => e.email.trim().toLowerCase());
@@ -1692,8 +1717,9 @@ const EmployeesTab = () => {
               rows={filtered}
               rowKey={(e) => e.id}
               storageKey="org-employees"
-              emptyMessage="Əməkdaş tapılmadı"
+              emptyMessage={showArchived ? "Passiv əməkdaş tapılmadı" : "Aktiv əməkdaş tapılmadı"}
               columns={cols}
+              toolbarRight={<ArchiveSwitch checked={showArchived} onCheckedChange={setShowArchived} />}
             />
           );
         })()}
