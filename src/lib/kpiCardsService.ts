@@ -287,6 +287,8 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
       evaluator: t.evaluator ?? undefined,
       ranges: Array.isArray(t.ranges) ? t.ranges : [],
     }));
+    const term = terminalFor({ id: c.id as string, numericId: c.legacy_numeric_id ?? undefined }, ledger);
+    if (term && !isDeletedStatus(c.status)) ledgerApplied = true;
     return {
       id: c.id as string,
       numericId: c.legacy_numeric_id ?? undefined,
@@ -299,8 +301,9 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
       positionIds: c.position_ids ?? [],
       assignmentMode: c.assignment_mode === "bulk" ? "bulk" : "individual",
       matrixId: c.matrix_id ?? null,
-      status: (c.status as SharedKpiStatus) ?? "natamam",
-      rejectedReason: c.rejected_reason ?? undefined,
+      status: (term?.status as SharedKpiStatus) ?? (c.status as SharedKpiStatus) ?? "natamam",
+      rejectedReason: (term?.reason ?? c.rejected_reason) ?? undefined,
+
       startDate: c.start_date ?? "",
       endDate: c.end_date ?? "",
       frequency: c.frequency ?? "",
