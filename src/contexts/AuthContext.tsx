@@ -101,33 +101,109 @@ const storeSessionDirectly = (data: PasswordSignInData) => {
   localStorage.setItem(`${key}-code-verifier`, "");
 };
 
-const signInWithPasswordFast = async (
+// Removes any leftover Supabase auth token from a previous (possibly broken or
+// expired) session. A stale refresh token makes the auth client start a retry
+// loop against /auth/v1/token which can starve the password grant request and
+// make it hang until it is aborted.
+const purgeStaleAuthStorage = () => {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && /^sb-.*-auth-token/.test(k)) keys.push(k);
+    }
+    keys.forEach((k) => localStorage.removeItem(k));
+  } catch { /* noop */ }
+};
+
+const attemptPasswordGrant = async (
   email: string,
   password: string,
   timeoutMs: number,
-): Promise<{ data?: PasswordSignInData; error?: { message?: string } }> => {
+): Promise<{ data?: PasswordSignInData; error?: { message?: string }; retryable?: boolean }> => {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: "POST",
       signal: controller.signal,
+      cache: "no-store",
+      credentials: "omit",
       headers: {
         apikey: SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ email, password }),
     });
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) return { error: { message: body?.msg || body?.message || "Email və ya şifrə yanlışdır" } };
+    if (!response.ok) {
+      // 5xx / 429 are transient — worth another attempt. 4xx (wrong password)
+      // must be surfaced immediately.
+      const retryable = response.status >= 500 || response.status === 429;
+      return {
+        error: { message: body?.msg || body?.message || (retryable ? "Server müvəqqəti cavab vermir" : "Email və ya şifrə yanlışdır") },
+        retryable,
+      };
+    }
     const authData = body as PasswordSignInData;
     storeSessionDirectly(authData);
     return { data: authData };
   } catch (err: any) {
-    return { error: { message: err?.name === "AbortError" ? "Giriş sorğusu cavab vermədi" : err?.message } };
+    // Network error / aborted request — always retryable.
+    return {
+      error: { message: err?.name === "AbortError" ? "Giriş sorğusu cavab vermədi" : (err?.message || "Şəbəkə xətası") },
+      retryable: true,
+    };
   } finally {
     window.clearTimeout(timer);
   }
+};
+
+const signInWithPasswordFast = async (
+  email: string,
+  password: string,
+  timeoutMs: number,
+): Promise<{ data?: PasswordSignInData; error?: { message?: string } }> => {
+  // Make sure no stale session / refresh loop competes with this request.
+  purgeStaleAuthStorage();
+  try { supabase.auth.stopAutoRefresh?.(); } catch { /* noop */ }
+
+  let last: { data?: PasswordSignInData; error?: { message?: string }; retryable?: boolean } = {};
+  for (let attempt = 0; attempt < 3; attempt++) {
+    last = await attemptPasswordGrant(email, password, timeoutMs);
+    if (last.data || !last.retryable) break;
+    await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+  }
+
+  if (last.data) {
+    try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
+    return { data: last.data };
+  }
+
+  // Final fallback: let the official client try (different transport path).
+  if (last.retryable) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (!error && data?.session) {
+        return {
+          data: {
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            expires_in: data.session.expires_in,
+            expires_at: data.session.expires_at,
+            token_type: data.session.token_type,
+            user: { id: data.session.user.id, email: data.session.user.email },
+          },
+        };
+      }
+      if (error) return { error: { message: error.message } };
+    } catch { /* noop */ }
+  }
+
+  try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
+  return { error: last.error ?? { message: "Giriş alınmadı" } };
+
 };
 
 const fetchAuthUserDirect = async (
@@ -555,7 +631,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
 
-  const LOGIN_TIMEOUT_MS = 10000;
+  // Per-attempt budget. signInWithPasswordFast retries up to 3 times and then
+  // falls back to the official client, so a slow first attempt never fails login.
+  const LOGIN_TIMEOUT_MS = 15000;
+
 
   const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
     return Promise.race([
