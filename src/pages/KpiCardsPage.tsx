@@ -2551,11 +2551,30 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                     {(getAssignKindFor(selectedKpi.id) !== "Fərdi" || !!employeeCardView) && (() => {
                       const own = selectedKpi.subKpis || [];
                       const entries = selectedKpi.id ? getEntriesForCard(selectedKpi.id) : [];
-                      const ownIds = new Set(own.map(s => s.id));
-                      const extras = entries
-                        .filter(e => e.subKpiName && !ownIds.has(e.subKpiId))
-                        .map(e => ({ id: e.subKpiId, name: e.subKpiName, target: e.target, unit: e.unit, weight: 0, current: "", progress: undefined, evaluator: undefined as any, _fromSet: true, _assignee: e.assigneeName }));
-                      let merged = [...own.map(s => ({ ...s, _fromSet: false as boolean, _assignee: "" })), ...extras];
+                      // Vahid mənbə: təyinedicinin (Məsul olduğum kartlar) verdiyi dəyər ad üzrə birləşdirilir.
+                      const nrm = (v: unknown) => String(v ?? "").split(" — ")[0].trim().toLowerCase().replace(/\s+/g, " ");
+                      const namedEntries = entries.filter(e => nrm(e.subKpiName));
+                      const entryByName = new Map(namedEntries.map(e => [nrm(e.subKpiName), e]));
+                      const usedNames = new Set<string>();
+                      const ownRows = own
+                        .filter(s => nrm(s.name))
+                        .map(s => {
+                          const e = entryByName.get(nrm(s.name));
+                          if (e) usedNames.add(nrm(s.name));
+                          return {
+                            ...s,
+                            target: (e?.target && String(e.target).trim()) ? String(e.target) : s.target,
+                            unit: e?.unit || s.unit,
+                            weight: s.weight || e?.weight || 0,
+                            _fromSet: !!e,
+                            _assignee: e?.assigneeName || "",
+                          };
+                        });
+                      const extras = namedEntries
+                        .filter(e => !usedNames.has(nrm(e.subKpiName)))
+                        .map(e => ({ id: e.subKpiId, name: e.subKpiName, target: e.target, unit: e.unit, weight: e.weight || 0, current: "", progress: undefined, evaluator: undefined as any, _fromSet: true, _assignee: e.assigneeName }));
+                      let merged = [...ownRows, ...extras];
+
                       if (merged.length === 0) {
                         // Fallback: hər KPI-nin ən azı bir hədəfi görünsün
                         merged = [{
