@@ -339,14 +339,15 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
   const meta: any[] = [];
   for (const c of cards) {
     if (c.legacy_numeric_id != null) {
+      const term = terminalFor({ id: c.id as string, numericId: c.legacy_numeric_id }, ledger);
       status[c.legacy_numeric_id] = {
         card_id: c.legacy_numeric_id,
-        status: c.status,
+        status: term?.status ?? c.status,
         use_matrix: !!c.use_matrix,
         submitted_for_approval: !!c.submitted_for_approval,
         rejected_by: c.rejected_by ?? null,
         rejected_at: c.rejected_at ?? null,
-        rejection_reason: c.rejected_reason ?? null,
+        rejection_reason: (term?.reason ?? c.rejected_reason) ?? null,
         assignees: c.assignees ?? [],
         updated_at: c.updated_at,
       };
