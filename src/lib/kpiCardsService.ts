@@ -365,6 +365,9 @@ export const hydrateKpiCardsFromCloud = async (orgId: string): Promise<void> => 
   }
 
   replaceLocalKpiCache(shared, status, meta);
+  // Ledger buluddan fərqli idi — terminal statusu buluda geri yaz.
+  if (ledgerApplied) void flushLocalKpiCardsToCloud();
+
 };
 
 // ── SEED cloud from current local snapshot ────────────────────────────────────
