@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import KpiCommentThread from "@/components/kpi/KpiCommentThread";
 import { getEmployees, getStructures, type OrgStructure } from "@/lib/orgStore";
 import {
   getRealKpiCardsForEmployee,
@@ -436,38 +437,14 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
   reviewMeta?: { reviewLabel: string; reviewStart: string; reviewNumber?: number; evaluator?: string; nextReview?: string; reviewStatusLabel?: string; reviewStatusClass?: string; outcomeComment?: string };
   tabsFilter?: DrawerTab[];
 }) => {
-  const [commentsMap, setCommentsMap] = useState<Record<string, CommentItem[]>>({});
-  const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (kpi && !commentsMap[kpi.id]) {
-      setCommentsMap(m => ({ ...m, [kpi.id]: initialComments(kpi.id) }));
-    }
-  }, [kpi, commentsMap]);
-
-  useEffect(() => {
-    if (tab === "comments" && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [tab, commentsMap, kpi]);
 
   if (!kpi) return null;
   const p = pctOf(kpi);
-  const comments = commentsMap[kpi.id] || [];
   const history = initialHistory(kpi.id);
   const reminders = initialReminders(kpi.id);
 
-  const sendComment = () => {
-    const t = draft.trim();
-    if (!t) return;
-    const now = new Date();
-    const stamp = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${now.getFullYear()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-    const item: CommentItem = { id: `${kpi.id}-c${Date.now()}`, author: "Siz", role: "İstifadəçi", date: stamp, text: t };
-    setCommentsMap(m => ({ ...m, [kpi.id]: [...(m[kpi.id] || []), item] }));
-    setDraft("");
-    toast({ title: "Şərh göndərildi" });
-  };
+
 
   return (
     <aside className="fixed top-0 right-0 h-screen w-full sm:w-[640px] bg-card border-l border-border shadow-2xl z-40 flex flex-col animate-in slide-in-from-right duration-300">
@@ -619,38 +596,9 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
           )}
 
           {tab === "comments" && (
-            <>
-              <div className="space-y-3">
-                {comments.map(c => (
-                  <div key={c.id} className="flex gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex-shrink-0 flex items-center justify-center text-xs font-semibold">
-                      {c.author.split(" ").map(x => x[0]).join("").slice(0,2)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs">
-                        <span className="font-medium text-foreground">{c.author}</span>
-                        <span className="text-muted-foreground"> · {c.date}</span>
-                      </div>
-                      <div className="mt-1 text-sm text-foreground rounded-lg bg-secondary/50 border border-border px-3 py-2">{c.text}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 flex items-center gap-2 border-t border-border pt-3">
-                <button className="w-8 h-8 rounded-md hover:bg-secondary text-muted-foreground inline-flex items-center justify-center" aria-label="Fayl əlavə et">
-                  <Paperclip className="w-4 h-4" />
-                </button>
-                <input
-                  value={draft}
-                  onChange={e => setDraft(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendComment(); } }}
-                  placeholder="Şərhinizi yazın..."
-                  className="flex-1 px-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-                <Button size="sm" onClick={sendComment} className="gap-1"><Send className="w-3.5 h-3.5" /> Göndər</Button>
-              </div>
-            </>
+            <KpiCommentThread refId={`card:${kpi.id}`} />
           )}
+
 
           {tab === "status" && (
             <ol className="space-y-2">
@@ -1414,25 +1362,15 @@ const subTabLabels: Record<SubTab, string> = {
 const SubDetailPanel = ({ node, tab, setTab, onClose }: {
   node: TreeNode; tab: SubTab; setTab: (t: SubTab) => void; onClose: () => void;
 }) => {
-  const [commentsMap, setCommentsMap] = useState<Record<string, CommentItem[]>>({});
-  const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [notifyTitle, setNotifyTitle] = useState("");
   const [notifyMsg, setNotifyMsg] = useState("");
   const [notifyPri, setNotifyPri] = useState("normal");
 
-  useEffect(() => {
-    if (!commentsMap[node.id]) setCommentsMap(m => ({ ...m, [node.id]: initialComments(node.id) }));
-  }, [node.id, commentsMap]);
-
-  useEffect(() => {
-    if (tab === "comments" && scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [tab, commentsMap, node.id]);
-
-  const comments = commentsMap[node.id] || [];
   const history = initialHistory(node.id);
   const reminders = initialReminders(node.id);
+
   const empKpis = useMemo<EmpKpi[]>(() => {
     if (!node.empId) return [];
     return getRealKpiCardsForEmployee(node.empId).flatMap(c =>
@@ -1449,14 +1387,7 @@ const SubDetailPanel = ({ node, tab, setTab, onClose }: {
   }, [node.empId]);
 
 
-  const sendComment = () => {
-    const t = draft.trim(); if (!t) return;
-    const now = new Date();
-    const stamp = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${now.getFullYear()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-    setCommentsMap(m => ({ ...m, [node.id]: [...(m[node.id] || []), { id: `${node.id}-c${Date.now()}`, author: "Siz", role: "Rəhbər", date: stamp, text: t }] }));
-    setDraft("");
-    toast({ title: "Şərh əlavə edildi" });
-  };
+
 
   const sendNotify = () => {
     if (!notifyTitle.trim() || !notifyMsg.trim()) { toast({ title: "Başlıq və mesaj tələb olunur", variant: "destructive" }); return; }
@@ -1576,28 +1507,9 @@ const SubDetailPanel = ({ node, tab, setTab, onClose }: {
             </TabsContent>
 
             <TabsContent value="comments">
-              <div className="space-y-2.5">
-                {comments.map(c => (
-                  <div key={c.id} className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex-shrink-0 flex items-center justify-center text-xs font-semibold">
-                      {c.author.split(" ").map(x => x[0]).join("").slice(0,2)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs"><span className="font-medium text-foreground">{c.author}</span><span className="text-muted-foreground"> · {c.date}</span></div>
-                      <div className="mt-1 text-sm text-foreground rounded-lg bg-secondary/50 border border-border px-3 py-2">{c.text}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
-                <button className="w-8 h-8 rounded-md hover:bg-secondary text-muted-foreground inline-flex items-center justify-center" aria-label="Fayl əlavə et"><Paperclip className="w-4 h-4" /></button>
-                <input value={draft} onChange={e => setDraft(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendComment(); } }}
-                  placeholder="Şərhinizi yazın..."
-                  className="flex-1 px-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
-                <Button size="sm" onClick={sendComment} className="gap-1"><Send className="w-3.5 h-3.5" /> Göndər</Button>
-              </div>
+              <KpiCommentThread refId={`node:${node.id}`} />
             </TabsContent>
+
 
             <TabsContent value="reminders">
               <ol className="relative border-l-2 border-border pl-4 space-y-4">
@@ -1821,32 +1733,13 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
 }) => {
   const initialTab: TargetDrawerTab = (tabsFilter && tabsFilter[0]) || "general";
   const [tab, setTab] = useState<TargetDrawerTab>(initialTab);
-  const [draft, setDraft] = useState("");
-  const [commentsMap, setCommentsMap] = useState<Record<string, CommentItem[]>>({});
-
-  useEffect(() => {
-    if (data && !commentsMap[data.target.id]) {
-      setCommentsMap(m => ({ ...m, [data.target.id]: initialComments(data.target.id) }));
-    }
-  }, [data, commentsMap]);
 
   if (!data) return null;
   const { target, cardName } = data;
   const history = initialHistory(target.id);
   const reminders = initialReminders(target.id);
-  const comments = commentsMap[target.id] || [];
   const pct = safePct(target.fakt, target.plan);
 
-  const sendComment = () => {
-    const t = draft.trim();
-    if (!t) return;
-    const now = new Date();
-    const stamp = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${now.getFullYear()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-    const item: CommentItem = { id: `${target.id}-c${Date.now()}`, author: "Siz", role: "İstifadəçi", date: stamp, text: t };
-    setCommentsMap(m => ({ ...m, [target.id]: [...(m[target.id] || []), item] }));
-    setDraft("");
-    toast({ title: "Şərh göndərildi" });
-  };
 
   return (
     <>
@@ -1980,20 +1873,9 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
               </TabsContent>
 
               <TabsContent value="comments" className="mt-0">
-                <div className="space-y-2.5">
-                  {comments.map(c => (
-                    <div key={c.id} className="flex gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex-shrink-0 flex items-center justify-center text-xs font-semibold">
-                        {c.author.split(" ").map(x => x[0]).join("").slice(0,2)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs"><span className="font-medium text-foreground">{c.author}</span><span className="text-muted-foreground"> · {c.date}</span></div>
-                        <div className="mt-1 text-sm text-foreground rounded-lg bg-secondary/50 border border-border px-3 py-2">{c.text}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <KpiCommentThread refId={`target:${target.id}`} />
               </TabsContent>
+
 
               <TabsContent value="performance" className="mt-0 space-y-3">
                 <div className="rounded-xl border border-border p-3 space-y-2 text-xs">
@@ -2020,15 +1902,7 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
             </div>
           </Tabs>
 
-          {tab === "comments" && (
-            <div className="border-t border-border pt-3 pb-4 flex items-center gap-2">
-              <input value={draft} onChange={e => setDraft(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendComment(); } }}
-                placeholder="Şərhinizi yazın..."
-                className="flex-1 px-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
-              <Button size="sm" onClick={sendComment} className="gap-1"><Send className="w-3.5 h-3.5" /> Göndər</Button>
-            </div>
-          )}
+
         </div>
       </aside>
     </>

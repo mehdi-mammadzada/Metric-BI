@@ -323,6 +323,36 @@ export type Database = {
           },
         ]
       }
+      kpi_card_comments: {
+        Row: {
+          author_name: string
+          author_user_id: string | null
+          card_ref: string
+          created_at: string
+          id: string
+          organization_id: string
+          text: string
+        }
+        Insert: {
+          author_name?: string
+          author_user_id?: string | null
+          card_ref: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          text: string
+        }
+        Update: {
+          author_name?: string
+          author_user_id?: string | null
+          card_ref?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          text?: string
+        }
+        Relationships: []
+      }
       kpi_card_history: {
         Row: {
           action: string
