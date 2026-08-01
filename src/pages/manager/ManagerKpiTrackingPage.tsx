@@ -2043,10 +2043,16 @@ const SubordinatesCount = ({ scopePath }: { scopePath?: string | null }) => {
 };
 
 
+type ReviewColKey = "cardName" | "department" | "division" | "position" | "progress" | "status" | "start" | "updated";
+
 const ReviewsView = () => {
   const rows = useReviewRows();
   const { user } = useAuth();
   const [q, setQ] = useState("");
+  const [colF, setColF] = useState<Record<ReviewColKey, string>>({
+    cardName: "", department: "", division: "", position: "", progress: "", status: "", start: "", updated: "",
+  });
+  const setCol = (k: ReviewColKey) => (v: string) => setColF(p => ({ ...p, [k]: v }));
   const [overview, setOverview] = useState<{ row: ReviewRow; data: ReviewOverviewData } | null>(null);
   const [statusDialog, setStatusDialog] = useState<{ row: ReviewRow } | null>(null);
   const [reasonDialog, setReasonDialog] = useState<{ title: string; label: string; text: string } | null>(null);
@@ -2054,15 +2060,27 @@ const ReviewsView = () => {
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return rows;
-    return rows.filter(r =>
-      r.cardName.toLowerCase().includes(s) ||
-      r.empName.toLowerCase().includes(s) ||
-      r.department.toLowerCase().includes(s) ||
-      r.division.toLowerCase().includes(s) ||
-      r.position.toLowerCase().includes(s),
-    );
-  }, [rows, q]);
+    const m = (val: string, f: string) => !f.trim() || String(val ?? "").toLowerCase().includes(f.trim().toLowerCase());
+    return rows.filter(r => {
+      const global = !s || (
+        r.cardName.toLowerCase().includes(s) ||
+        r.empName.toLowerCase().includes(s) ||
+        r.department.toLowerCase().includes(s) ||
+        r.division.toLowerCase().includes(s) ||
+        r.position.toLowerCase().includes(s)
+      );
+      if (!global) return false;
+      return m(withKartSuffix(r.cardName), colF.cardName)
+        && m(r.department, colF.department)
+        && m(r.division, colF.division)
+        && m(r.position, colF.position)
+        && m(`${r.progress}`, colF.progress)
+        && m(REVIEW_STATUS_STYLES[r.reviewStatus]?.badgeLabel || "", colF.status)
+        && m(r.reviewStart, colF.start)
+        && m(r.updatedAt, colF.updated);
+    });
+  }, [rows, q, colF]);
+
 
   const toOverviewStatus = (s: ReviewComputedStatus): ReviewStatusValue =>
     s === "held" ? "held" : s === "deferred" ? "deferred" : s === "missed" ? "missed" : "in_progress";
