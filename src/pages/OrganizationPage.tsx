@@ -1355,11 +1355,11 @@ const validateFin = (v: string): string | null => {
   return null;
 };
 
-// Xarici vətəndaş üçün "Digər" identifikatoru — dəqiq 10 simvol
+// Xarici vətəndaş üçün "Digər" identifikatoru — maksimum 10 simvol
 const sanitizeOther = (v: string) => v.replace(/\s+/g, "").slice(0, 10);
 const validateOther = (v: string): string | null => {
   if (!v) return "Digər sahəsi daxil edin.";
-  if (v.length !== 10) return "Digər sahəsi dəqiq 10 simvoldan ibarət olmalıdır.";
+  if (v.length > 10) return "Digər sahəsi maksimum 10 simvol ola bilər.";
   return null;
 };
 
