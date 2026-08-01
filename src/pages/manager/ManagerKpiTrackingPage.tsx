@@ -1387,14 +1387,7 @@ const SubDetailPanel = ({ node, tab, setTab, onClose }: {
   }, [node.empId]);
 
 
-  const sendComment = () => {
-    const t = draft.trim(); if (!t) return;
-    const now = new Date();
-    const stamp = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${now.getFullYear()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-    setCommentsMap(m => ({ ...m, [node.id]: [...(m[node.id] || []), { id: `${node.id}-c${Date.now()}`, author: "Siz", role: "Rəhbər", date: stamp, text: t }] }));
-    setDraft("");
-    toast({ title: "Şərh əlavə edildi" });
-  };
+
 
   const sendNotify = () => {
     if (!notifyTitle.trim() || !notifyMsg.trim()) { toast({ title: "Başlıq və mesaj tələb olunur", variant: "destructive" }); return; }
