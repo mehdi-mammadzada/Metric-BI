@@ -437,38 +437,14 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
   reviewMeta?: { reviewLabel: string; reviewStart: string; reviewNumber?: number; evaluator?: string; nextReview?: string; reviewStatusLabel?: string; reviewStatusClass?: string; outcomeComment?: string };
   tabsFilter?: DrawerTab[];
 }) => {
-  const [commentsMap, setCommentsMap] = useState<Record<string, CommentItem[]>>({});
-  const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (kpi && !commentsMap[kpi.id]) {
-      setCommentsMap(m => ({ ...m, [kpi.id]: initialComments(kpi.id) }));
-    }
-  }, [kpi, commentsMap]);
-
-  useEffect(() => {
-    if (tab === "comments" && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [tab, commentsMap, kpi]);
 
   if (!kpi) return null;
   const p = pctOf(kpi);
-  const comments = commentsMap[kpi.id] || [];
   const history = initialHistory(kpi.id);
   const reminders = initialReminders(kpi.id);
 
-  const sendComment = () => {
-    const t = draft.trim();
-    if (!t) return;
-    const now = new Date();
-    const stamp = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${now.getFullYear()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-    const item: CommentItem = { id: `${kpi.id}-c${Date.now()}`, author: "Siz", role: "İstifadəçi", date: stamp, text: t };
-    setCommentsMap(m => ({ ...m, [kpi.id]: [...(m[kpi.id] || []), item] }));
-    setDraft("");
-    toast({ title: "Şərh göndərildi" });
-  };
+
 
   return (
     <aside className="fixed top-0 right-0 h-screen w-full sm:w-[640px] bg-card border-l border-border shadow-2xl z-40 flex flex-col animate-in slide-in-from-right duration-300">
