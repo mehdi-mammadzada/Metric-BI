@@ -2222,19 +2222,17 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
                     selected ? "bg-amber-500/10" : "hover:bg-secondary/20"
                   }`}
                 >
-                  {needsMinMax && (
-                    <div className="col-span-2">
-                      <input
-                        type="radio"
-                        name="min-bonus-score"
-                        checked={selected}
-                        onChange={() => setRows(rows.map(x => ({ ...x, isMinBonus: x.id === r.id })))}
-                        className="w-4 h-4 accent-amber-500 cursor-pointer"
-                        aria-label={`Bal ${r.score} minimum bonus balı`}
-                      />
-                    </div>
-                  )}
-                  <div className={`${needsMinMax ? "col-span-1" : "col-span-2"} text-base font-bold text-foreground tabular-nums`}>
+                  <div className="col-span-2">
+                    <input
+                      type="radio"
+                      name="min-bonus-score"
+                      checked={selected}
+                      onChange={() => setRows(rows.map(x => ({ ...x, isMinBonus: x.id === r.id })))}
+                      className="w-4 h-4 accent-amber-500 cursor-pointer"
+                      aria-label={`Bal ${r.score} minimum bonus balı`}
+                    />
+                  </div>
+                  <div className="col-span-1 text-base font-bold text-foreground tabular-nums">
                     {r.score}
                   </div>
                   {needsMinMax ? (
@@ -2256,7 +2254,7 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
                     </>
                   ) : isTime ? (
                     <>
-                      <div className="col-span-5">
+                      <div className="col-span-4">
                         <input type="date" value={r.timeStart || ""}
                           onChange={e => setRows(rows.map(x => x.id === r.id ? { ...x, timeStart: e.target.value } : x))}
                           className={inputCls} />
@@ -2268,7 +2266,7 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
                       </div>
                     </>
                   ) : (
-                    <div className="col-span-10">
+                    <div className="col-span-9">
                       <input value={r.description || ""}
                         onChange={e => setRows(rows.map(x => x.id === r.id ? { ...x, description: e.target.value } : x))}
                         placeholder="Bu balı qazanmaq üçün şərt..." className={inputCls} />
