@@ -39,6 +39,7 @@ import KpiAccordionList, { type AccordionKpi, type AccordionKpiStatus } from "@/
 import ReviewOverviewDialog, { type ReviewOverviewData } from "@/components/kpi/ReviewOverviewDialog";
 import ReviewStatusChangeDialog, { type ReviewStatusValue } from "@/components/kpi/ReviewStatusChangeDialog";
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
+import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 
 type Stage = "assigned" | "evaluated" | "pending_assign";
 type KpiStatus = TargetStatus;
@@ -2043,10 +2044,16 @@ const SubordinatesCount = ({ scopePath }: { scopePath?: string | null }) => {
 };
 
 
+type ReviewColKey = "cardName" | "department" | "division" | "position" | "progress" | "status" | "start" | "updated";
+
 const ReviewsView = () => {
   const rows = useReviewRows();
   const { user } = useAuth();
   const [q, setQ] = useState("");
+  const [colF, setColF] = useState<Record<ReviewColKey, string>>({
+    cardName: "", department: "", division: "", position: "", progress: "", status: "", start: "", updated: "",
+  });
+  const setCol = (k: ReviewColKey) => (v: string) => setColF(p => ({ ...p, [k]: v }));
   const [overview, setOverview] = useState<{ row: ReviewRow; data: ReviewOverviewData } | null>(null);
   const [statusDialog, setStatusDialog] = useState<{ row: ReviewRow } | null>(null);
   const [reasonDialog, setReasonDialog] = useState<{ title: string; label: string; text: string } | null>(null);
@@ -2054,15 +2061,27 @@ const ReviewsView = () => {
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return rows;
-    return rows.filter(r =>
-      r.cardName.toLowerCase().includes(s) ||
-      r.empName.toLowerCase().includes(s) ||
-      r.department.toLowerCase().includes(s) ||
-      r.division.toLowerCase().includes(s) ||
-      r.position.toLowerCase().includes(s),
-    );
-  }, [rows, q]);
+    const m = (val: string, f: string) => !f.trim() || String(val ?? "").toLowerCase().includes(f.trim().toLowerCase());
+    return rows.filter(r => {
+      const global = !s || (
+        r.cardName.toLowerCase().includes(s) ||
+        r.empName.toLowerCase().includes(s) ||
+        r.department.toLowerCase().includes(s) ||
+        r.division.toLowerCase().includes(s) ||
+        r.position.toLowerCase().includes(s)
+      );
+      if (!global) return false;
+      return m(withKartSuffix(r.cardName), colF.cardName)
+        && m(r.department, colF.department)
+        && m(r.division, colF.division)
+        && m(r.position, colF.position)
+        && m(`${r.progress}`, colF.progress)
+        && m(REVIEW_STATUS_STYLES[r.reviewStatus]?.badgeLabel || "", colF.status)
+        && m(r.reviewStart, colF.start)
+        && m(r.updatedAt, colF.updated);
+    });
+  }, [rows, q, colF]);
+
 
   const toOverviewStatus = (s: ReviewComputedStatus): ReviewStatusValue =>
     s === "held" ? "held" : s === "deferred" ? "deferred" : s === "missed" ? "missed" : "in_progress";
@@ -2123,16 +2142,17 @@ const ReviewsView = () => {
           <table className="w-full text-sm">
             <thead className="bg-secondary/50 text-muted-foreground text-xs uppercase">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">KPI Kartının adı</th>
-                <th className="text-left px-4 py-3 font-medium">Departament</th>
-                <th className="text-left px-4 py-3 font-medium">Şöbə</th>
-                <th className="text-left px-4 py-3 font-medium">Vəzifə</th>
-                <th className="text-left px-4 py-3 font-medium w-[180px]">Progress</th>
-                <th className="text-left px-4 py-3 font-medium">Review statusu</th>
-                <th className="text-left px-4 py-3 font-medium">Review başlanma</th>
-                <th className="text-left px-4 py-3 font-medium">Son yenilənmə</th>
-                <th className="text-right px-4 py-3 font-medium">Əməliyyat</th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="KPI Kartının adı" value={colF.cardName} onChange={setCol("cardName")} /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Departament" value={colF.department} onChange={setCol("department")} /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Şöbə" value={colF.division} onChange={setCol("division")} /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Vəzifə" value={colF.position} onChange={setCol("position")} /></th>
+                <th className="text-left px-4 py-3 font-medium align-top w-[180px]"><ColumnSearchHeader label="Progress" value={colF.progress} onChange={setCol("progress")} placeholder="Məs: 60" /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review statusu" value={colF.status} onChange={setCol("status")} /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review başlanma" value={colF.start} onChange={setCol("start")} placeholder="Məs: 01.08.2026" /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Son yenilənmə" value={colF.updated} onChange={setCol("updated")} placeholder="Məs: 01.08.2026" /></th>
+                <th className="text-right px-4 py-3 font-medium align-top">Əməliyyat</th>
               </tr>
+
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
@@ -2167,7 +2187,10 @@ const ReviewsView = () => {
                         title={r.outcomeComment ? "Səbəbə bax" : undefined}
                         className={r.outcomeComment ? "cursor-pointer" : "cursor-default"}
                       >
-                        <Badge className={`${reviewStyle.badge} inline-flex items-center gap-1`}><ReviewIcon className="w-3 h-3" />{reviewStyle.badgeLabel}</Badge>
+                        <span className={`${reviewStyle.badge} inline-flex items-center justify-center gap-1.5 h-7 w-[150px] px-2 rounded-full border-0 text-xs font-medium leading-none whitespace-nowrap`}>
+                          <ReviewIcon className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{reviewStyle.badgeLabel}</span>
+                        </span>
                       </button>
                     </td>
 
