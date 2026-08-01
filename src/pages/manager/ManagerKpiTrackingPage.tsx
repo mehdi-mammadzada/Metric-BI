@@ -2141,16 +2141,17 @@ const ReviewsView = () => {
           <table className="w-full text-sm">
             <thead className="bg-secondary/50 text-muted-foreground text-xs uppercase">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">KPI Kartının adı</th>
-                <th className="text-left px-4 py-3 font-medium">Departament</th>
-                <th className="text-left px-4 py-3 font-medium">Şöbə</th>
-                <th className="text-left px-4 py-3 font-medium">Vəzifə</th>
-                <th className="text-left px-4 py-3 font-medium w-[180px]">Progress</th>
-                <th className="text-left px-4 py-3 font-medium">Review statusu</th>
-                <th className="text-left px-4 py-3 font-medium">Review başlanma</th>
-                <th className="text-left px-4 py-3 font-medium">Son yenilənmə</th>
-                <th className="text-right px-4 py-3 font-medium">Əməliyyat</th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="KPI Kartının adı" value={colF.cardName} onChange={setCol("cardName")} /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Departament" value={colF.department} onChange={setCol("department")} /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Şöbə" value={colF.division} onChange={setCol("division")} /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Vəzifə" value={colF.position} onChange={setCol("position")} /></th>
+                <th className="text-left px-4 py-3 font-medium align-top w-[180px]"><ColumnSearchHeader label="Progress" value={colF.progress} onChange={setCol("progress")} placeholder="Məs: 60" /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review statusu" value={colF.status} onChange={setCol("status")} /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review başlanma" value={colF.start} onChange={setCol("start")} placeholder="Məs: 01.08.2026" /></th>
+                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Son yenilənmə" value={colF.updated} onChange={setCol("updated")} placeholder="Məs: 01.08.2026" /></th>
+                <th className="text-right px-4 py-3 font-medium align-top">Əməliyyat</th>
               </tr>
+
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
