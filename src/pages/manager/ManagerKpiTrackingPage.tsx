@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import KpiCommentThread from "@/components/kpi/KpiCommentThread";
 import { getEmployees, getStructures, type OrgStructure } from "@/lib/orgStore";
 import {
   getRealKpiCardsForEmployee,
