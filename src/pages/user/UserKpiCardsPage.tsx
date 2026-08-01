@@ -529,14 +529,8 @@ const KpiDrawer = ({ kpi, tab, setTab, scope, onClose }: {
   const LIMITED_ALLOWED: DrawerTab[] = ["general", "lifecycle", "history", "team"];
   const tabs = isLimited ? ALL_TABS.filter(([k]) => LIMITED_ALLOWED.includes(k)) : ALL_TABS;
 
-  const sendComment = () => {
-    const t = draft.trim();
-    if (!t) return;
-    const now = new Date();
-    const stamp = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${now.getFullYear()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-    setComments(c => [...c, { id: `c${Date.now()}`, author: "Siz", role: "İstifadəçi", date: stamp, text: t }]);
-    setDraft("");
-  };
+  const sendComment = () => {};
+
 
   const memberStats = memberStatsData;
 
