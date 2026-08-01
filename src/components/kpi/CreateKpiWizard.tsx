@@ -2101,7 +2101,6 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
       if (firstErr) { toast.error(`Bal ${firstErr.score}: ${errors[firstErr.score]}`); return; }
       const filled = ordered.filter(r => { const { mn, mx } = parts(r); return mn !== "" && mx !== ""; });
       if (filled.length !== ordered.length) { toast.error("Bütün ballar üçün Min və Max dəyər daxil edin"); return; }
-      if (!minBonusScore) { toast.error("Minimum Bonus Bal seçilməlidir"); return; }
     } else {
       const required = max === 10 ? [10, 4] : [max, 2];
       for (const r of required) {
@@ -2114,6 +2113,7 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
         }
       }
     }
+    if (!minBonusScore) { toast.error("Minimum Bonus Bal seçilməlidir"); return; }
     onSave(ordered);
   };
 
@@ -2194,8 +2194,8 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
 
         <div className="rounded-lg border border-border overflow-hidden">
           <div className="grid grid-cols-12 gap-3 px-4 py-2.5 bg-secondary/50 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {needsMinMax && <div className="col-span-2">Minimum</div>}
-            <div className={needsMinMax ? "col-span-1" : "col-span-2"}>Bal</div>
+            <div className="col-span-2">Minimum</div>
+            <div className="col-span-1">Bal</div>
             {needsMinMax ? (
               <>
                 <div className="col-span-4">Min dəyər</div>
@@ -2203,11 +2203,11 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
               </>
             ) : isTime ? (
               <>
-                <div className="col-span-5">Başlama</div>
+                <div className="col-span-4">Başlama</div>
                 <div className="col-span-5">Bitmə</div>
               </>
             ) : (
-              <div className="col-span-10">İzah</div>
+              <div className="col-span-9">İzah</div>
             )}
           </div>
           <div className="divide-y divide-border">
@@ -2222,19 +2222,17 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
                     selected ? "bg-amber-500/10" : "hover:bg-secondary/20"
                   }`}
                 >
-                  {needsMinMax && (
-                    <div className="col-span-2">
-                      <input
-                        type="radio"
-                        name="min-bonus-score"
-                        checked={selected}
-                        onChange={() => setRows(rows.map(x => ({ ...x, isMinBonus: x.id === r.id })))}
-                        className="w-4 h-4 accent-amber-500 cursor-pointer"
-                        aria-label={`Bal ${r.score} minimum bonus balı`}
-                      />
-                    </div>
-                  )}
-                  <div className={`${needsMinMax ? "col-span-1" : "col-span-2"} text-base font-bold text-foreground tabular-nums`}>
+                  <div className="col-span-2">
+                    <input
+                      type="radio"
+                      name="min-bonus-score"
+                      checked={selected}
+                      onChange={() => setRows(rows.map(x => ({ ...x, isMinBonus: x.id === r.id })))}
+                      className="w-4 h-4 accent-amber-500 cursor-pointer"
+                      aria-label={`Bal ${r.score} minimum bonus balı`}
+                    />
+                  </div>
+                  <div className="col-span-1 text-base font-bold text-foreground tabular-nums">
                     {r.score}
                   </div>
                   {needsMinMax ? (
@@ -2256,7 +2254,7 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
                     </>
                   ) : isTime ? (
                     <>
-                      <div className="col-span-5">
+                      <div className="col-span-4">
                         <input type="date" value={r.timeStart || ""}
                           onChange={e => setRows(rows.map(x => x.id === r.id ? { ...x, timeStart: e.target.value } : x))}
                           className={inputCls} />
@@ -2268,7 +2266,7 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
                       </div>
                     </>
                   ) : (
-                    <div className="col-span-10">
+                    <div className="col-span-9">
                       <input value={r.description || ""}
                         onChange={e => setRows(rows.map(x => x.id === r.id ? { ...x, description: e.target.value } : x))}
                         placeholder="Bu balı qazanmaq üçün şərt..." className={inputCls} />
@@ -2280,12 +2278,10 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
           </div>
         </div>
 
-        {needsMinMax && (
-          <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5">
-            <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-            <p className="text-xs text-foreground">Bonus yalnız seçilmiş minimum baldan etibarən hesablanacaq.</p>
-          </div>
-        )}
+        <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5">
+          <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+          <p className="text-xs text-foreground">Bonus yalnız seçilmiş minimum baldan etibarən hesablanacaq.</p>
+        </div>
 
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
           <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-border bg-card">Ləğv et</button>
