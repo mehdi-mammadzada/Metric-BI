@@ -2194,8 +2194,8 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
 
         <div className="rounded-lg border border-border overflow-hidden">
           <div className="grid grid-cols-12 gap-3 px-4 py-2.5 bg-secondary/50 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {needsMinMax && <div className="col-span-2">Minimum</div>}
-            <div className={needsMinMax ? "col-span-1" : "col-span-2"}>Bal</div>
+            <div className="col-span-2">Minimum</div>
+            <div className="col-span-1">Bal</div>
             {needsMinMax ? (
               <>
                 <div className="col-span-4">Min dəyər</div>
@@ -2203,11 +2203,11 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
               </>
             ) : isTime ? (
               <>
-                <div className="col-span-5">Başlama</div>
+                <div className="col-span-4">Başlama</div>
                 <div className="col-span-5">Bitmə</div>
               </>
             ) : (
-              <div className="col-span-10">İzah</div>
+              <div className="col-span-9">İzah</div>
             )}
           </div>
           <div className="divide-y divide-border">
