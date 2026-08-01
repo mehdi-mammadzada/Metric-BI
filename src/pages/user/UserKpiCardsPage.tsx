@@ -17,6 +17,7 @@ import {
   Target as TargetIcon, AlertTriangle,
 } from "lucide-react";
 import KpiAccordionList, { type AccordionKpi } from "@/components/kpi/KpiAccordionList";
+import KpiCommentThread from "@/components/kpi/KpiCommentThread";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCascadeTree } from "@/lib/cascadeTreeStore";
 import { useSharedKpiCards } from "@/lib/kpiCardStore";
