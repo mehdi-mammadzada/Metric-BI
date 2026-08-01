@@ -2101,7 +2101,6 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
       if (firstErr) { toast.error(`Bal ${firstErr.score}: ${errors[firstErr.score]}`); return; }
       const filled = ordered.filter(r => { const { mn, mx } = parts(r); return mn !== "" && mx !== ""; });
       if (filled.length !== ordered.length) { toast.error("Bütün ballar üçün Min və Max dəyər daxil edin"); return; }
-      if (!minBonusScore) { toast.error("Minimum Bonus Bal seçilməlidir"); return; }
     } else {
       const required = max === 10 ? [10, 4] : [max, 2];
       for (const r of required) {
@@ -2114,6 +2113,7 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
         }
       }
     }
+    if (!minBonusScore) { toast.error("Minimum Bonus Bal seçilməlidir"); return; }
     onSave(ordered);
   };
 

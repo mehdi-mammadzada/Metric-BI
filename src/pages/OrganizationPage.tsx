@@ -1788,7 +1788,7 @@ const EmployeesTab = () => {
               onChange={v => setForm(p => ({ ...p, fatherName: sanitizeName(v).slice(0, 50) }))} />
             {citizenship === "foreign" ? (
               <ValidatedField label="Digər" value={form.fin} mono error={createErrors.fin}
-                placeholder="Maksimum 10 simvol"
+                placeholder="Max 10 simvol"
                 onChange={v => setForm(p => ({ ...p, fin: sanitizeOther(v) }))} />
             ) : (
               <ValidatedField label="FİN" value={form.fin} mono error={createErrors.fin}
