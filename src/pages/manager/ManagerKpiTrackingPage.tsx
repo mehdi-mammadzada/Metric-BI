@@ -2187,7 +2187,10 @@ const ReviewsView = () => {
                         title={r.outcomeComment ? "Səbəbə bax" : undefined}
                         className={r.outcomeComment ? "cursor-pointer" : "cursor-default"}
                       >
-                        <Badge className={`${reviewStyle.badge} inline-flex items-center gap-1`}><ReviewIcon className="w-3 h-3" />{reviewStyle.badgeLabel}</Badge>
+                        <span className={`${reviewStyle.badge} inline-flex items-center justify-center gap-1.5 h-7 w-[150px] px-2 rounded-full border-0 text-xs font-medium leading-none whitespace-nowrap`}>
+                          <ReviewIcon className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{reviewStyle.badgeLabel}</span>
+                        </span>
                       </button>
                     </td>
 
