@@ -39,6 +39,7 @@ import KpiAccordionList, { type AccordionKpi, type AccordionKpiStatus } from "@/
 import ReviewOverviewDialog, { type ReviewOverviewData } from "@/components/kpi/ReviewOverviewDialog";
 import ReviewStatusChangeDialog, { type ReviewStatusValue } from "@/components/kpi/ReviewStatusChangeDialog";
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
+import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 
 type Stage = "assigned" | "evaluated" | "pending_assign";
 type KpiStatus = TargetStatus;
