@@ -1821,32 +1821,13 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
 }) => {
   const initialTab: TargetDrawerTab = (tabsFilter && tabsFilter[0]) || "general";
   const [tab, setTab] = useState<TargetDrawerTab>(initialTab);
-  const [draft, setDraft] = useState("");
-  const [commentsMap, setCommentsMap] = useState<Record<string, CommentItem[]>>({});
-
-  useEffect(() => {
-    if (data && !commentsMap[data.target.id]) {
-      setCommentsMap(m => ({ ...m, [data.target.id]: initialComments(data.target.id) }));
-    }
-  }, [data, commentsMap]);
 
   if (!data) return null;
   const { target, cardName } = data;
   const history = initialHistory(target.id);
   const reminders = initialReminders(target.id);
-  const comments = commentsMap[target.id] || [];
   const pct = safePct(target.fakt, target.plan);
 
-  const sendComment = () => {
-    const t = draft.trim();
-    if (!t) return;
-    const now = new Date();
-    const stamp = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${now.getFullYear()} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-    const item: CommentItem = { id: `${target.id}-c${Date.now()}`, author: "Siz", role: "İstifadəçi", date: stamp, text: t };
-    setCommentsMap(m => ({ ...m, [target.id]: [...(m[target.id] || []), item] }));
-    setDraft("");
-    toast({ title: "Şərh göndərildi" });
-  };
 
   return (
     <>
