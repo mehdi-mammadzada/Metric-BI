@@ -1961,20 +1961,9 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
               </TabsContent>
 
               <TabsContent value="comments" className="mt-0">
-                <div className="space-y-2.5">
-                  {comments.map(c => (
-                    <div key={c.id} className="flex gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex-shrink-0 flex items-center justify-center text-xs font-semibold">
-                        {c.author.split(" ").map(x => x[0]).join("").slice(0,2)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs"><span className="font-medium text-foreground">{c.author}</span><span className="text-muted-foreground"> · {c.date}</span></div>
-                        <div className="mt-1 text-sm text-foreground rounded-lg bg-secondary/50 border border-border px-3 py-2">{c.text}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <KpiCommentThread refId={`target:${target.id}`} />
               </TabsContent>
+
 
               <TabsContent value="performance" className="mt-0 space-y-3">
                 <div className="rounded-xl border border-border p-3 space-y-2 text-xs">
