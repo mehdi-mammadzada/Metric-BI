@@ -1362,25 +1362,15 @@ const subTabLabels: Record<SubTab, string> = {
 const SubDetailPanel = ({ node, tab, setTab, onClose }: {
   node: TreeNode; tab: SubTab; setTab: (t: SubTab) => void; onClose: () => void;
 }) => {
-  const [commentsMap, setCommentsMap] = useState<Record<string, CommentItem[]>>({});
-  const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [notifyTitle, setNotifyTitle] = useState("");
   const [notifyMsg, setNotifyMsg] = useState("");
   const [notifyPri, setNotifyPri] = useState("normal");
 
-  useEffect(() => {
-    if (!commentsMap[node.id]) setCommentsMap(m => ({ ...m, [node.id]: initialComments(node.id) }));
-  }, [node.id, commentsMap]);
-
-  useEffect(() => {
-    if (tab === "comments" && scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [tab, commentsMap, node.id]);
-
-  const comments = commentsMap[node.id] || [];
   const history = initialHistory(node.id);
   const reminders = initialReminders(node.id);
+
   const empKpis = useMemo<EmpKpi[]>(() => {
     if (!node.empId) return [];
     return getRealKpiCardsForEmployee(node.empId).flatMap(c =>
