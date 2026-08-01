@@ -1577,28 +1577,9 @@ const SubDetailPanel = ({ node, tab, setTab, onClose }: {
             </TabsContent>
 
             <TabsContent value="comments">
-              <div className="space-y-2.5">
-                {comments.map(c => (
-                  <div key={c.id} className="flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex-shrink-0 flex items-center justify-center text-xs font-semibold">
-                      {c.author.split(" ").map(x => x[0]).join("").slice(0,2)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs"><span className="font-medium text-foreground">{c.author}</span><span className="text-muted-foreground"> · {c.date}</span></div>
-                      <div className="mt-1 text-sm text-foreground rounded-lg bg-secondary/50 border border-border px-3 py-2">{c.text}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
-                <button className="w-8 h-8 rounded-md hover:bg-secondary text-muted-foreground inline-flex items-center justify-center" aria-label="Fayl əlavə et"><Paperclip className="w-4 h-4" /></button>
-                <input value={draft} onChange={e => setDraft(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendComment(); } }}
-                  placeholder="Şərhinizi yazın..."
-                  className="flex-1 px-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
-                <Button size="sm" onClick={sendComment} className="gap-1"><Send className="w-3.5 h-3.5" /> Göndər</Button>
-              </div>
+              <KpiCommentThread refId={`node:${node.id}`} />
             </TabsContent>
+
 
             <TabsContent value="reminders">
               <ol className="relative border-l-2 border-border pl-4 space-y-4">
