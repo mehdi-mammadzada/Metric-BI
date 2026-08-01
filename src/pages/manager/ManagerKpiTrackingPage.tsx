@@ -1990,15 +1990,7 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
             </div>
           </Tabs>
 
-          {tab === "comments" && (
-            <div className="border-t border-border pt-3 pb-4 flex items-center gap-2">
-              <input value={draft} onChange={e => setDraft(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendComment(); } }}
-                placeholder="Şərhinizi yazın..."
-                className="flex-1 px-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
-              <Button size="sm" onClick={sendComment} className="gap-1"><Send className="w-3.5 h-3.5" /> Göndər</Button>
-            </div>
-          )}
+
         </div>
       </aside>
     </>
