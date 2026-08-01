@@ -1,5 +1,16 @@
-import { useEffect, useState } from "react";
-import { Info, MoreHorizontal, Send } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Info, Loader2, Send, Trash2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import {
+  addKpiComment,
+  deleteKpiComment,
+  fetchKpiComments,
+  formatCommentDate,
+  getCachedComments,
+  KPI_COMMENTS_EVT,
+  type KpiComment,
+} from "@/lib/kpiCommentsService";
 
 
 export const KPI_EXTRA_TABS = [
@@ -12,7 +23,7 @@ export const isExtraTab = (t: string): t is KpiExtraTabKey =>
   KPI_EXTRA_TABS.some(([k]) => k === t);
 
 interface Props {
-  kpi: { id?: number; name: string; target?: string | number; current?: string | number; unit?: string; progress: number };
+  kpi: { id?: number | string; name: string; target?: string | number; current?: string | number; unit?: string; progress: number };
   tab: KpiExtraTabKey;
 }
 
@@ -21,77 +32,64 @@ export default function KpiExtraTabContent({ kpi, tab }: Props) {
   return null;
 }
 
-// ================= Şərhlər (per-card, localStorage) =================
+// ================= Şərhlər (per-card, database-persisted) =================
 
-interface CommentItem { id: number; author: string; date: string; text: string; }
-
-const COMMENTS_KEY = "kpi_card_comments_v1";
-const COMMENTS_EVT = "kpi-card-comments-updated";
-
-type Store = Record<string, CommentItem[]>;
-
-const loadStore = (): Store => {
-  try {
-    const raw = localStorage.getItem(COMMENTS_KEY);
-    if (raw) return JSON.parse(raw) as Store;
-  } catch {}
-  return {};
-};
-const saveStore = (s: Store) => {
-  try { localStorage.setItem(COMMENTS_KEY, JSON.stringify(s)); } catch {}
-  window.dispatchEvent(new Event(COMMENTS_EVT));
-};
-
-const loadFor = (cardId?: number): CommentItem[] => {
-  const store = loadStore();
-  const key = String(cardId ?? "default");
-  if (store[key] && store[key].length > 0) return store[key];
-  return [];
-};
-
-function Comments({ cardId }: { cardId?: number }) {
-  const [items, setItems] = useState<CommentItem[]>(() => loadFor(cardId));
+function Comments({ cardId }: { cardId?: number | string }) {
+  const { user } = useAuth();
+  const [items, setItems] = useState<KpiComment[]>(() => getCachedComments(cardId));
   const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [filterAuthor, setFilterAuthor] = useState("");
   const [filterDate, setFilterDate] = useState("");
 
-  useEffect(() => {
-    setItems(loadFor(cardId));
-    const refresh = () => setItems(loadFor(cardId));
-    window.addEventListener(COMMENTS_EVT, refresh);
-    window.addEventListener("storage", refresh);
-    return () => {
-      window.removeEventListener(COMMENTS_EVT, refresh);
-      window.removeEventListener("storage", refresh);
-    };
+  const reload = useCallback(async () => {
+    if (cardId == null) return;
+    setLoading(true);
+    const rows = await fetchKpiComments(cardId);
+    setItems(rows);
+    setLoading(false);
   }, [cardId]);
 
-  const persist = (next: CommentItem[]) => {
-    setItems(next);
-    if (!cardId) return;
-    const store = loadStore();
-    store[String(cardId)] = next;
-    saveStore(store);
-  };
-
-  const add = () => {
-    if (!text.trim()) return;
-    const now = new Date();
-    const pad = (n: number) => n.toString().padStart(2, "0");
-    const item: CommentItem = {
-      id: Date.now(),
-      author: "Admin",
-      date: `${pad(now.getDate())}.${pad(now.getMonth() + 1)}.${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`,
-      text,
+  useEffect(() => {
+    setItems(getCachedComments(cardId));
+    void reload();
+    const onCache = () => setItems(getCachedComments(cardId));
+    window.addEventListener(KPI_COMMENTS_EVT, onCache);
+    window.addEventListener("storage", onCache);
+    return () => {
+      window.removeEventListener(KPI_COMMENTS_EVT, onCache);
+      window.removeEventListener("storage", onCache);
     };
-    persist([item, ...items]);
+  }, [cardId, reload]);
+
+  const add = async () => {
+    if (!text.trim() || cardId == null || saving) return;
+    setSaving(true);
+    const res = await addKpiComment(cardId, text, {
+      organizationId: user?.currentOrgId,
+      userId: user?.supabaseUserId,
+      authorName: user?.name,
+    });
+    setSaving(false);
+    if (!res.ok) {
+      toast({ title: "Şərh yadda saxlanılmadı", description: res.error, variant: "destructive" });
+      return;
+    }
+    setItems(res.rows);
     setText("");
   };
 
+  const remove = async (id: string) => {
+    if (cardId == null) return;
+    setItems(await deleteKpiComment(cardId, id));
+  };
+
+  const initial = (name: string) => (name || "?").trim().charAt(0).toUpperCase();
   const availableAuthors = Array.from(new Set(items.map(c => c.author).filter(Boolean)));
   const filtered = items.filter(c => {
     if (filterAuthor && c.author !== filterAuthor) return false;
-    if (filterDate && !(c.date || "").includes(filterDate.split("-").reverse().join("."))) return false;
+    if (filterDate && !formatCommentDate(c.createdAt).includes(filterDate.split("-").reverse().join("."))) return false;
     return true;
   });
 
@@ -99,11 +97,11 @@ function Comments({ cardId }: { cardId?: number }) {
     <div className="space-y-4">
       <h3 className="font-semibold text-foreground">Şərhlər</h3>
       <div className="flex items-start gap-2">
-        <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">A</div>
-        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()}
+        <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">{initial(user?.name || "")}</div>
+        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void add()}
           placeholder="Qeyd əlavə et..." className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-        <button onClick={add} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 flex items-center gap-1">
-          <Send className="w-3.5 h-3.5" /> Qeyd əlavə et
+        <button onClick={() => void add()} disabled={saving || !text.trim()} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1">
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />} Qeyd əlavə et
         </button>
       </div>
 
@@ -136,21 +134,25 @@ function Comments({ cardId }: { cardId?: number }) {
       <div className="space-y-3">
         {filtered.length === 0 && (
           <div className="text-center py-8 border border-dashed border-border rounded-lg text-sm text-muted-foreground">
-            {items.length === 0 ? "Hələ heç bir şərh yoxdur." : "Filtrə uyğun şərh tapılmadı."}
+            {loading ? "Yüklənir..." : items.length === 0 ? "Hələ heç bir şərh yoxdur." : "Filtrə uyğun şərh tapılmadı."}
           </div>
         )}
         {filtered.map((c) => (
           <div key={c.id} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${c.author === "Admin" ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"}`}>{c.author[0]}</div>
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${c.author === user?.name ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground"}`}>{initial(c.author)}</div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-foreground">{c.author}</p>
-                  <p className="text-[11px] text-muted-foreground">{c.date}</p>
+                  <p className="text-[11px] text-muted-foreground">{formatCommentDate(c.createdAt)}</p>
                 </div>
-                <button className="p-1 rounded hover:bg-secondary"><MoreHorizontal className="w-4 h-4 text-muted-foreground" /></button>
+                {c.author === user?.name && (
+                  <button onClick={() => void remove(c.id)} className="p-1 rounded hover:bg-secondary" title="Sil">
+                    <Trash2 className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                )}
               </div>
-              <p className="text-sm text-foreground mt-1">{c.text}</p>
+              <p className="text-sm text-foreground mt-1 break-words">{c.text}</p>
             </div>
           </div>
         ))}
