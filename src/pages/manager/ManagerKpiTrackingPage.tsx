@@ -1105,17 +1105,7 @@ export const SubordinatesView = ({
             </Select>
           </div>
           <div>
-            <label className="text-[11px] text-muted-foreground">Metrik</label>
-            <Select value={metric} onValueChange={setMetric}>
-              <SelectTrigger className="w-48 h-9 mt-0.5"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="avg">Ortalama icra faizi</SelectItem>
-                <SelectItem value="completed">Hədəfə çatan KPI</SelectItem>
-                <SelectItem value="not_achieved">Hədəfə çatmayan KPI</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
+
             <label className="text-[11px] text-muted-foreground">Status</label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue /></SelectTrigger>
