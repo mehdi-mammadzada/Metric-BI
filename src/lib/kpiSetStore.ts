@@ -424,10 +424,12 @@ export const suggestLimitsFromTarget = (target: string): LimitSet => {
 };
 
 export const useKpiSet = (): KpiSetEntry[] => {
-  const [rows, setRows] = useState<KpiSetEntry[]>(() => load());
+  const [rows, setRows] = useState<KpiSetEntry[]>(() => getKpiSetEntries());
   useEffect(() => {
-    const refresh = () => setRows(load());
+    const refresh = () => setRows(getKpiSetEntries());
     window.addEventListener(EVT, refresh);
+    window.addEventListener("shared-kpi-cards-updated", refresh);
+
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(EVT, refresh);
