@@ -306,16 +306,22 @@ export const buildSharedCardFromDraft = (
 });
 
 // ---------- React hook ----------
+/**
+ * UI hook — silinmiş / ləğv olunmuş kartlar heç bir modulda görünmür.
+ * (HR-in kart siyahısı öz status store-undan oxuyur, ona təsir etmir.)
+ */
 export const useSharedKpiCards = (): SharedKpiCard[] => {
-  const [rows, setRows] = useState<SharedKpiCard[]>(() => load());
+  const visible = () => load().filter(c => !isDeletedShared(c.status));
+  const [rows, setRows] = useState<SharedKpiCard[]>(visible);
   useEffect(() => {
-    const h = () => setRows(load());
+    const h = () => setRows(visible());
     window.addEventListener(EVT, h);
     window.addEventListener("storage", h);
     return () => { window.removeEventListener(EVT, h); window.removeEventListener("storage", h); };
   }, []);
   return rows;
 };
+
 
 // ---------- Seed (a handful of cross-panel demo cards) ----------
 function seedCards(): SharedKpiCard[] {
