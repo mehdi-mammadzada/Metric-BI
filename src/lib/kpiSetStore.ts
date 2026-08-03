@@ -318,8 +318,9 @@ export const getAssignedTargetValues = (cardId: number): Map<string, AssignedTar
       if (!key) return;
       map.set(key, {
         name: e.subKpiName || "",
-
+        target: e.target || "",
         value: toNumber(e.target),
+
         unit: e.unit || "",
         weight: e.weight,
         updatedAt: Number(e.updatedAt) || 0,
