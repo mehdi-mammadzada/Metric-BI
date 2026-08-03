@@ -119,7 +119,16 @@ const persist = (rows: KpiSetEntry[]) => {
   window.dispatchEvent(new Event(EVT));
 };
 
-export const getKpiSetEntries = (): KpiSetEntry[] => load();
+/** Silinmiş / ləğv olunmuş kartların təyinat yazıları görünməməlidir. */
+export const getKpiSetEntries = (): KpiSetEntry[] => {
+  const removed = removedCardIds();
+  const names = removedCardNames();
+  if (removed.size === 0 && names.size === 0) return load();
+  return load().filter(
+    e => !removed.has(String(e.cardId)) && !names.has(norm(e.cardName)),
+  );
+};
+
 
 /** Yeni pending entry əlavə et — HR kart yaradarkən rəhbərin "Məsul olduğum kartlar"-ında görünsün deyə. */
 export const addPendingEntry = (input: {
