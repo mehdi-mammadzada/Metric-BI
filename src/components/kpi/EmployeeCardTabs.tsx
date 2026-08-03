@@ -7,7 +7,7 @@ import KpiAccordionList, { type AccordionKpi } from "@/components/kpi/KpiAccordi
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
 import { REVIEW_STATUS_STYLES } from "@/components/kpi/LifecycleView";
 import { computeReviewStatus, getLifecycleWithFallback } from "@/lib/kpiLifecycleStore";
-import { getAssignedTargetValues } from "@/lib/kpiSetStore";
+import { mergeCardTargets } from "@/lib/kpiSetStore";
 
 export type EmployeeCardTab = "empTargets" | "empDynamics" | "empReviews";
 
@@ -24,29 +24,28 @@ interface Props {
 export default function EmployeeCardTabs({ card, tab }: Props) {
   const accordionItems: AccordionKpi[] = useMemo(() => {
     if (!card) return [];
-    // Hədəf dəyərləri vahid mənbədən: rəhbərin təyin etdiyi aktual dəyər üstündür.
-    const cardId = Number(card.id);
-    const assigned = Number.isFinite(cardId) ? getAssignedTargetValues(cardId) : new Map();
-    const key = (v: unknown) => String(v ?? "").split(" — ")[0].trim().toLowerCase().replace(/\s+/g, " ");
+    // Hədəf ad/dəyərləri vahid mənbədən (KPI izlənməsi ilə eyni).
     return [{
       id: card.id,
       name: card.name,
       createdAt: card.startDate || card.createdAt || "—",
       deadline: card.endDate || card.deadline || "—",
       status: "in_progress",
-      targets: (card.subKpis || []).map((sk: any, i: number) => {
-        const name = sk.name || `Hədəf ${i + 1}`;
-        const a = assigned.get(key(name));
-        return {
-          id: String(sk.id ?? i),
-          name,
-          plan: a ? a.value : toNum(sk.target),
-          fakt: toNum(sk.current),
-          unit: a?.unit || sk.unit || "",
-        };
-      }),
+      targets: mergeCardTargets(
+        Number(card.id),
+        (card.subKpis || []).map((sk: any) => ({
+          id: sk.id, name: sk.name, value: sk.target, unit: sk.unit, weight: sk.weight,
+        })),
+      ).map(t => ({
+        id: t.id,
+        name: t.name,
+        plan: t.plan,
+        fakt: toNum((card.subKpis || []).find((sk: any) => String(sk.id) === t.id)?.current),
+        unit: t.unit,
+      })),
     }];
   }, [card]);
+
 
 
   const reviews = useMemo(() => {

@@ -805,7 +805,10 @@ const employeeIdByName = (name: string): string =>
   mockEmployees.find(e => norm(e.fullName) === norm(name))?.id || name;
 
 const buildGroups = (scope: StatusScope): StatusGroup[] => {
-  const cards = getSharedKpiCards().filter(c => c.status !== "imtina");
+  const cards = getSharedKpiCards().filter(
+    c => c.status !== "imtina" && c.status !== "silindi" && c.status !== "legv_olundu",
+  );
+
   if (scope === "individual") {
     // Fərdi: default olaraq bütün əməkdaşlar görünür; kart/hədəf sayları həmin əməkdaşa düşən KPI-lardan hesablanır.
     return mockEmployees.map(e => {
