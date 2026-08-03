@@ -4,7 +4,7 @@ import { getEmployees } from "@/lib/orgStore";
 import { getSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
 import { getNodes, type CascadeTreeNode } from "@/lib/cascadeTreeStore";
 import { getTeams } from "@/lib/teamsStore";
-import { getAssignedTargetValues, type AssignedTargetValue } from "@/lib/kpiSetStore";
+import { getAssignedTargetValues, mergeCardTargets, type AssignedTargetValue } from "@/lib/kpiSetStore";
 
 export interface RealTarget {
   id: string;
