@@ -329,6 +329,65 @@ export const getAssignedTargetValues = (cardId: number): Map<string, AssignedTar
   return map;
 };
 
+export interface MergedCardTarget {
+  id: string;
+  name: string;
+  plan: number;
+  unit: string;
+  weight: number;
+}
+
+/**
+ * Kartın hədəflərini təyinedicinin verdiyi aktual dəyərlərlə birləşdirir —
+ * bütün modullarda (KPI kartları, KPI izlənməsi, əməkdaş görünüşü) eyni
+ * ad/dəyər göstərilməsi üçün VAHİD MƏNBƏ.
+ * Ad üzrə uyğunluq tapılmasa, sıra üzrə (positional) uyğunlaşdırma işləyir;
+ * uyğunlaşmayan təyin edilmiş hədəflər siyahının sonuna əlavə olunur.
+ */
+export const mergeCardTargets = (
+  cardId: number | undefined,
+  base: Array<{ id?: string | number; name?: string; value?: unknown; unit?: string; weight?: unknown }>,
+): MergedCardTarget[] => {
+  const assigned = Number.isFinite(Number(cardId))
+    ? getAssignedTargetValues(Number(cardId))
+    : new Map<string, AssignedTargetValue>();
+  const keyOf = (v: unknown) => norm(String(v ?? "").split(" — ")[0]);
+  const pool = [...assigned.values()];
+  const used = new Set<string>();
+  const isPlaceholder = (n: string) => /^h[əe]d[əe]f\s*\d*$/i.test(n.trim());
+
+  const out: MergedCardTarget[] = base.map((t, i) => {
+    const rawName = String(t.name ?? "").trim() || `Hədəf ${i + 1}`;
+    let a = assigned.get(keyOf(rawName));
+    // Kartdaki ad placeholder-dir (məs. "Hədəf 1") — sıra üzrə uyğunlaşdır.
+    if (!a && isPlaceholder(rawName)) {
+      a = pool.find(p => !used.has(norm(p.name)));
+    }
+    if (a) used.add(norm(a.name));
+    return {
+      id: String(t.id ?? i),
+      name: a?.name || rawName,
+      plan: a ? a.value : toNumber(t.value),
+      unit: a?.unit || t.unit || "",
+      weight: Number(a?.weight ?? t.weight) || 0,
+    };
+  });
+
+  pool.forEach((a, i) => {
+    if (used.has(norm(a.name))) return;
+    out.push({
+      id: `assigned-${i}`,
+      name: a.name,
+      plan: a.value,
+      unit: a.unit || "",
+      weight: Number(a.weight) || 0,
+    });
+  });
+  return out;
+};
+
+
+
 /** Bir hədəf üçün aktual (təyin edilmiş) dəyər — yoxdursa undefined. */
 export const getAssignedTargetValue = (
   cardId: number,
