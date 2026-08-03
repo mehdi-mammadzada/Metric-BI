@@ -6,6 +6,8 @@
 import { useEffect, useState } from "react";
 import { getNodes as getCascadeNodes, remainingOf } from "@/lib/cascadeTreeStore";
 import { getSharedKpiCards } from "@/lib/kpiCardStore";
+import { removedCardIds, removedCardNames } from "@/lib/removedCards";
+
 import { getEmployees } from "@/lib/orgStore";
 
 export type LimitTier = "l1" | "l2" | "l3" | "l4" | "l5";
