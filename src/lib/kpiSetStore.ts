@@ -433,6 +433,8 @@ export const useKpiSet = (): KpiSetEntry[] => {
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(EVT, refresh);
+      window.removeEventListener("shared-kpi-cards-updated", refresh);
+
       window.removeEventListener("storage", refresh);
     };
   }, []);
