@@ -81,8 +81,10 @@ const stableCardTime = (card: SharedKpiCard) => Date.parse(card.createdAt || "")
 
 const stableCardId = (card: SharedKpiCard) => String(card.numericId ?? card.id ?? card.name ?? "");
 
-const isDeletedSharedStatus = (status: SharedKpiStatus | undefined | null) =>
+export const isDeletedSharedStatus = (status: SharedKpiStatus | string | undefined | null) =>
   status === "silindi" || status === "legv_olundu";
+const isDeletedShared = isDeletedSharedStatus;
+
 
 const stableCardSort = (a: SharedKpiCard, b: SharedKpiCard) => {
   const byCreated = stableCardTime(b) - stableCardTime(a);
