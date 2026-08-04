@@ -5,14 +5,14 @@ import { PageHero, FancyStatCard, FancyCard } from "@/components/ui/page-hero";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { AIChatSection } from "@/components/ai/AIChatSection";
 import { useApprovals } from "@/lib/approvalsStore";
-import { useSharedKpiCards } from "@/lib/kpiCardStore";
+import { useVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { getCurrentEmployeeId, getVisibleApprovals, getVisibleKpiCards, getVisibleTeams } from "@/lib/scope";
 import { useMemo } from "react";
 
 const ManagerHomePage = () => {
   const { user } = useAuth();
   const approvals = useApprovals();
-  const cards = useSharedKpiCards();
+  const cards = useVisibleSharedKpiCards();
   const meId = getCurrentEmployeeId(user);
   const visibleApprovals = useMemo(() => getVisibleApprovals(user, approvals), [user, approvals]);
   const visibleCards = useMemo(() => getVisibleKpiCards(user, cards), [user, cards]);

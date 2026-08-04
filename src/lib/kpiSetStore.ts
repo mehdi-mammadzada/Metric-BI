@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { getNodes as getCascadeNodes, remainingOf } from "@/lib/cascadeTreeStore";
-import { getSharedKpiCards } from "@/lib/kpiCardStore";
+import { getVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { getEmployees } from "@/lib/orgStore";
 
 export type LimitTier = "l1" | "l2" | "l3" | "l4" | "l5";
@@ -252,7 +252,7 @@ export const getIncomingCascadeLoad = (
     const emp = getEmployees().find(e => `${e.firstName} ${e.lastName}` === assigneeName);
     if (emp) {
       const empKeys = new Set([String(emp.id), `e${emp.id}`]);
-      const cards = getSharedKpiCards()
+      const cards = getVisibleSharedKpiCards()
         .filter(c =>
           (empKeys.has(c.ownerId) || (c.assigneeIds || []).some(id => empKeys.has(id))) &&
           (excludeCardId == null || c.numericId !== excludeCardId)
