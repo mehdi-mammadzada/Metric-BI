@@ -140,14 +140,20 @@ const applyRows = (rows: { catalog_key: string; entries: unknown }[]) => {
   touchedEvents.forEach(evt => window.dispatchEvent(new Event(evt)));
 };
 
+const sleep = (ms: number) => new Promise(r => window.setTimeout(r, ms));
+
+/** Bulud oxunuşu — şəbəkə xətasında 3 dəfə təkrar cəhd (data itkisinin qarşısını alır). */
 const fetchKeys = async (orgId: string, keys: string[]) => {
-  const { data, error } = await supabase
-    .from("org_catalogs")
-    .select("catalog_key, entries")
-    .eq("organization_id", orgId)
-    .in("catalog_key", keys);
-  if (error || !data) return null;
-  return data as { catalog_key: string; entries: unknown }[];
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data, error } = await supabase
+      .from("org_catalogs")
+      .select("catalog_key, entries")
+      .eq("organization_id", orgId)
+      .in("catalog_key", keys);
+    if (!error && data) return data as { catalog_key: string; entries: unknown }[];
+    if (attempt < 2) await sleep(400 * (attempt + 1) ** 2);
+  }
+  return null;
 };
 
 // ── Hydrate ─────────────────────────────────────────────────────────────────
@@ -273,15 +279,24 @@ export const activatePhase1Sync = async (orgId: string) => {
   // Purge any stale local seed for tracked keys BEFORE hydrating.
   // This prevents a fresh browser from later flushing a demo seed back to the
   // cloud (which would overwrite the real data other browsers wrote).
-  suppressFlush = true;
-  try {
-    for (const s of STORES) {
-      try { localStorage.removeItem(s.localKey); } catch { /* noop */ }
-      lastWrittenJson.delete(s.localKey);
+  // DİQQƏT: lokal keş YALNIZ təşkilat dəyişdikdə təmizlənir. Eyni təşkilat üçün
+  // keş saxlanılır — əks halda bulud sorğusu uğursuz olduqda (şəbəkə/RLS) vəzifə
+  // kataloqu, kaskad ağacı və s. istifadəçinin gözü qarşısında "silinir".
+  const ORG_MARK_KEY = "phase1_sync_org_v1";
+  let previousOrg: string | null = null;
+  try { previousOrg = localStorage.getItem(ORG_MARK_KEY); } catch { /* noop */ }
+  if (previousOrg && previousOrg !== orgId) {
+    suppressFlush = true;
+    try {
+      for (const s of STORES) {
+        try { localStorage.removeItem(s.localKey); } catch { /* noop */ }
+        lastWrittenJson.delete(s.localKey);
+      }
+    } finally {
+      suppressFlush = false;
     }
-  } finally {
-    suppressFlush = false;
   }
+  try { localStorage.setItem(ORG_MARK_KEY, orgId); } catch { /* noop */ }
   installStoragePatch();
   await hydratePhase1FromCloud(orgId);
   lastHydrateAt = Date.now();
