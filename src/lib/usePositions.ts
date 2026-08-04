@@ -3,7 +3,7 @@
 // vəzifələri yalnız buradan almalıdır — ayrıca/statik siyahı saxlanılmamalıdır.
 
 import { useEffect, useState } from "react";
-import { getPositions } from "./catalogStore";
+import { ensurePositionsCatalog, getPositions } from "./catalogStore";
 import { getStructures, getEmployees, type OrgStructure } from "./orgStore";
 
 const collect = (list: OrgStructure[], out: Set<string>) => {
@@ -51,6 +51,13 @@ export const getAllPositions = (): string[] => {
     collect(getStructures(), set);
   } catch {}
   const names = employeeNameSet();
+  // Ştatda istifadə olunan vəzifələr kataloqda yoxdursa — bərpa edilir,
+  // beləliklə vəzifələr heç vaxt "yoxa çıxmır" (bulud sinxronizasiyası da alır).
+  try {
+    const fromCatalog = new Set(getPositions().map(p => String(p || "").trim().toLowerCase()));
+    const missing = Array.from(set).filter(p => !fromCatalog.has(p.trim().toLowerCase()) && !looksLikeEmployeeLabel(p, names));
+    if (missing.length) ensurePositionsCatalog(missing);
+  } catch {}
   return Array.from(set)
     .filter(p => !looksLikeEmployeeLabel(p, names))
     .sort((a, b) => a.localeCompare(b, "az"));

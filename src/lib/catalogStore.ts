@@ -52,6 +52,19 @@ export const addPositionCatalog = (name: string): { ok: boolean; list: string[] 
   save(KEY_POSITIONS, next);
   return { ok: true, list: next };
 };
+/** Struktur/ştatda faktiki istifadə olunan vəzifələri kataloqa əlavə edir (idempotent). */
+export const ensurePositionsCatalog = (names: string[]): string[] => {
+  const list = getPositions();
+  const existing = new Set(list.map(v => String(v).trim().toLowerCase()));
+  const missing = names
+    .map(n => String(n || "").trim())
+    .filter(n => n && !existing.has(n.toLowerCase()));
+  if (missing.length === 0) return list;
+  const next = [...list, ...Array.from(new Set(missing))];
+  save(KEY_POSITIONS, next);
+  return next;
+};
+
 export const removePositionCatalog = (name: string) => {
   const next = getPositions().filter(t => t !== name);
   save(KEY_POSITIONS, next);

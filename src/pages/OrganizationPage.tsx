@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { getAllPositions } from "@/lib/usePositions";
 import {
   getEmployees, updateEmployee, toggleEmployeeActive,
   getStructures,
@@ -1290,7 +1291,7 @@ const SlotRow = ({ slot, index }: SlotRowProps) => {
 const PositionPicker = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const options = useMemo(() => getPositions(), [open]);
+  const options = useMemo(() => getAllPositions(), [open]);
   const filtered = useMemo(() => options.filter(o => o.toLowerCase().includes(q.toLowerCase())), [options, q]);
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -1927,7 +1928,7 @@ const CatalogTab = () => {
       <CatalogList
         title="Vəzifələr"
         icon={Briefcase}
-        items={getPositions()}
+        items={getAllPositions()}
         onAdd={(v) => { const r = addPositionCatalog(v); r.ok ? toast.success("Vəzifə əlavə edildi") : toast.error("Bu vəzifə artıq mövcuddur"); }}
         onRemove={(v) => {
           if (isPositionInUse(v)) { toast.error("Bu vəzifə istifadə olunduğu üçün silinə bilməz."); return; }
