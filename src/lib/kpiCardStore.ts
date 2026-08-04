@@ -143,6 +143,16 @@ const save = (list: SharedKpiCard[]) => {
 
 export const getSharedKpiCards = (): SharedKpiCard[] => load();
 
+/** Terminal statuslar — bu kartlar YALNIZ "KPI Kartları" modulunda görünür. */
+export const TERMINAL_CARD_STATUSES = new Set<SharedKpiStatus>(["silindi", "legv_olundu", "imtina"]);
+
+export const isTerminalCardStatus = (status?: SharedKpiStatus | string | null): boolean =>
+  TERMINAL_CARD_STATUSES.has(String(status || "") as SharedKpiStatus);
+
+/** Digər bütün modullar üçün kart siyahısı (silinmiş/ləğv olunmuş/imtina xaric). */
+export const getVisibleSharedKpiCards = (): SharedKpiCard[] =>
+  load().filter(c => !isTerminalCardStatus(c.status));
+
 export const upsertSharedKpiCard = (card: SharedKpiCard) => {
   const list = load();
   const key = cardKey(card);
@@ -304,6 +314,12 @@ export const buildSharedCardFromDraft = (
 });
 
 // ---------- React hook ----------
+/** Reaktiv siyahı — terminal statuslu kartlar daxil edilmir. */
+export const useVisibleSharedKpiCards = (): SharedKpiCard[] => {
+  const rows = useSharedKpiCards();
+  return useMemo(() => rows.filter(c => !isTerminalCardStatus(c.status)), [rows]);
+};
+
 export const useSharedKpiCards = (): SharedKpiCard[] => {
   const [rows, setRows] = useState<SharedKpiCard[]>(() => load());
   useEffect(() => {
