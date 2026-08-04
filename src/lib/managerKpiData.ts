@@ -47,10 +47,45 @@ const empKey = (id: number) => `e${id}`;
 const VISIBLE = new Set(["aktiv", "natamam", "tesdiq_gozlenilir"]);
 
 const cardToReal = (c: SharedKpiCard): RealKpiCard => {
-  // Hədəf dəyərləri üçün vahid mənbə: "Məsul Olduğum Kartlar"-da təyin edilmiş dəyər
-  // (varsa) kartdakı ilkin dəyəri əvəz edir.
-  const assigned = c.numericId != null ? getAssignedTargetValues(c.numericId) : new Map();
+  // Hədəf dəyərləri üçün vahid mənbə: "Məsul Olduğum Kartlar"-da təyin edilmiş dəyər.
+  // KPI kartı detalları ilə eyni məntiq: adı uyğun gələn hədəflər birləşdirilir,
+  // kartda olmayan (yalnız təyinatda mövcud) hədəflər isə əlavə sətir kimi gəlir.
+  const assigned = c.numericId != null ? getAssignedTargetValues(c.numericId) : new Map<string, AssignedTargetValue>();
   const normName = (v: unknown) => String(v ?? "").split(" — ")[0].trim().toLowerCase().replace(/\s+/g, " ");
+  const used = new Set<string>();
+  const hasAssigned = assigned.size > 0;
+
+  const ownTargets = (c.targets || [])
+    // Kartda adı olmayan boş hədəf sətirləri təyin olunmuş hədəflərlə əvəzlənir.
+    .filter(t => !hasAssigned || !!String(t.name || "").trim())
+    .map((t, i) => {
+      const name = String(t.name || "").trim() || `Hədəf ${i + 1}`;
+      const key = normName(name);
+      const a = assigned.get(key);
+      if (a) used.add(key);
+      return {
+        id: `${c.id}-${t.id ?? i}`,
+        name,
+        plan: a && a.value ? a.value : num(t.targetValue ?? t.scoreLimit),
+        fakt: 0,
+        unit: (a?.unit || t.unit || ""),
+        weight: Number(a?.weight ?? t.weight) || 0,
+        status: "in_progress" as const,
+      };
+    });
+
+  const extraTargets = Array.from(assigned.entries())
+    .filter(([key]) => !used.has(key))
+    .map(([key, a], i) => ({
+      id: `${c.id}-set-${key || i}`,
+      name: a.name || key,
+      plan: a.value,
+      fakt: 0,
+      unit: a.unit || "",
+      weight: Number(a.weight) || 0,
+      status: "in_progress" as const,
+    }));
+
   return {
     id: `sk-${c.id}`,
     cardId: c.numericId,
@@ -61,21 +96,10 @@ const cardToReal = (c: SharedKpiCard): RealKpiCard => {
     cardStatus: c.status,
     scoringSystem: c.scoringSystem,
     frequency: c.frequency,
-    targets: (c.targets || []).map((t, i) => {
-      const name = t.name || `Hədəf ${i + 1}`;
-      const a = assigned.get(normName(name));
-      return {
-        id: `${c.id}-${t.id ?? i}`,
-        name,
-        plan: a ? a.value : num(t.targetValue ?? t.scoreLimit),
-        fakt: 0,
-        unit: (a?.unit || t.unit || ""),
-        weight: Number(a?.weight ?? t.weight) || 0,
-        status: "in_progress" as const,
-      };
-    }),
+    targets: [...ownTargets, ...extraTargets],
   };
 };
+
 
 
 /** Cascade node-larını kart formatına çevir (kart adı üzrə qruplaşdırılmış). */
