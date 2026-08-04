@@ -42,37 +42,7 @@ export const removeStructureType = (name: string) => {
 };
 
 // --- Positions ---
-// Ştatda (təşkilat strukturunda) faktiki istifadə olunan vəzifələr kataloqdan
-// heç vaxt itməməlidir. Ona görə kataloq oxunarkən struktur vəzifələri ilə
-// birləşdirilir (self-heal) — bulud hidratasiyası gecikdikdə də siyahı boş qalmır.
-const STRUCTURES_KEY = "kpi_org_structures_v6";
-
-const collectStructurePositions = (nodes: any[], out: Set<string>) => {
-  for (const n of nodes || []) {
-    for (const p of n?.positions || []) {
-      const v = String(p?.name ?? "").trim();
-      if (v) out.add(v);
-    }
-    if (n?.children?.length) collectStructurePositions(n.children, out);
-  }
-};
-
-const structurePositions = (): string[] => {
-  const set = new Set<string>();
-  try {
-    const raw = localStorage.getItem(STRUCTURES_KEY);
-    if (raw) collectStructurePositions(JSON.parse(raw), set);
-  } catch { /* noop */ }
-  return Array.from(set);
-};
-
-export const getPositions = (): string[] => {
-  const stored = load(KEY_POSITIONS, seedPositions);
-  const set = new Set<string>(stored.map(p => String(p ?? "").trim()).filter(Boolean));
-  structurePositions().forEach(p => set.add(p));
-  return Array.from(set);
-};
-
+export const getPositions = () => load(KEY_POSITIONS, seedPositions);
 export const addPositionCatalog = (name: string): { ok: boolean; list: string[] } => {
   const list = getPositions();
   const v = name.trim();
@@ -83,11 +53,10 @@ export const addPositionCatalog = (name: string): { ok: boolean; list: string[] 
   return { ok: true, list: next };
 };
 export const removePositionCatalog = (name: string) => {
-  const stored = load(KEY_POSITIONS, seedPositions).filter(t => t !== name);
-  save(KEY_POSITIONS, stored);
-  return getPositions();
+  const next = getPositions().filter(t => t !== name);
+  save(KEY_POSITIONS, next);
+  return next;
 };
-
 
 // --- Evaluation criteria ---
 export const getCriteria = () => load(KEY_CRITERIA, seedCriteria);

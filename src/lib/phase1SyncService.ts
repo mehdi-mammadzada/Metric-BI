@@ -64,55 +64,12 @@ const readLocal = <T>(key: string, fallback: T): T => {
   try { const raw = localStorage.getItem(key); return raw ? (JSON.parse(raw) as T) : fallback; }
   catch { return fallback; }
 };
-const safeParse = (json: string): unknown => {
-  try { return JSON.parse(json); } catch { return null; }
-};
-
-// Yaddaş kvotası doldukda (QuotaExceededError) yazılar sükutla uğursuz olur və
-// məlumat "yoxa çıxır". Ona görə kvota xətasında ağır/keçici keşlər təmizlənib
-// yazı bir dəfə təkrarlanır.
-const EVICTABLE_KEYS = [
-  "kpi_operations_log_v1",
-  "wb_reports_v1",
-  "kpi_card_comments_cache_v1",
-  "kpi_card_drafts_v1",
-];
-
-const isQuotaError = (e: unknown) =>
-  !!e && typeof e === "object" && (
-    (e as { name?: string }).name === "QuotaExceededError" ||
-    (e as { name?: string }).name === "NS_ERROR_DOM_QUOTA_REACHED" ||
-    String((e as { message?: string }).message || "").toLowerCase().includes("quota")
-  );
-
-// Patch-dən əvvəlki xam setItem — safeSetLocal patch daxilində çağırıldıqda
-// rekursiya yaranmasın.
-const rawSetItem = Storage.prototype.setItem;
-const rawWrite = (key: string, json: string) => rawSetItem.call(window.localStorage, key, json);
-
-export const safeSetLocal = (key: string, json: string): boolean => {
-  try {
-    rawWrite(key, json);
-    return true;
-  } catch (e) {
-    if (!isQuotaError(e)) return false;
-    for (const k of EVICTABLE_KEYS) {
-      if (k === key) continue;
-      try { window.localStorage.removeItem(k); } catch { /* noop */ }
-      try { rawWrite(key, json); return true; } catch { /* continue evicting */ }
-    }
-    return false;
-  }
-};
-
-
 const writeLocal = (key: string, value: unknown) => {
   try {
     const next = JSON.stringify(value);
-    if (localStorage.getItem(key) !== next) safeSetLocal(key, next);
+    if (localStorage.getItem(key) !== next) localStorage.setItem(key, next);
   } catch { /* noop */ }
 };
-
 
 const normalizeKpiSetEntries = (value: unknown): unknown => {
   if (!Array.isArray(value)) return value;
@@ -242,25 +199,15 @@ export const flushPhase1ToCloud = async (localKey?: string) => {
     const rawEntries = readLocal<unknown>(s.localKey, null);
     const entries = normalizeStoreValue(s.localKey, rawEntries);
     if (entries === null || entries === undefined) continue;
-    if (isEmptyPayload(entries)) {
-      // Boş payload heç vaxt buluda yazılmır:
-      //  - hidratasiya bitməyibsə, mövcud bulud dəyəri silinərdi;
-      //  - əvvəl dolu idisə, bu store-un "seed yazması" nəticəsində baş verən
-      //    təsadüfi silinmədir — lokal dəyəri bərpa edirik.
-      const known = lastWrittenJson.get(s.localKey);
-      if (known && !isEmptyPayload(safeParse(known))) {
-        suppressFlush = true;
-        try { writeLocal(s.localKey, safeParse(known)); } finally { suppressFlush = false; }
-      }
-      continue;
-    }
+    // Bulud dəyəri hələ hidrat olunmayıbsa, boş massivi buluda yazmırıq —
+    // əks halda mövcud kataloqlar (struktur tipləri, vəzifələr) silinir.
+    if (isEmptyPayload(entries) && !lastWrittenJson.has(s.localKey)) continue;
     const json = JSON.stringify(entries);
     if (lastWrittenJson.get(s.localKey) === json) continue;
     rows.push({ organization_id: orgId, catalog_key: s.cloudKey, entries });
     changedKeys.push(s.localKey);
   }
   if (rows.length === 0) return;
-
 
   lastLocalWriteAt = Date.now();
   const { error } = await supabase
@@ -284,16 +231,9 @@ const installStoragePatch = () => {
   const removeItem = originalRemoveItem;
   Storage.prototype.setItem = function (key: string, value: string) {
     const prev = this === window.localStorage ? this.getItem(key) : null;
-    if (this === window.localStorage) {
-      // Kvota xətası halında ağır keşləri təmizləyib təkrar yaz — əks halda
-      // yazı uğursuz olur və istifadəçi məlumatı "yoxa çıxır".
-      if (!safeSetLocal(key, value)) setItem.call(this, key, value);
-    } else {
-      setItem.call(this, key, value);
-    }
+    setItem.call(this, key, value);
     if (this === window.localStorage && trackedLocalKeys.has(key) && prev !== value) scheduleFlush(key);
   };
-
   Storage.prototype.removeItem = function (key: string) {
     removeItem.call(this, key);
     if (this === window.localStorage && trackedLocalKeys.has(key)) scheduleFlush(key);
@@ -330,18 +270,13 @@ const scheduleRehydrate = (opts?: { minIntervalMs?: number }) => {
 export const activatePhase1Sync = async (orgId: string) => {
   if (currentOrgId === orgId) return;
   currentOrgId = orgId;
-  // Lokal "seed" məlumatı buluda geri yazılmasın deyə hidratasiyadan əvvəl
-  // təmizlənir, lakin snapshot saxlanılır: buludda uyğun sətir yoxdursa
-  // (yalnız bu cihazda yaradılmış real məlumat) geri qaytarılır.
-  const snapshot = new Map<string, string>();
+  // Purge any stale local seed for tracked keys BEFORE hydrating.
+  // This prevents a fresh browser from later flushing a demo seed back to the
+  // cloud (which would overwrite the real data other browsers wrote).
   suppressFlush = true;
   try {
     for (const s of STORES) {
-      try {
-        const raw = localStorage.getItem(s.localKey);
-        if (raw && !isEmptyPayload(safeParse(raw))) snapshot.set(s.localKey, raw);
-        localStorage.removeItem(s.localKey);
-      } catch { /* noop */ }
+      try { localStorage.removeItem(s.localKey); } catch { /* noop */ }
       lastWrittenJson.delete(s.localKey);
     }
   } finally {
@@ -349,16 +284,7 @@ export const activatePhase1Sync = async (orgId: string) => {
   }
   installStoragePatch();
   await hydratePhase1FromCloud(orgId);
-  // Buluddan gəlmədiyi halda lokal real məlumatı bərpa et və buluda yaz.
-  for (const s of STORES) {
-    if (lastWrittenJson.has(s.localKey)) continue;
-    const raw = snapshot.get(s.localKey);
-    if (!raw) continue;
-    safeSetLocal(s.localKey, raw);
-    scheduleFlush(s.localKey);
-  }
   lastHydrateAt = Date.now();
-
   getAllDropdownCatalogs();
 
   if (realtimeChannel) supabase.removeChannel(realtimeChannel);

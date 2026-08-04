@@ -2,8 +2,6 @@
 // localStorage-də saxlanılır, dəyişiklikləri "kpi-lifecycle-updated" eventi ilə bildirir.
 
 import { useEffect, useState } from "react";
-import { removedCardIds, removedCardNames } from "@/lib/removedCards";
-
 
 export interface LifecycleStage {
   period: string; // dropdown catalog dəyəri (statik) və ya "Digər"
@@ -47,34 +45,16 @@ const EVT = "kpi-lifecycle-updated";
 
 const SEED: CardLifecycle[] = [];
 
-const loadRaw = (): CardLifecycle[] => {
+const load = (): CardLifecycle[] => {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as CardLifecycle[];
-      return Array.isArray(parsed) ? parsed : [];
-    }
+    if (raw) return JSON.parse(raw) as CardLifecycle[];
   } catch {}
   return [];
 };
 
-// Silinmiş / ləğv olunmuş kartların lifecycle-ı heç bir görünüşdə əks olunmur
-// (məlumat itməsin deyə storage-dən silinmir, yalnız filtrlənir).
-const load = (): CardLifecycle[] => {
-  const removed = removedCardIds();
-  const names = removedCardNames();
-  if (removed.size === 0 && names.size === 0) return loadRaw();
-  return loadRaw().filter(
-    l => !removed.has(String(l.cardId)) && !names.has(String(l.cardName ?? "").trim().toLowerCase().replace(/\s+/g, " ")),
-  );
-};
-
 const persist = (list: CardLifecycle[]) => {
-  // Filtrlənmiş (silinmiş kartlara aid) yazılar itməsin.
-  const visible = new Set(load().map(l => String(l.cardId)));
-  const hidden = loadRaw().filter(l => !visible.has(String(l.cardId)));
-  const merged = [...list, ...hidden.filter(h => !list.some(l => l.cardId === h.cardId))];
-  localStorage.setItem(KEY, JSON.stringify(merged));
+  localStorage.setItem(KEY, JSON.stringify(list));
   window.dispatchEvent(new Event(EVT));
 };
 
@@ -82,7 +62,6 @@ export const getAllLifecycles = (): CardLifecycle[] => load();
 
 export const getLifecycle = (cardId: number): CardLifecycle | undefined =>
   load().find(l => l.cardId === cardId);
-
 
 /**
  * Kartın öz startDate/endDate/frequency-sinə əsasən lifecycle qaytarır.
@@ -138,13 +117,10 @@ export const useKpiLifecycles = (): CardLifecycle[] => {
   useEffect(() => {
     const r = () => setList(load());
     window.addEventListener(EVT, r);
-    window.addEventListener("shared-kpi-cards-updated", r);
     window.addEventListener("storage", r);
     return () => {
       window.removeEventListener(EVT, r);
-      window.removeEventListener("shared-kpi-cards-updated", r);
       window.removeEventListener("storage", r);
-
     };
   }, []);
   return list;

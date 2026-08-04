@@ -6,8 +6,6 @@
 import { useEffect, useState } from "react";
 import { getNodes as getCascadeNodes, remainingOf } from "@/lib/cascadeTreeStore";
 import { getSharedKpiCards } from "@/lib/kpiCardStore";
-import { removedCardIds, removedCardNames } from "@/lib/removedCards";
-
 import { getEmployees } from "@/lib/orgStore";
 
 export type LimitTier = "l1" | "l2" | "l3" | "l4" | "l5";
@@ -121,16 +119,7 @@ const persist = (rows: KpiSetEntry[]) => {
   window.dispatchEvent(new Event(EVT));
 };
 
-/** Silinmiş / ləğv olunmuş kartların təyinat yazıları görünməməlidir. */
-export const getKpiSetEntries = (): KpiSetEntry[] => {
-  const removed = removedCardIds();
-  const names = removedCardNames();
-  if (removed.size === 0 && names.size === 0) return load();
-  return load().filter(
-    e => !removed.has(String(e.cardId)) && !names.has(norm(e.cardName)),
-  );
-};
-
+export const getKpiSetEntries = (): KpiSetEntry[] => load();
 
 /** Yeni pending entry əlavə et — HR kart yaradarkən rəhbərin "Məsul olduğum kartlar"-ında görünsün deyə. */
 export const addPendingEntry = (input: {
@@ -304,14 +293,12 @@ export const getEntriesForCard = (cardId: number): KpiSetEntry[] =>
  * kartlar) hədəf dəyərini əvvəlcə buradan oxumalıdır.
  */
 export interface AssignedTargetValue {
-  name: string;
   target: string;
   value: number;
   unit: string;
   weight?: number;
   updatedAt: number;
 }
-
 
 const toNumber = (v: unknown): number => {
   const n = parseFloat(String(v ?? "").replace(/[^\d.\-]/g, ""));
@@ -328,10 +315,8 @@ export const getAssignedTargetValues = (cardId: number): Map<string, AssignedTar
       const key = norm(e.subKpiName);
       if (!key) return;
       map.set(key, {
-        name: e.subKpiName || "",
         target: e.target || "",
         value: toNumber(e.target),
-
         unit: e.unit || "",
         weight: e.weight,
         updatedAt: Number(e.updatedAt) || 0,
@@ -339,65 +324,6 @@ export const getAssignedTargetValues = (cardId: number): Map<string, AssignedTar
     });
   return map;
 };
-
-export interface MergedCardTarget {
-  id: string;
-  name: string;
-  plan: number;
-  unit: string;
-  weight: number;
-}
-
-/**
- * Kartın hədəflərini təyinedicinin verdiyi aktual dəyərlərlə birləşdirir —
- * bütün modullarda (KPI kartları, KPI izlənməsi, əməkdaş görünüşü) eyni
- * ad/dəyər göstərilməsi üçün VAHİD MƏNBƏ.
- * Ad üzrə uyğunluq tapılmasa, sıra üzrə (positional) uyğunlaşdırma işləyir;
- * uyğunlaşmayan təyin edilmiş hədəflər siyahının sonuna əlavə olunur.
- */
-export const mergeCardTargets = (
-  cardId: number | undefined,
-  base: Array<{ id?: string | number; name?: string; value?: unknown; unit?: string; weight?: unknown }>,
-): MergedCardTarget[] => {
-  const assigned = Number.isFinite(Number(cardId))
-    ? getAssignedTargetValues(Number(cardId))
-    : new Map<string, AssignedTargetValue>();
-  const keyOf = (v: unknown) => norm(String(v ?? "").split(" — ")[0]);
-  const pool = [...assigned.values()];
-  const used = new Set<string>();
-  const isPlaceholder = (n: string) => /^h[əe]d[əe]f\s*\d*$/i.test(n.trim());
-
-  const out: MergedCardTarget[] = base.map((t, i) => {
-    const rawName = String(t.name ?? "").trim() || `Hədəf ${i + 1}`;
-    let a = assigned.get(keyOf(rawName));
-    // Kartdaki ad placeholder-dir (məs. "Hədəf 1") — sıra üzrə uyğunlaşdır.
-    if (!a && isPlaceholder(rawName)) {
-      a = pool.find(p => !used.has(norm(p.name)));
-    }
-    if (a) used.add(norm(a.name));
-    return {
-      id: String(t.id ?? i),
-      name: a?.name || rawName,
-      plan: a ? a.value : toNumber(t.value),
-      unit: a?.unit || t.unit || "",
-      weight: Number(a?.weight ?? t.weight) || 0,
-    };
-  });
-
-  pool.forEach((a, i) => {
-    if (used.has(norm(a.name))) return;
-    out.push({
-      id: `assigned-${i}`,
-      name: a.name,
-      plan: a.value,
-      unit: a.unit || "",
-      weight: Number(a.weight) || 0,
-    });
-  });
-  return out;
-};
-
-
 
 /** Bir hədəf üçün aktual (təyin edilmiş) dəyər — yoxdursa undefined. */
 export const getAssignedTargetValue = (
@@ -424,17 +350,13 @@ export const suggestLimitsFromTarget = (target: string): LimitSet => {
 };
 
 export const useKpiSet = (): KpiSetEntry[] => {
-  const [rows, setRows] = useState<KpiSetEntry[]>(() => getKpiSetEntries());
+  const [rows, setRows] = useState<KpiSetEntry[]>(() => load());
   useEffect(() => {
-    const refresh = () => setRows(getKpiSetEntries());
+    const refresh = () => setRows(load());
     window.addEventListener(EVT, refresh);
-    window.addEventListener("shared-kpi-cards-updated", refresh);
-
     window.addEventListener("storage", refresh);
     return () => {
       window.removeEventListener(EVT, refresh);
-      window.removeEventListener("shared-kpi-cards-updated", refresh);
-
       window.removeEventListener("storage", refresh);
     };
   }, []);

@@ -81,10 +81,8 @@ const stableCardTime = (card: SharedKpiCard) => Date.parse(card.createdAt || "")
 
 const stableCardId = (card: SharedKpiCard) => String(card.numericId ?? card.id ?? card.name ?? "");
 
-export const isDeletedSharedStatus = (status: SharedKpiStatus | string | undefined | null) =>
+const isDeletedSharedStatus = (status: SharedKpiStatus | undefined | null) =>
   status === "silindi" || status === "legv_olundu";
-const isDeletedShared = isDeletedSharedStatus;
-
 
 const stableCardSort = (a: SharedKpiCard, b: SharedKpiCard) => {
   const byCreated = stableCardTime(b) - stableCardTime(a);
@@ -306,22 +304,16 @@ export const buildSharedCardFromDraft = (
 });
 
 // ---------- React hook ----------
-/**
- * UI hook — silinmiş / ləğv olunmuş kartlar heç bir modulda görünmür.
- * (HR-in kart siyahısı öz status store-undan oxuyur, ona təsir etmir.)
- */
 export const useSharedKpiCards = (): SharedKpiCard[] => {
-  const visible = () => load().filter(c => !isDeletedShared(c.status));
-  const [rows, setRows] = useState<SharedKpiCard[]>(visible);
+  const [rows, setRows] = useState<SharedKpiCard[]>(() => load());
   useEffect(() => {
-    const h = () => setRows(visible());
+    const h = () => setRows(load());
     window.addEventListener(EVT, h);
     window.addEventListener("storage", h);
     return () => { window.removeEventListener(EVT, h); window.removeEventListener("storage", h); };
   }, []);
   return rows;
 };
-
 
 // ---------- Seed (a handful of cross-panel demo cards) ----------
 function seedCards(): SharedKpiCard[] {
