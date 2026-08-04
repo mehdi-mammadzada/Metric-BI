@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Search, X, ChevronRight, ChevronDown } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { getEmployees, getStructures, type OrgStructure } from "@/lib/orgStore";
-import { getPositions } from "@/lib/catalogStore";
+import { getAllPositions } from "@/lib/usePositions";
 import { getTeams } from "@/lib/teamsStore";
 import { useRoles } from "@/lib/rolesStore";
 import { LEGACY_RECIPIENT_LABELS } from "@/lib/notificationSettingsStore";
@@ -143,7 +143,7 @@ const NotificationRecipientsPicker = ({ value, onChange }: Props) => {
     () => getEmployees().map(e => ({ key: `${e.firstName} ${e.lastName}`.trim(), label: `${e.firstName} ${e.lastName}` })),
     [],
   );
-  const positions = useMemo(() => getPositions().map(p => ({ key: p, label: p })), []);
+  const positions = useMemo(() => getAllPositions().map(p => ({ key: p, label: p })), []);
   const structures = useMemo(() => getStructures(), []);
   const teams = useMemo(() => getTeams().map(t => ({ key: String(t.id), label: t.name })), []);
   const rolesList = useRoles();

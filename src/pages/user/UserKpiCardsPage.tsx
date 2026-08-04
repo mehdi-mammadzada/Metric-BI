@@ -20,7 +20,7 @@ import KpiAccordionList, { type AccordionKpi } from "@/components/kpi/KpiAccordi
 import KpiCommentThread from "@/components/kpi/KpiCommentThread";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCascadeTree } from "@/lib/cascadeTreeStore";
-import { useSharedKpiCards } from "@/lib/kpiCardStore";
+import { useVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { getEmployees } from "@/lib/orgStore";
 import { getCurrentEmployeeId } from "@/lib/scope";
 import { TARGET_STATUS_BADGE, TARGET_STATUS_LABEL, type TargetStatus } from "@/lib/targetStatus";
@@ -101,7 +101,7 @@ const UserKpiCardsPage = () => {
   const [view, setView] = useState<View>("hub");
   const { user } = useAuth();
   const tree = useCascadeTree();
-  const sharedCards = useSharedKpiCards();
+  const sharedCards = useVisibleSharedKpiCards();
 
   const ownKpis = useMemo<DemoKpi[]>(() => {
     const result: DemoKpi[] = [];

@@ -14,7 +14,7 @@ import DropdownMultiSelect from "@/components/kpi/DropdownMultiSelect";
 import SearchableSelect from "@/components/common/SearchableSelect";
 import { mockEmployees } from "@/data/mockData";
 import { mockStructures, mockTeams } from "@/data/mockExtras";
-import { getPositions } from "@/lib/catalogStore";
+import { getAllPositions } from "@/lib/usePositions";
 
 type FilterType = "position" | "person" | "structure" | "team";
 const FILTER_LABELS: Record<FilterType, string> = {
@@ -62,7 +62,7 @@ const ReportsPage = () => {
 
   // Options for the second dropdown based on filter type
   const secondOptions = useMemo(() => {
-    if (filterType === "position") return getPositions();
+    if (filterType === "position") return getAllPositions();
     if (filterType === "structure") return mockStructures.map(s => s.name);
     if (filterType === "team") return teams.map(t => t.name);
     if (filterType === "person") return mockEmployees.map(e => ({ value: e.id, label: e.fullName, group: e.position }));

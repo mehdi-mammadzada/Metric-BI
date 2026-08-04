@@ -5,7 +5,7 @@ import { withKartSuffix } from "@/lib/utils";
 
 import { useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSharedKpiCards, updateExecution, type ExecutionStatus } from "@/lib/kpiCardStore";
+import { useVisibleSharedKpiCards, updateExecution, type ExecutionStatus } from "@/lib/kpiCardStore";
 import { getCurrentEmployeeId, getVisibleKpiCards } from "@/lib/scope";
 import { getEnrichedEmployee } from "@/data/mockExtras";
 import { Target } from "lucide-react";
@@ -33,7 +33,7 @@ interface Props {
 
 export default function SharedKpiPanel({ title = "Sizə aid KPI kartları", emptyText = "Sizə təyin olunmuş aktiv KPI yoxdur.", onlyAssignedToMe, readOnlyStatus }: Props) {
   const { user } = useAuth();
-  const all = useSharedKpiCards();
+  const all = useVisibleSharedKpiCards();
   const meId = getCurrentEmployeeId(user);
 
   const visible = useMemo(() => {

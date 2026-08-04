@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { getNodes as getCascadeNodes, remainingOf } from "@/lib/cascadeTreeStore";
-import { getSharedKpiCards } from "@/lib/kpiCardStore";
+import { getVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { getEmployees } from "@/lib/orgStore";
 
 export type LimitTier = "l1" | "l2" | "l3" | "l4" | "l5";
@@ -252,7 +252,7 @@ export const getIncomingCascadeLoad = (
     const emp = getEmployees().find(e => `${e.firstName} ${e.lastName}` === assigneeName);
     if (emp) {
       const empKeys = new Set([String(emp.id), `e${emp.id}`]);
-      const cards = getSharedKpiCards()
+      const cards = getVisibleSharedKpiCards()
         .filter(c =>
           (empKeys.has(c.ownerId) || (c.assigneeIds || []).some(id => empKeys.has(id))) &&
           (excludeCardId == null || c.numericId !== excludeCardId)
@@ -293,6 +293,8 @@ export const getEntriesForCard = (cardId: number): KpiSetEntry[] =>
  * kartlar) hədəf dəyərini əvvəlcə buradan oxumalıdır.
  */
 export interface AssignedTargetValue {
+  /** Hədəfin orijinal (normalizə edilməmiş) adı */
+  name: string;
   target: string;
   value: number;
   unit: string;
@@ -315,6 +317,7 @@ export const getAssignedTargetValues = (cardId: number): Map<string, AssignedTar
       const key = norm(e.subKpiName);
       if (!key) return;
       map.set(key, {
+        name: String(e.subKpiName || "").trim(),
         target: e.target || "",
         value: toNumber(e.target),
         unit: e.unit || "",
