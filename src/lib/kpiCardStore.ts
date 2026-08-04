@@ -2,7 +2,7 @@
 // so that Manager / User panels can see (scoped) the same items HR sees.
 // Persisted in localStorage + custom event for cross-tab/panel sync.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CreateKpiWizardDraft } from "@/components/kpi/CreateKpiWizard";
 import type { LimitSet, ScoreDescRow } from "@/lib/kpiSetStore";
 

@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useKpiSet, getIncomingCascadeLoad, dedupeKpiSetEntries, type KpiSetEntry } from "@/lib/kpiSetStore";
 import { addPendingEntry } from "@/lib/kpiSetStore";
-import { useSharedKpiCards } from "@/lib/kpiCardStore";
+import { useSharedKpiCards, useVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { useCascadeTree } from "@/lib/cascadeTreeStore";
 import { createRootsForCardAssignees, getCascadeCandidateIds, isBulkAssignedCard } from "@/lib/cascadeAssignment";
 import { useAuth } from "@/contexts/AuthContext";
@@ -164,7 +164,7 @@ const ManagerResponsibleCardsPage = () => {
 /* ============================== HUB ============================== */
 const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
   const rows = useKpiSet();
-  const sharedCards = useSharedKpiCards();
+  const sharedCards = useVisibleSharedKpiCards();
   const { user } = useAuth();
   const meId = getCurrentEmployeeId(user);
   const evalItems = useSubKpis(meId || "");
@@ -239,7 +239,7 @@ const HubCard = ({
 /* ============================== ASSIGN ============================== */
 const AssignView = () => {
   const rows = useKpiSet();
-  const sharedCards = useSharedKpiCards();
+  const sharedCards = useVisibleSharedKpiCards();
   const { user } = useAuth();
   useCascadeTree();
   const [q, setQ] = useState("");

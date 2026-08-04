@@ -7,7 +7,7 @@ import { PageHero, FancyStatCard, FancyCard } from "@/components/ui/page-hero";
 import { AIChatSection } from "@/components/ai/AIChatSection";
 import PeriodPicker, { buildDemoSeries, currentPeriod, periodLabel, type PeriodValue } from "@/components/common/PeriodPicker";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSharedKpiCards } from "@/lib/kpiCardStore";
+import { useVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 
 // Localized "… Kartı" suffix so we don't stuff Azerbaijani copy in EN/RU rows.
 const kartiSuffix = (lang: string) =>
@@ -28,7 +28,7 @@ const departments = [];
 const HomePage = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const cards = useSharedKpiCards();
+  const cards = useVisibleSharedKpiCards();
   const [period, setPeriod] = useState<PeriodValue>(() => currentPeriod("year"));
   const chartData = useMemo(() => buildDemoSeries(period), [period]);
   const subtitle = periodLabel(period);

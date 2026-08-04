@@ -12,7 +12,7 @@ import KpiScoresPage from "@/pages/KpiScoresPage";
 import { getEmployees, getSubordinatesOfStarHolder, getStructures } from "@/lib/orgStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { SubordinatesView } from "@/pages/manager/ManagerKpiTrackingPage";
-import { useSharedKpiCards } from "@/lib/kpiCardStore";
+import { useVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { getSubKpis, isEvaluated } from "@/lib/kpiEvaluationStore";
 
 type View = "hub" | "own" | "team" | "sub";
@@ -45,7 +45,7 @@ const ManagerResultsPage = () => {
   }, [user?.email, user?.name]);
 
   // Kartlarda göstərilən say — real nəticəsi olan əməkdaşların sayı olmalıdır.
-  const cards = useSharedKpiCards();
+  const cards = useVisibleSharedKpiCards();
   const countWithResults = (list: any[]) => {
     try {
       return list.filter(e => {

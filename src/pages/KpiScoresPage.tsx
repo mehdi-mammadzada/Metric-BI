@@ -15,7 +15,7 @@ import { DataTable } from "@/components/common/DataTable";
 import { getEmployees } from "@/lib/orgStore";
 import { MONTHS } from "@/lib/salaryStore";
 import { cn, withKartSuffix } from "@/lib/utils";
-import { useSharedKpiCards } from "@/lib/kpiCardStore";
+import { useVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { calcCompletion, getSubKpis, isEvaluated } from "@/lib/kpiEvaluationStore";
 
 const YEARS = [2025, 2026];
@@ -67,7 +67,7 @@ type Periodicity = "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly" | 
 
 const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle }: KpiScoresPageProps = {}) => {
   const employees = useMemo(() => employeesOverride || getEmployees().filter(e => e.active), [employeesOverride]);
-  const cards = useSharedKpiCards();
+  const cards = useVisibleSharedKpiCards();
   const employeeById = useMemo(() => {
     const map = new Map<string, ReturnType<typeof getEmployees>[number]>();
     employees.forEach(e => {

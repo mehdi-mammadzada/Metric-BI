@@ -20,7 +20,7 @@ import {
 } from "@/lib/managerKpiData";
 
 import { useCascadeTree, type CascadeTreeNode } from "@/lib/cascadeTreeStore";
-import { useSharedKpiCards, type SharedKpiCard, type ExecutionStatus } from "@/lib/kpiCardStore";
+import { useVisibleSharedKpiCards, type SharedKpiCard, type ExecutionStatus } from "@/lib/kpiCardStore";
 import { TARGET_STATUS_BADGE, TARGET_STATUS_LABEL, normalizeTargetStatus, type TargetStatus } from "@/lib/targetStatus";
 import { computeReviewStatus, setReviewOutcome, useKpiLifecycles, type CardLifecycle, type LifecycleReview, type ReviewComputedStatus } from "@/lib/kpiLifecycleStore";
 import CascadeDistributeDialog from "@/components/kpi/CascadeDistributeDialog";
@@ -129,7 +129,7 @@ const ManagerKpiTrackingPage = () => {
   const [view, setView] = useState<View>("hub");
   const { user } = useAuth();
   const tree = useCascadeTree();
-  const sharedCards = useSharedKpiCards();
+  const sharedCards = useVisibleSharedKpiCards();
 
   const me = useMemo(() => findEmployeeByUser(user), [user?.email, user?.name, sharedCards, tree]);
 
@@ -1948,7 +1948,7 @@ const execLabel: Record<ExecutionStatus, { label: string; cls: string }> = {
 
 const useReviewRows = (): ReviewRow[] => {
   const lifecycles = useKpiLifecycles();
-  const sharedCards = useSharedKpiCards();
+  const sharedCards = useVisibleSharedKpiCards();
   return useMemo(() => {
     const today = iso(new Date());
     const employees = getEmployees();
