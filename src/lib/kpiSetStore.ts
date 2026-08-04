@@ -293,6 +293,8 @@ export const getEntriesForCard = (cardId: number): KpiSetEntry[] =>
  * kartlar) hədəf dəyərini əvvəlcə buradan oxumalıdır.
  */
 export interface AssignedTargetValue {
+  /** Hədəfin orijinal (normalizə edilməmiş) adı */
+  name: string;
   target: string;
   value: number;
   unit: string;
@@ -315,6 +317,7 @@ export const getAssignedTargetValues = (cardId: number): Map<string, AssignedTar
       const key = norm(e.subKpiName);
       if (!key) return;
       map.set(key, {
+        name: String(e.subKpiName || "").trim(),
         target: e.target || "",
         value: toNumber(e.target),
         unit: e.unit || "",
