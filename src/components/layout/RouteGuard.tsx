@@ -16,7 +16,11 @@ const RouteGuard = ({ children, requiredPermissions, requiredRole, blockRoles }:
   const { user, loading, hasPermission } = useAuth();
   const location = useLocation();
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    </div>
+  );
 
   if (!user) return <Navigate to="/login" replace />;
 
