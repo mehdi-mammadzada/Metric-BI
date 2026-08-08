@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDefaultPath } from "@/lib/navigation";
+import AccessDenied from "@/pages/AccessDenied";
 
 type Role = "HR" | "USER" | "SUPER_ADMIN" | "MANAGER";
 
@@ -15,15 +16,21 @@ const RouteGuard = ({ children, requiredPermissions, requiredRole, blockRoles }:
   const { user, loading, hasPermission } = useAuth();
   const location = useLocation();
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    </div>
+  );
 
   if (!user) return <Navigate to="/login" replace />;
 
   const redirectToDefault = () => {
     const path = getDefaultPath(user);
-    if (!path || path === location.pathname) return null;
+    // Boş ekranın qarşısını alırıq — yönləndirmə mümkün deyilsə, aydın mesaj.
+    if (!path || path === location.pathname) return <AccessDenied />;
     return <Navigate to={path} replace />;
   };
+
 
   if (requiredRole && user.role !== requiredRole) {
     return redirectToDefault();

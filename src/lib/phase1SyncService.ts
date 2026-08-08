@@ -124,12 +124,16 @@ const applyRows = (rows: { catalog_key: string; entries: unknown }[]) => {
     for (const store of STORES) {
       const val = byKey.get(store.cloudKey);
       if (val !== undefined && val !== null) {
+        // Standart kataloqlar (məs. dəyişənlər kitabı) buludda boş olduqda
+        // lokal defaultları silmirik.
+        if (store.localKey === "kpi_formula_variables_v4" && Array.isArray(val) && val.length === 0) continue;
         const normalized = normalizeStoreValue(store.localKey, val);
         writeLocal(store.localKey, normalized);
         lastWrittenJson.set(store.localKey, JSON.stringify(normalized));
         touchedEvents.add(store.event);
       }
     }
+
   } finally {
     suppressFlush = false;
     // Hidratasiyadan sonra event-lərlə tetiklənən store yazılarının
