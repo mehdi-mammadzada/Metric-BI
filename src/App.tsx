@@ -65,22 +65,32 @@ runDevResetOnce();
 
 const queryClient = new QueryClient();
 
+// Yüklənmə zamanı ağ ekran yerinə görünən indikator.
+const AuthLoading = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="flex flex-col items-center gap-3">
+      <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <p className="text-sm text-muted-foreground">Yüklənir…</p>
+    </div>
+  </div>
+);
+
 const RootRedirect = () => {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <AuthLoading />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.mustChangePassword) return <Navigate to="/change-password" replace />;
   const path = getDefaultPath(user);
-  return path ? <Navigate to={path} replace /> : null;
+  return <Navigate to={path ?? "/user"} replace />;
 };
 
 const LoginGuard = () => {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <AuthLoading />;
   if (user) {
     if (user.mustChangePassword) return <Navigate to="/change-password" replace />;
     const path = getDefaultPath(user);
-    return path ? <Navigate to={path} replace /> : null;
+    return <Navigate to={path ?? "/user"} replace />;
   }
   return <LoginPage />;
 };
@@ -88,10 +98,11 @@ const LoginGuard = () => {
 // Force users with a temporary password to visit /change-password first.
 const RequirePasswordChanged = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <AuthLoading />;
   if (user?.mustChangePassword) return <Navigate to="/change-password" replace />;
   return <>{children}</>;
 };
+
 
 const ChangePasswordGuard = () => {
   const { user, loading } = useAuth();
