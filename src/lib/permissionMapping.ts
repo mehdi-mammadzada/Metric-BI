@@ -37,7 +37,24 @@ const EXTRA_KEY_TO_DB_CODES: Record<string, string[]> = {
 
 const ALL_KEY_TO_DB_CODES = { ...MODULE_KEY_TO_DB_CODES, ...EXTRA_KEY_TO_DB_CODES };
 
+// Rol təyin olunmamış (user_roles boş) təşkilat üzvləri üçün minimum işlək
+// səth — əks halda hesaba giriş etdikdən sonra boş/qadağan ekran görünür.
+export const BASELINE_USER_UI_PERMISSIONS = [
+  "home",
+  "kpi",
+  "kpi_own",
+  "kpi_team",
+  "evaluation",
+  "approvals",
+  "teams",
+  "teams_compare",
+  "reporting",
+  "whistleblower",
+  "settings",
+];
+
 export const derivePermissionsFromDbCodes = (dbCodes: string[]): string[] => {
+  if (!dbCodes || dbCodes.length === 0) return [...BASELINE_USER_UI_PERMISSIONS];
   const set = new Set<string>(dbCodes);
   const uiKeys: string[] = [];
   for (const [uiKey, needed] of Object.entries(ALL_KEY_TO_DB_CODES)) {
