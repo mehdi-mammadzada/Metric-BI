@@ -63,5 +63,8 @@ export const getDefaultPath = (user: NavigationUser | null): string | null => {
   if (p.includes("admin_users")) return "/dahvetler";
   if (p.includes("audit")) return "/audit-jurnali";
 
-  return null;
+  // Fallback — heç bir icazə tapılmasa da istifadəçi boş (ağ) ekranda qalmır.
+  if (user.role === "HR") return "/hr";
+  if (user.role === "MANAGER") return "/manager";
+  return "/user";
 };
