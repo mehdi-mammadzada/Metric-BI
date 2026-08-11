@@ -142,6 +142,8 @@ export const LOCKED_CATALOG_IDS = new Set<string>([
   "evaluator_types",
   "sub_kpi_units",
   "evaluation_statuses",
+  "frequencies",
+  "scoring_systems",
 ]);
 
 // Strukturlaşdırılmış kataloqlarda values array-ı rows.name-dən avtomatik sinxronlaşdırılır
