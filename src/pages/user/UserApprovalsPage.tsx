@@ -18,7 +18,7 @@ interface ApprovalStep {
 
 interface ApprovalRequest {
   id: string; kpiCode: string; kpiName: string; kpiType: string; createdDate: string; createdBy: string;
-  kpiOwner: string; department: string; currentStep: number; approvalChain: ApprovalStep[];
+  kpiOwner: string; currentStep: number; approvalChain: ApprovalStep[];
   status: "pending" | "approved" | "rejected"; target: string; description: string;
   canAct: boolean;
   actionApproverId: string | null;
@@ -26,7 +26,6 @@ interface ApprovalRequest {
 
 const PAGE_SIZE = 3;
 const empName = (id?: string | null) => (id ? getEnrichedEmployee(id)?.fullName || id : "—");
-const empDepartment = (id?: string | null) => (id ? getEnrichedEmployee(id)?.department || "—" : "—");
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString("az-AZ") : "—";
 
 const decisionNote = (d?: { note?: string; comment?: string }) => d?.note || d?.comment || undefined;
@@ -66,7 +65,6 @@ const toApprovalRequest = (a: ApprovalItem, cards: ReturnType<typeof useSharedKp
     createdDate: formatDate(a.createdAt),
     createdBy: empName(a.createdBy),
     kpiOwner: empName(card?.ownerId || a.createdBy),
-    department: empDepartment(card?.ownerId || a.createdBy),
     currentStep,
     approvalChain,
     status: a.status,
