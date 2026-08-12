@@ -102,8 +102,12 @@ const UserApprovalsPage = () => {
 
   const handleApprove = async (req: ApprovalRequest) => {
     if (!req.actionApproverId) return;
+    if (!approveComment.trim()) {
+      toast.error("Təsdiq üçün şərh yazın");
+      return;
+    }
     try {
-      await decideApproval(req.id, req.actionApproverId, "approved", approveComment || undefined);
+      await decideApproval(req.id, req.actionApproverId, "approved", approveComment.trim());
       setApproveComment(""); setShowApproveInput(false); setSelectedRequest(null);
       toast.success("Sorğu təsdiqləndi");
     } catch (e) {
@@ -391,11 +395,11 @@ const UserApprovalsPage = () => {
                     {showApproveInput ? (
                       <div className="space-y-3">
                         <div>
-                          <label className="text-sm font-medium text-foreground">Təsdiq Şərhi (ixtiyari)</label>
-                          <textarea value={approveComment} onChange={e => setApproveComment(e.target.value)} placeholder="Şərh əlavə edin..." rows={2} className="w-full mt-1 px-3 py-2.5 text-sm border border-border rounded-lg bg-background resize-none focus:ring-2 focus:ring-ring" />
+                          <label className="text-sm font-medium text-foreground">Təsdiq Şərhi <span className="text-rose-500">*</span></label>
+                          <textarea value={approveComment} onChange={e => setApproveComment(e.target.value)} placeholder="Təsdiq şərhini yazın..." rows={2} className="w-full mt-1 px-3 py-2.5 text-sm border border-border rounded-lg bg-background resize-none focus:ring-2 focus:ring-ring" />
                         </div>
                         <div className="flex gap-3">
-                          <button onClick={() => handleApprove(selectedRequest)} className="flex-1 py-2.5 text-sm rounded-lg bg-success text-success-foreground font-medium">Təsdiq Et</button>
+                          <button onClick={() => handleApprove(selectedRequest)} disabled={!approveComment.trim()} className="flex-1 py-2.5 text-sm rounded-lg bg-success text-success-foreground font-medium disabled:opacity-50 disabled:cursor-not-allowed">Təsdiq Et</button>
                           <button onClick={() => { setShowApproveInput(false); setApproveComment(""); }} className="flex-1 py-2.5 text-sm rounded-lg border border-border bg-card">Ləğv Et</button>
                         </div>
                       </div>

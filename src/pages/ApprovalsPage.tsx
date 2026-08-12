@@ -124,14 +124,13 @@ const ApprovalsPage = () => {
 
   const handleApproveInDetail = async () => {
     if (!detail || !meId) return;
-    const isDeletion = String(detail.matrixId || "").startsWith("deletion:");
-    if (isDeletion && !detailNote.trim()) {
-      toast.error("Silinmə təsdiqi üçün silinmə səbəbini yazın");
+    if (!detailNote.trim()) {
+      toast.error("Təsdiq üçün şərh yazın");
       return;
     }
     const approverId = findMyRef(myAliases, detail.approverIds ?? []) || meId;
     try {
-      await decideApproval(detail.id, approverId, "approved", detailNote || undefined);
+      await decideApproval(detail.id, approverId, "approved", detailNote.trim());
       toast.success("KPI təsdiqləndi");
       closeDetail();
     } catch (e) {
@@ -293,24 +292,26 @@ const ApprovalsPage = () => {
                 {/* Rəy + Aksiyalar */}
                 {canAct ? (
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-foreground">Təsdiq / İmtina Şərhi <span className="text-muted-foreground">(imtina üçün məcburi)</span></label>
+                    <label className="text-xs font-medium text-foreground">Təsdiq / İmtina Şərhi <span className="text-rose-500">*</span></label>
                     <textarea
                       value={detailNote}
                       onChange={e => setDetailNote(e.target.value)}
                       rows={3}
-                      placeholder="Şərh əlavə edin..."
+                      placeholder="Təsdiq və ya imtina şərhini yazın..."
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={handleApproveInDetail}
-                        className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium flex items-center justify-center gap-1.5"
+                        disabled={!detailNote.trim()}
+                        className="px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white text-sm font-medium flex items-center justify-center gap-1.5"
                       >
                         <Check className="h-4 w-4" /> Təsdiq Et
                       </button>
                       <button
                         onClick={handleRejectInDetail}
-                        className="px-3 py-2 rounded-md border border-rose-300 hover:bg-rose-50 text-rose-700 text-sm font-medium flex items-center justify-center gap-1.5"
+                        disabled={!detailNote.trim()}
+                        className="px-3 py-2 rounded-md border border-rose-300 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed text-rose-700 text-sm font-medium flex items-center justify-center gap-1.5"
                       >
                         <X className="h-4 w-4" /> Ləğv Et
                       </button>
