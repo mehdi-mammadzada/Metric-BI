@@ -18,7 +18,7 @@ interface ApprovalStep {
 
 interface ApprovalRequest {
   id: string; kpiCode: string; kpiName: string; kpiType: string; createdDate: string; createdBy: string;
-  kpiOwner: string; department: string; currentStep: number; approvalChain: ApprovalStep[];
+  kpiOwner: string; currentStep: number; approvalChain: ApprovalStep[];
   status: "pending" | "approved" | "rejected"; target: string; description: string;
   canAct: boolean;
   actionApproverId: string | null;
@@ -26,7 +26,6 @@ interface ApprovalRequest {
 
 const PAGE_SIZE = 3;
 const empName = (id?: string | null) => (id ? getEnrichedEmployee(id)?.fullName || id : "—");
-const empDepartment = (id?: string | null) => (id ? getEnrichedEmployee(id)?.department || "—" : "—");
 const formatDate = (value?: string | null) => value ? new Date(value).toLocaleDateString("az-AZ") : "—";
 
 const decisionNote = (d?: { note?: string; comment?: string }) => d?.note || d?.comment || undefined;
@@ -66,7 +65,6 @@ const toApprovalRequest = (a: ApprovalItem, cards: ReturnType<typeof useSharedKp
     createdDate: formatDate(a.createdAt),
     createdBy: empName(a.createdBy),
     kpiOwner: empName(card?.ownerId || a.createdBy),
-    department: empDepartment(card?.ownerId || a.createdBy),
     currentStep,
     approvalChain,
     status: a.status,
@@ -165,7 +163,6 @@ const UserApprovalsPage = () => {
     const styles = variantStyles[variant];
     const datedSteps = req.approvalChain.filter(s => s.date);
     const lastDate = datedSteps.length ? datedSteps[datedSteps.length - 1].date : null;
-    const firstApprover = req.approvalChain[0]?.person ?? "";
     return (
       <div className={`${styles.card} rounded-lg border overflow-hidden`}>
         <div className={`${styles.title} px-4 py-2 text-center font-semibold text-sm`}>
@@ -174,9 +171,6 @@ const UserApprovalsPage = () => {
         <div className="px-4 py-3 space-y-1 text-sm">
           <div><span className="opacity-90">Sorğu Növü</span> - {req.kpiType || "—"}</div>
           <div><span className="opacity-90">Sorğunun Yaradılma Tarixi</span> - {req.createdDate}</div>
-          {variant === "pending" && (
-            <div><span className="opacity-90">İlk təsdiqləyici şəxs</span> - {firstApprover || "—"}</div>
-          )}
           {variant === "approved" && (
             <div><span className="opacity-90">Sorğunun Təsdiq Tarixi</span> - {lastDate || "—"}</div>
           )}
@@ -184,7 +178,6 @@ const UserApprovalsPage = () => {
             <div><span className="opacity-90">Sorğunun imtina tarixi</span> - {lastDate || "—"}</div>
           )}
           <div><span className="opacity-90">Sorğu Yaradan</span> - {req.createdBy}</div>
-          <div><span className="opacity-90">Struktur</span> - {req.department || "—"}</div>
         </div>
         <div className="flex justify-end px-4 pb-3">
           <button
@@ -322,7 +315,6 @@ const UserApprovalsPage = () => {
                     <div className="flex justify-between"><span className="text-muted-foreground">Sorğu növü:</span><span className="font-medium">{selectedRequest.kpiType}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Göndərilmə tarixi:</span><span className="font-medium">{selectedRequest.createdDate}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Yaradan:</span><span className="font-medium">{selectedRequest.createdBy}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Struktur:</span><span className="font-medium">{selectedRequest.department}</span></div>
                   </div>
 
                 </div>

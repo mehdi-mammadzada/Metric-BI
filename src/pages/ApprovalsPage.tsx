@@ -263,7 +263,6 @@ const ApprovalsPage = () => {
                     <InfoRow k="Sorğu növü" v={String(detail.matrixId || "").startsWith("deletion:") ? "KPI silinmə sorğusu" : "KPI təsdiq sorğusu"} />
                     <InfoRow k="Göndərilmə tarixi" v={new Date(detail.createdAt).toLocaleDateString("az-AZ")} />
                     <InfoRow k="Yaradan" v={empName(detail.createdBy)} />
-                    <InfoRow k="Struktur" v={getEnrichedEmployee(detail.createdBy)?.department || "—"} />
                   </div>
 
                 </div>
