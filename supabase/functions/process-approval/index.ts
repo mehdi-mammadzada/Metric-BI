@@ -65,6 +65,12 @@ Deno.serve(async (req) => {
     }
     const { queueLocalId, organizationId, approverId, decision, comment } = parsed.data;
 
+    if (decision === "approved" && (!comment || !comment.trim())) {
+      return new Response(JSON.stringify({ error: "Təsdiq şərhi məcburidir" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
