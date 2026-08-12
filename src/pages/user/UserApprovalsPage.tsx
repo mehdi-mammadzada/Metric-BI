@@ -172,7 +172,6 @@ const UserApprovalsPage = () => {
           {req.kpiName}
         </div>
         <div className="px-4 py-3 space-y-1 text-sm">
-          <div><span className="opacity-90">Sorğu NO</span> - {req.kpiCode}</div>
           <div><span className="opacity-90">Sorğu Növü</span> - {req.kpiType || "—"}</div>
           <div><span className="opacity-90">Sorğunun Yaradılma Tarixi</span> - {req.createdDate}</div>
           {variant === "pending" && (
@@ -185,7 +184,6 @@ const UserApprovalsPage = () => {
             <div><span className="opacity-90">Sorğunun imtina tarixi</span> - {lastDate || "—"}</div>
           )}
           <div><span className="opacity-90">Sorğu Yaradan</span> - {req.createdBy}</div>
-          <div><span className="opacity-90">Subyektin adı soyadı</span> - {req.kpiOwner || "—"}</div>
           <div><span className="opacity-90">Struktur</span> - {req.department || "—"}</div>
         </div>
         <div className="flex justify-end px-4 pb-3">
