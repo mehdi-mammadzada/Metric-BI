@@ -260,17 +260,12 @@ const ApprovalsPage = () => {
                 <div className="rounded-lg border border-border bg-muted/30 p-3">
                   <div className="text-xs font-semibold text-foreground mb-2">KPI Məlumatları</div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-                    <InfoRow k="KPI Kodu" v={detail.id.slice(0, 12).toUpperCase()} />
-                    <InfoRow k="KPI Növü" v={c?.scoringSystem ? "Absolut Hədəf" : "—"} />
-                    <InfoRow k="Hədəf" v={firstTargetVal} />
-                    <InfoRow k="Cavab tarixi" v={new Date(detail.updatedAt).toLocaleDateString("az-AZ")} />
-                    <InfoRow k="Təsdiq tarixi" v={detail.status === "approved" ? new Date(detail.updatedAt).toLocaleDateString("az-AZ") : "—"} />
+                    <InfoRow k="Sorğu növü" v={String(detail.matrixId || "").startsWith("deletion:") ? "KPI silinmə sorğusu" : "KPI təsdiq sorğusu"} />
+                    <InfoRow k="Göndərilmə tarixi" v={new Date(detail.createdAt).toLocaleDateString("az-AZ")} />
                     <InfoRow k="Yaradan" v={empName(detail.createdBy)} />
-                    <InfoRow k="KPI Sahibi" v={c?.ownerId ? empName(c.ownerId) : empName(detail.createdBy)} />
                     <InfoRow k="Struktur" v={getEnrichedEmployee(detail.createdBy)?.department || "—"} />
-                    <InfoRow k="Dövr" v={c?.frequency || "—"} />
-                    <InfoRow k="Ümumi çəki" v={`${totalWeight}%`} />
                   </div>
+
                 </div>
 
                 {/* Hədəflər */}

@@ -321,24 +321,12 @@ const UserApprovalsPage = () => {
                 <div className="bg-secondary rounded-lg p-4">
                   <h4 className="font-semibold text-foreground mb-3 text-sm">KPI Məlumatları</h4>
                   <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">KPI Kodu:</span><span className="font-medium">{selectedRequest.kpiCode}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">KPI Növü:</span><span className="font-medium">{selectedRequest.kpiType}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Hədəf:</span><span className="font-medium">{selectedRequest.target}</span></div>
-                    {(() => {
-                      const ds = selectedRequest.approvalChain.filter(s => s.date);
-                      const respDate = ds.length ? ds[ds.length - 1].date : null;
-                      const apprDate = selectedRequest.status === "approved" && ds.length ? ds[ds.length - 1].date : null;
-                      return (
-                        <>
-                          <div className="flex justify-between"><span className="text-muted-foreground">Cavab tarixi:</span><span className="font-medium">{respDate || "—"}</span></div>
-                          <div className="flex justify-between"><span className="text-muted-foreground">Təsdiq tarixi:</span><span className="font-medium">{apprDate || "—"}</span></div>
-                        </>
-                      );
-                    })()}
+                    <div className="flex justify-between"><span className="text-muted-foreground">Sorğu növü:</span><span className="font-medium">{selectedRequest.kpiType}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Göndərilmə tarixi:</span><span className="font-medium">{selectedRequest.createdDate}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Yaradan:</span><span className="font-medium">{selectedRequest.createdBy}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">KPI Sahibi:</span><span className="font-medium">{selectedRequest.kpiOwner}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Struktur:</span><span className="font-medium">{selectedRequest.department}</span></div>
                   </div>
+
                 </div>
 
                 <div className="bg-card rounded-lg border border-border p-4">
