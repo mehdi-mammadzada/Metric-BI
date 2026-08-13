@@ -795,7 +795,7 @@ const RolesPermissionsTab = () => {
                 {visible
                   .map(m => {
                     const on = pendingMembers.has(m.memberId);
-                    const assignedRoleNames = roles.filter(r => m.roleIds.includes(r.id)).map(r => r.name).join(", ");
+
                     return (
                       <button
                         key={m.memberId}
