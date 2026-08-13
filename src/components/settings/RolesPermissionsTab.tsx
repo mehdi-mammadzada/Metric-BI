@@ -589,7 +589,7 @@ const RolesPermissionsTab = () => {
                   </div>
                   <div>
                     <label className="text-xs font-medium text-foreground mb-1.5 block">
-                      Başlıq <span className="text-destructive">*</span>
+                      Rol adı <span className="text-destructive">*</span>
                     </label>
                     <input
                       value={editing.name}
