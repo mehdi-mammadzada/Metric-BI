@@ -588,17 +588,14 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
 
 // ===== Deletion Matrix Dialog =====
 const DeletionDialog = ({ open, onClose, initial, onSaved }: { open: boolean; onClose: () => void; initial: DeletionMatrix | null; onSaved: () => void }) => {
-  const positionRoles = usePositions();
   const allUsers = useAllUsers();
   const [name, setName] = useState("");
-  const [mode, setMode] = useState<"position" | "user">("user");
   const [selected, setSelected] = useState<string>("");
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (open) {
       setName(initial?.name || "Yeni Silinmə Matrisi");
-      setMode("user");
       setSelected(initial?.approver?.type === "user" ? initial.approver.name : "");
       setSearch("");
     }
