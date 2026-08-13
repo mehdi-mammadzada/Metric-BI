@@ -118,7 +118,7 @@ const RAW_SEED: DropdownCatalog[] = [
     "Təhlükəsizlik pozuntusu", "Etik qayda pozuntusu", "Digər",
   ]},
   { id: "scoring_systems", name: "Qiymətləndirmə Bal Sistemi", system: true, values: [
-    "1-3 Bal Sistemi", "1-5 Bal Sistemi", "1-10 Bal Sistemi", "Faiz (0-100)",
+    "1-3 Bal Sistemi", "1-10 Bal Sistemi", "Faiz (0-100)",
   ]},
 ];
 
@@ -205,7 +205,12 @@ const ensureSystemCatalogs = (list: DropdownCatalog[]): { list: DropdownCatalog[
     let values = existing.values ?? [];
     if (!seed.schema && seed.system) {
       const seedValues = (seed.values ?? []).filter(v => !removedSet.has(v.toLocaleLowerCase("az-AZ")));
-      values = uniqueValues([...seedValues, ...values]);
+      if (LOCKED_CATALOG_IDS.has(seed.id)) {
+        // Sistem sabitləri yalnız seed dəyərləri ilə məhdudlaşır; köhnə/silinmiş dəyərlər bərpa olunmur
+        values = uniqueValues(seedValues);
+      } else {
+        values = uniqueValues([...seedValues, ...values]);
+      }
       if (seed.id === "evaluator_types") {
         values = uniqueValues(values.map(v => EVALUATOR_TYPE_ALIASES[v.toLocaleLowerCase("az-AZ")] ?? v));
         values = uniqueValues([...seedValues, ...values]);
