@@ -53,7 +53,12 @@ export const hydrateApprovalsFromCloud = async (orgId: string): Promise<void> =>
     })));
   }
   if (!dmRes.error && dmRes.data) {
-    writeLocal(DELETION_KEY, dmRes.data.map(r => ({
+    // Vəzifəyə görə silinmə matrisləri artıq dəstəklənmir → təmizlə.
+    const legacyPos = dmRes.data.filter(r => r.mode === "position");
+    if (legacyPos.length) {
+      supabase.from("deletion_matrices").delete().in("id", legacyPos.map(r => r.id)).then(() => {});
+    }
+    writeLocal(DELETION_KEY, dmRes.data.filter(r => r.mode !== "position").map(r => ({
       id: r.local_id,
       name: r.name,
       mode: r.mode ?? undefined,
