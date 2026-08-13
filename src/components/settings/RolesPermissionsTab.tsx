@@ -572,21 +572,7 @@ const RolesPermissionsTab = () => {
             <div className="flex-1 min-h-0 flex flex-col px-8 pt-5 pb-3">
               {/* Sticky header: meta + toggle */}
               <div className="shrink-0 space-y-4 pb-4 bg-card">
-                <div className="grid grid-cols-1 md:grid-cols-[140px_1fr_2fr] gap-4">
-                  <div>
-                    <label className="text-xs font-medium text-foreground mb-1.5 block">Dil</label>
-                    <div className="relative">
-                      <select
-                        defaultValue="AZ"
-                        className="w-full appearance-none px-3 py-2.5 text-sm border border-primary/60 rounded-lg bg-background pr-8 font-medium"
-                      >
-                        <option value="AZ">AZ</option>
-                        <option value="EN">EN</option>
-                        <option value="RU">RU</option>
-                      </select>
-                      <ChevronDown className="w-4 h-4 absolute right-2.5 top-3 text-muted-foreground pointer-events-none" />
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-4">
                   <div>
                     <label className="text-xs font-medium text-foreground mb-1.5 block">
                       Rol adı <span className="text-destructive">*</span>
