@@ -264,10 +264,9 @@ const RolesPermissionsTab = () => {
   const [savingMembers, setSavingMembers] = useState(false);
 
   const [showCreate, setShowCreate] = useState(false);
-  const [newRole, setNewRole] = useState<{ name: string; description: string; cloneFromRoleId: string }>({
+  const [newRole, setNewRole] = useState<{ name: string; description: string }>({
     name: "",
     description: "",
-    cloneFromRoleId: "",
   });
 
   // ── Load ───────────────────────────────────────────────────────────────
