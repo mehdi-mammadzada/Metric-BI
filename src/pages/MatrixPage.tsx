@@ -588,32 +588,29 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
 
 // ===== Deletion Matrix Dialog =====
 const DeletionDialog = ({ open, onClose, initial, onSaved }: { open: boolean; onClose: () => void; initial: DeletionMatrix | null; onSaved: () => void }) => {
-  const positionRoles = usePositions();
   const allUsers = useAllUsers();
   const [name, setName] = useState("");
-  const [mode, setMode] = useState<"position" | "user">("user");
   const [selected, setSelected] = useState<string>("");
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (open) {
       setName(initial?.name || "Yeni Silinmə Matrisi");
-      setMode((initial?.mode as any) || "user");
-      setSelected(initial?.approver?.name || "");
+      setSelected(initial?.approver?.type === "user" ? initial.approver.name : "");
       setSearch("");
     }
   }, [open, initial]);
 
-  const baseOptions = mode === "position" ? positionRoles : allUsers;
+  const baseOptions = allUsers;
   const options = useMemo(() => {
     const q = search.toLowerCase();
-    return baseOptions.filter(u => u.toLowerCase().includes(q) || formatAssignee({ type: mode === "position" ? "role" : "user", name: u }).toLowerCase().includes(q));
-  }, [search, baseOptions, mode]);
+    return baseOptions.filter(u => u.toLowerCase().includes(q) || formatAssignee({ type: "user", name: u }).toLowerCase().includes(q));
+  }, [search, baseOptions]);
 
   const save = () => {
     if (!name.trim()) return toast.error("Matris adı boş ola bilməz");
     if (!selected) return toast.error("Təsdiqləyici seçməlisiniz");
-    saveDeletionMatrix({ id: initial?.id, name: name.trim(), mode, approver: { type: mode === "position" ? "role" : "user", name: selected } });
+    saveDeletionMatrix({ id: initial?.id, name: name.trim(), mode: "user", approver: { type: "user", name: selected } });
     toast.success(initial ? "Matris yeniləndi" : "Yeni matris yaradıldı");
     onSaved();
     onClose();
@@ -637,25 +634,21 @@ const DeletionDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
 
           <div>
             <label className="text-sm font-medium text-foreground mb-1 block">Matris Rejimi</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => { setMode("position"); setSelected(""); }} className={`px-3 py-2 text-sm rounded-lg border ${mode === "position" ? "border-primary bg-primary/10 text-primary font-medium" : "border-border bg-card text-foreground"}`}>Vəzifəyə görə</button>
-              <button type="button" onClick={() => { setMode("user"); setSelected(""); }} className={`px-3 py-2 text-sm rounded-lg border ${mode === "user" ? "border-primary bg-primary/10 text-primary font-medium" : "border-border bg-card text-foreground"}`}>Şəxsə görə</button>
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              {mode === "position" ? "Vəzifə əsasında seçilir; aid strukturdakı şəxs avtomatik rezolv olunur." : "Konkret əməkdaş seçilir."}
-            </p>
+            <div className="px-3 py-2 text-sm rounded-lg border border-primary bg-primary/10 text-primary font-medium text-center">Şəxsə görə</div>
+            <p className="text-[11px] text-muted-foreground mt-1">Konkret əməkdaş seçilir.</p>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-foreground mb-1 block">{mode === "position" ? "Təsdiqləyici (Vəzifə)" : "Təsdiqləyici (Əməkdaş)"}</label>
+            <label className="text-sm font-medium text-foreground mb-1 block">Təsdiqləyici (Əməkdaş)</label>
+
             <div className="relative mb-2">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder={mode === "position" ? "Vəzifə axtar..." : "Əməkdaş axtar..."} className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded bg-background" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Əməkdaş axtar..." className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded bg-background" />
             </div>
             <div className="max-h-56 overflow-y-auto border border-border rounded-lg">
               {options.map(o => (
                 <div key={o} onClick={() => setSelected(o)} className={`px-3 py-2 text-sm cursor-pointer flex items-center justify-between hover:bg-secondary ${selected === o ? "bg-primary/5" : ""}`}>
-                  <span>{mode === "position" ? o : formatAssignee({ type: "user", name: o })}</span>{selected === o && <Check className="w-4 h-4 text-primary" />}
+                  <span>{formatAssignee({ type: "user", name: o })}</span>{selected === o && <Check className="w-4 h-4 text-primary" />}
                 </div>
               ))}
               {options.length === 0 && <p className="px-3 py-3 text-xs text-muted-foreground text-center">Tapılmadı</p>}
