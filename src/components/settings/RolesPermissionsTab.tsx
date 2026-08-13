@@ -391,11 +391,11 @@ const RolesPermissionsTab = () => {
       await createOrgRole(orgId, {
         name: newRole.name,
         description: newRole.description,
-        cloneFromRoleId: newRole.cloneFromRoleId || null,
+        cloneFromRoleId: null,
       });
       toast.success("Rol yaradıldı");
       setShowCreate(false);
-      setNewRole({ name: "", description: "", cloneFromRoleId: "" });
+      setNewRole({ name: "", description: "" });
       await reload();
     } catch (e: any) {
       toast.error(`Xəta: ${e?.message ?? e}`);
