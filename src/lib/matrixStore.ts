@@ -106,7 +106,13 @@ export const getApprovalMatrix = (): ApprovalMatrix | null => {
 export const getDeletionMatrices = (): DeletionMatrix[] => {
   try {
     const raw = localStorage.getItem(DELETION_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const all: DeletionMatrix[] = JSON.parse(raw);
+      // Vəzifəyə görə rejim ləğv edildi — belə matrislər saxlanılmır.
+      const kept = all.filter(m => m.mode !== "position" && m.approver?.type !== "role");
+      if (kept.length !== all.length) localStorage.setItem(DELETION_KEY, JSON.stringify(kept));
+      return kept;
+    }
     const seed: DeletionMatrix[] = [];
     localStorage.setItem(DELETION_KEY, JSON.stringify(seed));
     return seed;
