@@ -815,12 +815,10 @@ const RolesPermissionsTab = () => {
                         <div className="min-w-0 flex-1">
                           <div className="font-medium truncate">{m.fullName}</div>
                           <div className="text-[11px] text-muted-foreground truncate">
-                            {m.positionName || "—"}{m.email ? ` · ${m.email}` : ""}
-                          </div>
-                          <div className="text-[10px] text-primary truncate mt-0.5">
-                            Profil rolları: {assignedRoleNames || "rol yoxdur"}
+                            {m.positionName || "—"}
                           </div>
                         </div>
+
                       </button>
                     );
                   })}
