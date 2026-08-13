@@ -546,24 +546,6 @@ const RolesPermissionsTab = () => {
                 className="w-full mt-1 px-3 py-2 text-sm border border-border rounded-lg bg-background"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium">Şablon əsasında kopyala (istəyə bağlı)</label>
-              <select
-                value={newRole.cloneFromRoleId}
-                onChange={e => setNewRole(p => ({ ...p, cloneFromRoleId: e.target.value }))}
-                className="w-full mt-1 px-3 py-2.5 text-sm border border-border rounded-lg bg-background"
-              >
-                <option value="">— Boş rol —</option>
-                {roles.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Seçilən rolun bütün icazələri yeni rola köçürüləcək; sonradan redaktə edə bilərsiniz.
-              </p>
-            </div>
             <div className="flex gap-3 pt-2">
               <button onClick={submitCreate} className="flex-1 py-2.5 text-sm rounded-lg bg-primary text-primary-foreground font-medium">
                 Yarat
