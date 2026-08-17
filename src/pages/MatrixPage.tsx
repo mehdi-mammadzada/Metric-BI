@@ -506,7 +506,9 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
               const q = (search[step.id] || "").toLowerCase();
               const filteredUsers = allUsers.filter(u => u.toLowerCase().includes(q) || (formatAssignee({ type: "user", name: u }).toLowerCase().includes(q)));
               const filteredRoles = positionRoles.filter(r => r.toLowerCase().includes(q));
-              const maxMin = Math.max(1, step.assignees.length || 1);
+              const posTotal = step.assignees.reduce((acc, a) => acc + Math.max(1, positionHeadcount(a.name)), 0);
+              const posSum = step.assignees.reduce((acc, a) => acc + Math.max(1, a.minApprovals || 1), 0);
+              const maxMin = mode === "position" ? Math.max(1, posTotal) : Math.max(1, step.assignees.length || 1);
               return (
                 <div
                   key={step.id}
