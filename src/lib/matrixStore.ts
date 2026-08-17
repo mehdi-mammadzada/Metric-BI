@@ -3,12 +3,28 @@
 
 import { getEmployees } from "@/lib/orgStore";
 
+export interface ApprovalAssignee {
+  type: "user" | "role";
+  name: string;
+  /** Vəzifəyə görə rejimdə: bu vəzifə üzrə minimal təsdiq sayı */
+  minApprovals?: number;
+}
+
 export interface ApprovalStep {
   id: string;
   label: string;
-  assignees: { type: "user" | "role"; name: string }[];
+  assignees: ApprovalAssignee[];
   minApprovals?: number; // minimal təsdiq sayı (default 1)
 }
+
+/** Verilmiş vəzifədə çalışan əməkdaşların sayı */
+export const positionHeadcount = (position: string): number => {
+  const clean = String(position || "").trim().toLowerCase();
+  if (!clean) return 0;
+  try {
+    return getEmployees().filter(e => String(e.positionName || "").trim().toLowerCase() === clean).length;
+  } catch { return 0; }
+};
 
 export interface ApprovalMatrix {
   id: string;
