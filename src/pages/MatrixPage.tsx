@@ -468,7 +468,14 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
         }
       }
     }
-    saveApprovalMatrix({ id: initial?.id, name: name.trim(), mode, steps });
+    const normalized = mode === "position"
+      ? steps.map(s => ({
+          ...s,
+          assignees: s.assignees.map(a => ({ ...a, minApprovals: Math.max(1, a.minApprovals || 1) })),
+          minApprovals: Math.max(1, sumMin(s.assignees)),
+        }))
+      : steps;
+    saveApprovalMatrix({ id: initial?.id, name: name.trim(), mode, steps: normalized });
     toast.success(initial ? "Matris yeniləndi" : "Yeni matris yaradıldı");
     onSaved();
     onClose();
