@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import {
   getApprovalMatrices, saveApprovalMatrix, deleteApprovalMatrix, getDeletionMatrices, saveDeletionMatrix, deleteDeletionMatrix,
-  formatAssignee,
+  formatAssignee, positionHeadcount,
   type ApprovalStep, type ApprovalMatrix, type DeletionMatrix,
 } from "@/lib/matrixStore";
 import { getOperationsLog, addOperationLog, type OperationLogEntry } from "@/lib/operationsLogStore";
