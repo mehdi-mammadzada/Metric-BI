@@ -149,7 +149,26 @@ const NotificationRecipientsPicker = ({ value, onChange }: Props) => {
   const structures = useMemo(() => getStructures(), []);
   const teams = useMemo(() => getTeams().map(t => ({ key: String(t.id), label: t.name })), []);
   const rolesList = useRoles();
-  const roleItems = useMemo(() => rolesList.map(r => ({ key: r.name, label: r.name })), [rolesList]);
+  const { user } = useAuth();
+  const orgId = user?.currentOrgId ?? "";
+  const [dbRoleNames, setDbRoleNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!orgId) { setDbRoleNames([]); return; }
+    let cancelled = false;
+    fetchRolesForOrg(orgId)
+      .then(rows => {
+        if (!cancelled) setDbRoleNames(rows.filter(r => r.is_active).map(r => r.name));
+      })
+      .catch(() => { if (!cancelled) setDbRoleNames([]); });
+    return () => { cancelled = true; };
+  }, [orgId]);
+
+  const roleItems = useMemo(() => {
+    const names = Array.from(new Set([...dbRoleNames, ...rolesList.map(r => r.name)].filter(Boolean)));
+    names.sort((a, b) => a.localeCompare(b, "az"));
+    return names.map(n => ({ key: n, label: n }));
+  }, [dbRoleNames, rolesList]);
 
   // struct id → name (chip display)
   const structIdx = useMemo(() => {
