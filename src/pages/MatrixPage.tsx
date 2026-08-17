@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import {
   getApprovalMatrices, saveApprovalMatrix, deleteApprovalMatrix, getDeletionMatrices, saveDeletionMatrix, deleteDeletionMatrix,
-  formatAssignee,
+  formatAssignee, positionHeadcount,
   type ApprovalStep, type ApprovalMatrix, type DeletionMatrix,
 } from "@/lib/matrixStore";
 import { getOperationsLog, addOperationLog, type OperationLogEntry } from "@/lib/operationsLogStore";
@@ -425,20 +425,57 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
     });
   };
 
+  const sumMin = (assignees: { minApprovals?: number }[]) =>
+    assignees.reduce((acc, a) => acc + Math.max(1, a.minApprovals || 1), 0);
+
   const toggleAssignee = (stepId: string, type: "user" | "role", name: string) => {
     setSteps(s => s.map(x => {
       if (x.id !== stepId) return x;
       const exists = x.assignees.find(a => a.type === type && a.name === name);
-      const next = exists ? x.assignees.filter(a => !(a.type === type && a.name === name)) : [...x.assignees, { type, name }];
-      const min = Math.min(x.minApprovals || 1, Math.max(1, next.length || 1));
+      const next = exists
+        ? x.assignees.filter(a => !(a.type === type && a.name === name))
+        : [...x.assignees, { type, name, minApprovals: 1 }];
+      const min = mode === "position"
+        ? Math.max(1, sumMin(next))
+        : Math.min(x.minApprovals || 1, Math.max(1, next.length || 1));
       return { ...x, assignees: next, minApprovals: min };
+    }));
+  };
+
+  // Bir vəzifə üzrə minimal təsdiq sayını dəyişir (headcount-dan çox ola bilməz).
+  const setAssigneeMin = (stepId: string, name: string, value: number) => {
+    setSteps(s => s.map(x => {
+      if (x.id !== stepId) return x;
+      const cap = Math.max(1, positionHeadcount(name));
+      const next = x.assignees.map(a =>
+        a.type === "role" && a.name === name
+          ? { ...a, minApprovals: Math.min(cap, Math.max(1, value || 1)) }
+          : a,
+      );
+      return { ...x, assignees: next, minApprovals: Math.max(1, sumMin(next)) };
     }));
   };
 
   const save = () => {
     if (!name.trim()) return toast.error("Matris adı boş ola bilməz");
     if (steps.some(s => s.assignees.length === 0)) return toast.error("Hər mərhələdə ən azı 1 təyinat olmalıdır");
-    saveApprovalMatrix({ id: initial?.id, name: name.trim(), mode, steps });
+    if (mode === "position") {
+      for (const s of steps) {
+        for (const a of s.assignees) {
+          const cap = positionHeadcount(a.name);
+          if (cap === 0) return toast.error(`"${a.name}" vəzifəsində əməkdaş yoxdur`);
+          if ((a.minApprovals || 1) > cap) return toast.error(`"${a.name}" üçün minimal təsdiq sayı ${cap}-dən çox ola bilməz`);
+        }
+      }
+    }
+    const normalized = mode === "position"
+      ? steps.map(s => ({
+          ...s,
+          assignees: s.assignees.map(a => ({ ...a, minApprovals: Math.max(1, a.minApprovals || 1) })),
+          minApprovals: Math.max(1, sumMin(s.assignees)),
+        }))
+      : steps;
+    saveApprovalMatrix({ id: initial?.id, name: name.trim(), mode, steps: normalized });
     toast.success(initial ? "Matris yeniləndi" : "Yeni matris yaradıldı");
     onSaved();
     onClose();
@@ -476,7 +513,9 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
               const q = (search[step.id] || "").toLowerCase();
               const filteredUsers = allUsers.filter(u => u.toLowerCase().includes(q) || (formatAssignee({ type: "user", name: u }).toLowerCase().includes(q)));
               const filteredRoles = positionRoles.filter(r => r.toLowerCase().includes(q));
-              const maxMin = Math.max(1, step.assignees.length || 1);
+              const posTotal = step.assignees.reduce((acc, a) => acc + Math.max(1, positionHeadcount(a.name)), 0);
+              const posSum = step.assignees.reduce((acc, a) => acc + Math.max(1, a.minApprovals || 1), 0);
+              const maxMin = mode === "position" ? Math.max(1, posTotal) : Math.max(1, step.assignees.length || 1);
               return (
                 <div
                   key={step.id}
@@ -506,18 +545,26 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
                         <ArrowDown className="w-3 h-3" />
                       </button>
                     </div>
-                    <div className="flex items-center gap-1 px-2 py-1 rounded border border-border bg-background" title="Minimal təsdiq sayı">
-                      <Check className="w-3 h-3 text-primary" />
-                      <input
-                        type="number"
-                        min={1}
-                        max={maxMin}
-                        value={step.minApprovals || 1}
-                        onChange={e => updateStep(step.id, { minApprovals: Math.min(maxMin, Math.max(1, parseInt(e.target.value) || 1)) })}
-                        className="w-10 text-xs bg-transparent outline-none text-center"
-                      />
-                      <span className="text-[10px] text-muted-foreground">/ {maxMin}</span>
-                    </div>
+                    {mode === "position" ? (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded border border-border bg-background" title="Mərhələnin ümumi minimal təsdiq sayı (vəzifələrin cəmi)">
+                        <Check className="w-3 h-3 text-primary" />
+                        <span className="text-xs font-medium w-6 text-center">{step.assignees.length ? posSum : 1}</span>
+                        <span className="text-[10px] text-muted-foreground">/ {maxMin}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded border border-border bg-background" title="Minimal təsdiq sayı">
+                        <Check className="w-3 h-3 text-primary" />
+                        <input
+                          type="number"
+                          min={1}
+                          max={maxMin}
+                          value={step.minApprovals || 1}
+                          onChange={e => updateStep(step.id, { minApprovals: Math.min(maxMin, Math.max(1, parseInt(e.target.value) || 1)) })}
+                          className="w-10 text-xs bg-transparent outline-none text-center"
+                        />
+                        <span className="text-[10px] text-muted-foreground">/ {maxMin}</span>
+                      </div>
+                    )}
                     {steps.length > 1 && (
                       <button onClick={() => removeStep(step.id)} className="w-7 h-7 rounded bg-zone-red-bg text-zone-red-text flex items-center justify-center"><X className="w-3 h-3" /></button>
                     )}
@@ -528,11 +575,34 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
                       <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                       <input value={search[step.id] || ""} onChange={e => setSearch(p => ({ ...p, [step.id]: e.target.value }))} placeholder={mode === "position" ? "Vəzifə axtar..." : "Əməkdaş axtar..."} className="w-full pl-7 pr-3 py-1.5 text-xs border border-border rounded bg-background" />
                     </div>
-                    {step.assignees.length > 0 && (
+                    {step.assignees.length > 0 && mode === "position" && (
+                      <div className="space-y-1">
+                        {step.assignees.map((a, j) => {
+                          const cap = Math.max(1, positionHeadcount(a.name));
+                          return (
+                            <div key={j} className="flex items-center gap-2 px-2 py-1 rounded border border-border bg-background">
+                              <span className="flex-1 text-xs text-foreground truncate">{a.name}</span>
+                              <span className="text-[10px] text-muted-foreground shrink-0">Min. təsdiq</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={cap}
+                                value={a.minApprovals || 1}
+                                onChange={e => setAssigneeMin(step.id, a.name, parseInt(e.target.value) || 1)}
+                                className="w-12 text-xs text-center border border-border rounded bg-background py-0.5"
+                              />
+                              <span className="text-[10px] text-muted-foreground shrink-0">/ {cap} nəfər</span>
+                              <X className="w-3 h-3 cursor-pointer text-muted-foreground" onClick={() => toggleAssignee(step.id, a.type, a.name)} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {step.assignees.length > 0 && mode !== "position" && (
                       <div className="flex flex-wrap gap-1">
                         {step.assignees.map((a, j) => (
                           <span key={j} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">
-                            {mode === "position" && a.type === "role" ? a.name : formatAssignee(a)}
+                            {formatAssignee(a)}
                             <X className="w-2.5 h-2.5 cursor-pointer" onClick={() => toggleAssignee(step.id, a.type, a.name)} />
                           </span>
                         ))}
