@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, X, ChevronRight, ChevronDown } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { getEmployees, getStructures, type OrgStructure } from "@/lib/orgStore";
 import { getAllPositions } from "@/lib/usePositions";
 import { getTeams } from "@/lib/teamsStore";
 import { useRoles } from "@/lib/rolesStore";
+import { fetchRolesForOrg } from "@/lib/rolesService";
+import { useAuth } from "@/contexts/AuthContext";
 import { LEGACY_RECIPIENT_LABELS } from "@/lib/notificationSettingsStore";
 
 interface Props {
@@ -147,7 +149,26 @@ const NotificationRecipientsPicker = ({ value, onChange }: Props) => {
   const structures = useMemo(() => getStructures(), []);
   const teams = useMemo(() => getTeams().map(t => ({ key: String(t.id), label: t.name })), []);
   const rolesList = useRoles();
-  const roleItems = useMemo(() => rolesList.map(r => ({ key: r.name, label: r.name })), [rolesList]);
+  const { user } = useAuth();
+  const orgId = user?.currentOrgId ?? "";
+  const [dbRoleNames, setDbRoleNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!orgId) { setDbRoleNames([]); return; }
+    let cancelled = false;
+    fetchRolesForOrg(orgId)
+      .then(rows => {
+        if (!cancelled) setDbRoleNames(rows.filter(r => r.is_active).map(r => r.name));
+      })
+      .catch(() => { if (!cancelled) setDbRoleNames([]); });
+    return () => { cancelled = true; };
+  }, [orgId]);
+
+  const roleItems = useMemo(() => {
+    const names = Array.from(new Set([...dbRoleNames, ...rolesList.map(r => r.name)].filter(Boolean)));
+    names.sort((a, b) => a.localeCompare(b, "az"));
+    return names.map(n => ({ key: n, label: n }));
+  }, [dbRoleNames, rolesList]);
 
   // struct id → name (chip display)
   const structIdx = useMemo(() => {
