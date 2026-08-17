@@ -5,6 +5,8 @@ import { getEmployees, getStructures, type OrgStructure } from "@/lib/orgStore";
 import { getAllPositions } from "@/lib/usePositions";
 import { getTeams } from "@/lib/teamsStore";
 import { useRoles } from "@/lib/rolesStore";
+import { fetchRolesForOrg } from "@/lib/rolesService";
+import { useAuth } from "@/contexts/AuthContext";
 import { LEGACY_RECIPIENT_LABELS } from "@/lib/notificationSettingsStore";
 
 interface Props {
