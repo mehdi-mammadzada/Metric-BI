@@ -538,18 +538,26 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
                         <ArrowDown className="w-3 h-3" />
                       </button>
                     </div>
-                    <div className="flex items-center gap-1 px-2 py-1 rounded border border-border bg-background" title="Minimal təsdiq sayı">
-                      <Check className="w-3 h-3 text-primary" />
-                      <input
-                        type="number"
-                        min={1}
-                        max={maxMin}
-                        value={step.minApprovals || 1}
-                        onChange={e => updateStep(step.id, { minApprovals: Math.min(maxMin, Math.max(1, parseInt(e.target.value) || 1)) })}
-                        className="w-10 text-xs bg-transparent outline-none text-center"
-                      />
-                      <span className="text-[10px] text-muted-foreground">/ {maxMin}</span>
-                    </div>
+                    {mode === "position" ? (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded border border-border bg-background" title="Mərhələnin ümumi minimal təsdiq sayı (vəzifələrin cəmi)">
+                        <Check className="w-3 h-3 text-primary" />
+                        <span className="text-xs font-medium w-6 text-center">{step.assignees.length ? posSum : 1}</span>
+                        <span className="text-[10px] text-muted-foreground">/ {maxMin}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded border border-border bg-background" title="Minimal təsdiq sayı">
+                        <Check className="w-3 h-3 text-primary" />
+                        <input
+                          type="number"
+                          min={1}
+                          max={maxMin}
+                          value={step.minApprovals || 1}
+                          onChange={e => updateStep(step.id, { minApprovals: Math.min(maxMin, Math.max(1, parseInt(e.target.value) || 1)) })}
+                          className="w-10 text-xs bg-transparent outline-none text-center"
+                        />
+                        <span className="text-[10px] text-muted-foreground">/ {maxMin}</span>
+                      </div>
+                    )}
                     {steps.length > 1 && (
                       <button onClick={() => removeStep(step.id)} className="w-7 h-7 rounded bg-zone-red-bg text-zone-red-text flex items-center justify-center"><X className="w-3 h-3" /></button>
                     )}
