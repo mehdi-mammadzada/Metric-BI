@@ -568,11 +568,34 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
                       <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                       <input value={search[step.id] || ""} onChange={e => setSearch(p => ({ ...p, [step.id]: e.target.value }))} placeholder={mode === "position" ? "Vəzifə axtar..." : "Əməkdaş axtar..."} className="w-full pl-7 pr-3 py-1.5 text-xs border border-border rounded bg-background" />
                     </div>
-                    {step.assignees.length > 0 && (
+                    {step.assignees.length > 0 && mode === "position" && (
+                      <div className="space-y-1">
+                        {step.assignees.map((a, j) => {
+                          const cap = Math.max(1, positionHeadcount(a.name));
+                          return (
+                            <div key={j} className="flex items-center gap-2 px-2 py-1 rounded border border-border bg-background">
+                              <span className="flex-1 text-xs text-foreground truncate">{a.name}</span>
+                              <span className="text-[10px] text-muted-foreground shrink-0">Min. təsdiq</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={cap}
+                                value={a.minApprovals || 1}
+                                onChange={e => setAssigneeMin(step.id, a.name, parseInt(e.target.value) || 1)}
+                                className="w-12 text-xs text-center border border-border rounded bg-background py-0.5"
+                              />
+                              <span className="text-[10px] text-muted-foreground shrink-0">/ {cap} nəfər</span>
+                              <X className="w-3 h-3 cursor-pointer text-muted-foreground" onClick={() => toggleAssignee(step.id, a.type, a.name)} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {step.assignees.length > 0 && mode !== "position" && (
                       <div className="flex flex-wrap gap-1">
                         {step.assignees.map((a, j) => (
                           <span key={j} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">
-                            {mode === "position" && a.type === "role" ? a.name : formatAssignee(a)}
+                            {formatAssignee(a)}
                             <X className="w-2.5 h-2.5 cursor-pointer" onClick={() => toggleAssignee(step.id, a.type, a.name)} />
                           </span>
                         ))}
