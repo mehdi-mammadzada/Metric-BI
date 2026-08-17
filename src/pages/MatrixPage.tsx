@@ -425,19 +425,49 @@ const ApprovalDialog = ({ open, onClose, initial, onSaved }: { open: boolean; on
     });
   };
 
+  const sumMin = (assignees: { minApprovals?: number }[]) =>
+    assignees.reduce((acc, a) => acc + Math.max(1, a.minApprovals || 1), 0);
+
   const toggleAssignee = (stepId: string, type: "user" | "role", name: string) => {
     setSteps(s => s.map(x => {
       if (x.id !== stepId) return x;
       const exists = x.assignees.find(a => a.type === type && a.name === name);
-      const next = exists ? x.assignees.filter(a => !(a.type === type && a.name === name)) : [...x.assignees, { type, name }];
-      const min = Math.min(x.minApprovals || 1, Math.max(1, next.length || 1));
+      const next = exists
+        ? x.assignees.filter(a => !(a.type === type && a.name === name))
+        : [...x.assignees, { type, name, minApprovals: 1 }];
+      const min = mode === "position"
+        ? Math.max(1, sumMin(next))
+        : Math.min(x.minApprovals || 1, Math.max(1, next.length || 1));
       return { ...x, assignees: next, minApprovals: min };
+    }));
+  };
+
+  // Bir vəzifə üzrə minimal təsdiq sayını dəyişir (headcount-dan çox ola bilməz).
+  const setAssigneeMin = (stepId: string, name: string, value: number) => {
+    setSteps(s => s.map(x => {
+      if (x.id !== stepId) return x;
+      const cap = Math.max(1, positionHeadcount(name));
+      const next = x.assignees.map(a =>
+        a.type === "role" && a.name === name
+          ? { ...a, minApprovals: Math.min(cap, Math.max(1, value || 1)) }
+          : a,
+      );
+      return { ...x, assignees: next, minApprovals: Math.max(1, sumMin(next)) };
     }));
   };
 
   const save = () => {
     if (!name.trim()) return toast.error("Matris adı boş ola bilməz");
     if (steps.some(s => s.assignees.length === 0)) return toast.error("Hər mərhələdə ən azı 1 təyinat olmalıdır");
+    if (mode === "position") {
+      for (const s of steps) {
+        for (const a of s.assignees) {
+          const cap = positionHeadcount(a.name);
+          if (cap === 0) return toast.error(`"${a.name}" vəzifəsində əməkdaş yoxdur`);
+          if ((a.minApprovals || 1) > cap) return toast.error(`"${a.name}" üçün minimal təsdiq sayı ${cap}-dən çox ola bilməz`);
+        }
+      }
+    }
     saveApprovalMatrix({ id: initial?.id, name: name.trim(), mode, steps });
     toast.success(initial ? "Matris yeniləndi" : "Yeni matris yaradıldı");
     onSaved();
