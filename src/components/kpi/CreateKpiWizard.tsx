@@ -1808,65 +1808,61 @@ function Step2Targets({
               ) : (
                 <>
                   <div className="col-span-12">
-                    <div className="flex flex-col md:flex-row gap-2 items-end">
-                      <div className="flex-1 min-w-0">
-                        <label className="text-[11px] text-muted-foreground">
-                          {t.type === "Zaman" ? "Zaman aralığı" : "Hədəf dəyəri"} {isOther ? <span className="text-amber-600">(təyin edən dolduracaq)</span> : "*"}
-                        </label>
-                        <div className="mt-0.5 flex gap-1">
-                          {(t.type === "Zaman") ? (
-                            <>
-                              <input type="date" value={t.timeStart || ""} disabled={isOther}
-                                onChange={e => updHedef(t.id, { timeStart: e.target.value })}
-                                title="Başlama tarixi"
-                                className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
-                              <input type="date" value={t.timeEnd || ""} disabled={isOther}
-                                onChange={e => updHedef(t.id, { timeEnd: e.target.value })}
-                                title="Bitmə tarixi"
-                                className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
-                            </>
-                          ) : (t.type === "Boolean") ? (
-                            <select value={t.targetValue} disabled={isOther}
-                              onChange={e => updHedef(t.id, { targetValue: e.target.value })}
-                              className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60">
-                              <option value="">— Seçin —</option>
-                              <option value="Bəli">Bəli</option>
-                              <option value="Xeyr">Xeyr</option>
+                    <label className="text-[11px] text-muted-foreground">
+                      {t.type === "Zaman" ? "Zaman aralığı" : "Hədəf dəyəri"} {isOther ? <span className="text-amber-600">(təyin edən dolduracaq)</span> : "*"}
+                    </label>
+                    <div className="mt-0.5 flex gap-1">
+                      {(t.type === "Zaman") ? (
+                        <>
+                          <input type="date" value={t.timeStart || ""} disabled={isOther}
+                            onChange={e => updHedef(t.id, { timeStart: e.target.value })}
+                            title="Başlama tarixi"
+                            className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
+                          <input type="date" value={t.timeEnd || ""} disabled={isOther}
+                            onChange={e => updHedef(t.id, { timeEnd: e.target.value })}
+                            title="Bitmə tarixi"
+                            className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
+                        </>
+                      ) : (t.type === "Boolean") ? (
+                        <select value={t.targetValue} disabled={isOther}
+                          onChange={e => updHedef(t.id, { targetValue: e.target.value })}
+                          className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60">
+                          <option value="">— Seçin —</option>
+                          <option value="Bəli">Bəli</option>
+                          <option value="Xeyr">Xeyr</option>
+                        </select>
+                      ) : (t.type === "İcra" || t.type === "Fərdi İnkişaf") ? (
+                        <input value={t.targetValue} disabled={isOther}
+                          onChange={e => updHedef(t.id, { targetValue: e.target.value })}
+                          placeholder="Hədəf təsviri"
+                          className="w-full px-2.5 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
+                      ) : (
+                        <>
+                          <input type="number" value={t.targetValue} disabled={isOther}
+                            onChange={e => updHedef(t.id, { targetValue: e.target.value })}
+                            placeholder={t.type === "Faiz" ? "0-100" : "0"}
+                            className="w-full px-2.5 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
+                          {t.type === "Məbləğ" && (
+                            <select value={t.currency} disabled={isOther}
+                              onChange={e => updHedef(t.id, { currency: e.target.value as any })}
+                              className="px-1.5 py-1.5 text-xs border border-border rounded bg-background disabled:opacity-60">
+                              {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
-                          ) : (t.type === "İcra" || t.type === "Fərdi İnkişaf") ? (
-                            <input value={t.targetValue} disabled={isOther}
-                              onChange={e => updHedef(t.id, { targetValue: e.target.value })}
-                              placeholder="Hədəf təsviri"
-                              className="w-full px-2.5 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
-                          ) : (
-                            <>
-                              <input type="number" value={t.targetValue} disabled={isOther}
-                                onChange={e => updHedef(t.id, { targetValue: e.target.value })}
-                                placeholder={t.type === "Faiz" ? "0-100" : "0"}
-                                className="w-full px-2.5 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
-                              {t.type === "Məbləğ" && (
-                                <select value={t.currency} disabled={isOther}
-                                  onChange={e => updHedef(t.id, { currency: e.target.value as any })}
-                                  className="px-1.5 py-1.5 text-xs border border-border rounded bg-background disabled:opacity-60">
-                                  {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                              )}
-                              {t.type === "Faiz" && <span className="px-2 py-1.5 text-xs text-muted-foreground">%</span>}
-                              {t.type === "Say" && <span className="px-2 py-1.5 text-xs text-muted-foreground whitespace-nowrap">ədəd</span>}
-                            </>
                           )}
-                        </div>
-                      </div>
-
-                      <div className="shrink-0">
-                        <button type="button" onClick={() => setScoreDlgFor(t.id)}
-                          disabled={isOther}
-                          title={isOther ? "Digər əməkdaş təyin edir — qiymətləri o dolduracaq" : ""}
-                          className="px-3 py-1.5 text-xs font-medium rounded border border-amber-500/60 text-amber-700 hover:bg-amber-500/10 flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
-                          <Star className="w-3.5 h-3.5" /> Qiymətlər
-                        </button>
-                      </div>
+                          {t.type === "Faiz" && <span className="px-2 py-1.5 text-xs text-muted-foreground">%</span>}
+                          {t.type === "Say" && <span className="px-2 py-1.5 text-xs text-muted-foreground whitespace-nowrap">ədəd</span>}
+                        </>
+                      )}
                     </div>
+                  </div>
+
+                  <div className="col-span-12 flex justify-end">
+                    <button type="button" onClick={() => setScoreDlgFor(t.id)}
+                      disabled={isOther}
+                      title={isOther ? "Digər əməkdaş təyin edir — qiymətləri o dolduracaq" : ""}
+                      className="px-3 py-1.5 text-xs font-medium rounded border border-amber-500/60 text-amber-700 hover:bg-amber-500/10 flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+                      <Star className="w-3.5 h-3.5" /> Qiymətlər
+                    </button>
                   </div>
                 </>
               )}
