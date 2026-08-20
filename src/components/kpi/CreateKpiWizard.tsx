@@ -726,6 +726,9 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     const sd = t.scoreDescriptions || [];
     const isTime = t.type === "Zaman";
     const needsRanges = ["Məbləğ", "Say", "Faiz", "Nisbət"].includes(t.type);
+    if (isTime && t.createdBy === "self" && (!t.timeStart || !t.timeEnd)) {
+      return `"${t.name}": başlama və bitmə tarixləri seçilməlidir`;
+    }
 
     if (t.type === "Səriştə") {
       if (!t.competencyMatrix) return `"${t.name}": Səriştə matrisi seçilməlidir`;
@@ -1806,10 +1809,21 @@ function Step2Targets({
                 <>
                   <div className="col-span-12 md:col-span-3">
                     <label className="text-[11px] text-muted-foreground">
-                      Hədəf dəyəri {isOther ? <span className="text-amber-600">(təyin edən dolduracaq)</span> : "*"}
+                      {t.type === "Zaman" ? "Zaman aralığı" : "Hədəf dəyəri"} {isOther ? <span className="text-amber-600">(təyin edən dolduracaq)</span> : "*"}
                     </label>
                     <div className="mt-0.5 flex gap-1">
-                      {(t.type === "Boolean") ? (
+                      {(t.type === "Zaman") ? (
+                        <>
+                          <input type="date" value={t.timeStart || ""} disabled={isOther}
+                            onChange={e => updHedef(t.id, { timeStart: e.target.value })}
+                            title="Başlama tarixi"
+                            className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
+                          <input type="date" value={t.timeEnd || ""} disabled={isOther}
+                            onChange={e => updHedef(t.id, { timeEnd: e.target.value })}
+                            title="Bitmə tarixi"
+                            className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
+                        </>
+                      ) : (t.type === "Boolean") ? (
                         <select value={t.targetValue} disabled={isOther}
                           onChange={e => updHedef(t.id, { targetValue: e.target.value })}
                           className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60">
@@ -1826,7 +1840,7 @@ function Step2Targets({
                         <>
                           <input type="number" value={t.targetValue} disabled={isOther}
                             onChange={e => updHedef(t.id, { targetValue: e.target.value })}
-                            placeholder={t.type === "Faiz" ? "0-100" : t.type === "Zaman" ? "Gün / saat" : "0"}
+                            placeholder={t.type === "Faiz" ? "0-100" : "0"}
                             className="w-full px-2.5 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
                           {t.type === "Məbləğ" && (
                             <select value={t.currency} disabled={isOther}
@@ -1836,10 +1850,12 @@ function Step2Targets({
                             </select>
                           )}
                           {t.type === "Faiz" && <span className="px-2 py-1.5 text-xs text-muted-foreground">%</span>}
+                          {t.type === "Say" && <span className="px-2 py-1.5 text-xs text-muted-foreground whitespace-nowrap">ədəd</span>}
                         </>
                       )}
                     </div>
                   </div>
+
                   <div className="col-span-6 md:col-span-2 flex items-end">
                     <button type="button" onClick={() => setScoreDlgFor(t.id)}
                       disabled={isOther}
