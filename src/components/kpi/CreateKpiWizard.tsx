@@ -726,6 +726,9 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     const sd = t.scoreDescriptions || [];
     const isTime = t.type === "Zaman";
     const needsRanges = ["Məbləğ", "Say", "Faiz", "Nisbət"].includes(t.type);
+    if (isTime && t.createdBy === "self" && (!t.timeStart || !t.timeEnd)) {
+      return `"${t.name}": başlama və bitmə tarixləri seçilməlidir`;
+    }
 
     if (t.type === "Səriştə") {
       if (!t.competencyMatrix) return `"${t.name}": Səriştə matrisi seçilməlidir`;
