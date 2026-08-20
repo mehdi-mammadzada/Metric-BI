@@ -1807,7 +1807,7 @@ function Step2Targets({
                 </>
               ) : (
                 <>
-                  <div className="col-span-12">
+                  <div className="col-span-12 md:col-span-10">
                     <label className="text-[11px] text-muted-foreground">
                       {t.type === "Zaman" ? "Zaman aralığı" : "Hədəf dəyəri"} {isOther ? <span className="text-amber-600">(təyin edən dolduracaq)</span> : "*"}
                     </label>
@@ -1856,11 +1856,11 @@ function Step2Targets({
                     </div>
                   </div>
 
-                  <div className="col-span-12 flex justify-end">
+                  <div className="col-span-12 md:col-span-2 flex items-end">
                     <button type="button" onClick={() => setScoreDlgFor(t.id)}
                       disabled={isOther}
                       title={isOther ? "Digər əməkdaş təyin edir — qiymətləri o dolduracaq" : ""}
-                      className="px-3 py-1.5 text-xs font-medium rounded border border-amber-500/60 text-amber-700 hover:bg-amber-500/10 flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+                      className="w-full px-3 py-1.5 text-xs font-medium rounded border border-amber-500/60 text-amber-700 hover:bg-amber-500/10 flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
                       <Star className="w-3.5 h-3.5" /> Qiymətlər
                     </button>
                   </div>
