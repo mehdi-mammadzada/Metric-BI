@@ -1623,6 +1623,7 @@ function Step2Targets({
   const [unifiedOpen, setUnifiedOpen] = useState(false);
   const [unifiedAssigner, setUnifiedAssigner] = useState<string>("");
   const [unifiedEvaluators, setUnifiedEvaluators] = useState<WizardEvaluatorRef[]>([]);
+  const [unifiedEvalPickerOpen, setUnifiedEvalPickerOpen] = useState(false);
   // Applied markers — once applied, target-level pickers are locked
   const [unifiedAssignerApplied, setUnifiedAssignerApplied] = useState<string>("");
   const [unifiedEvaluatorsApplied, setUnifiedEvaluatorsApplied] = useState<WizardEvaluatorRef[]>([]);
