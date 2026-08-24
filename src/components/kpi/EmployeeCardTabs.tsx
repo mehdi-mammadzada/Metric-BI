@@ -105,15 +105,32 @@ export default function EmployeeCardTabs({ card, tab, employeeName }: Props) {
 
   const reviewer = (card.team && card.team[0]?.name) || card.responsible || "—";
   const authors = Array.from(new Set(cardComments.map(c => c.author).filter(Boolean)));
-  const filteredComments = cardComments.filter(c => {
+
+  const dayOf = (iso: string) => {
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  };
+
+  /** Ümumi (review-a bağlanmamış) şərhi tarixinə görə uyğun review-a yerləşdirir. */
+  const reviewIndexForDate = (day: string): number => {
+    if (!day || reviews.length === 0) return -1;
+    const inRange = reviews.findIndex((r: any) => r.start && r.end && r.start <= day && day <= r.end);
+    if (inRange >= 0) return inRange;
+    let last = -1;
+    reviews.forEach((r: any, i: number) => { if (r.start && r.start <= day) last = i; });
+    return last >= 0 ? last : 0;
+  };
+
+  /** Verilmiş review-a aid şərhlər (yalnız o review-da görünür). */
+  const commentsForReview = (r: any, idx: number) => cardComments.filter(c => {
+    const rid = commentReviewId(c.cardRef);
+    if (rid) { if (String(rid) !== String(r.id)) return false; }
+    else if (reviewIndexForDate(dayOf(c.createdAt)) !== idx) return false;
     if (filterAuthor && c.author !== filterAuthor) return false;
-    if (filterDate) {
-      const d = new Date(c.createdAt);
-      const iso = isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
-      if (iso !== filterDate) return false;
-    }
+    if (filterDate && dayOf(c.createdAt) !== filterDate) return false;
     return true;
   });
+
 
 
   return (
