@@ -2023,7 +2023,7 @@ const useReviewRows = (): ReviewRow[] => {
           };
         });
         rows.push({
-          key: `${lc.cardId}-${aid}`,
+          key: `${lc.cardId}-${active.id}-${aid}`,
           cardId: lc.cardId,
           reviewId: active.id,
           cardName: lc.cardName,
@@ -2048,7 +2048,9 @@ const useReviewRows = (): ReviewRow[] => {
         });
 
       });
+      });
     });
+
 
     return rows;
   }, [lifecycles, sharedCards]);
