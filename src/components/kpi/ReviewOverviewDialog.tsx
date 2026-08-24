@@ -18,6 +18,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import KpiCommentThread from "./KpiCommentThread";
 import type { ReviewStatusValue } from "./ReviewStatusChangeDialog";
 
 export interface ReviewOverviewData {
@@ -53,9 +54,11 @@ interface Props {
   data: ReviewOverviewData;
   onChangeStatus: () => void;
   onOpenTarget?: (index: number) => void;
+  /** Şərhlərin bağlandığı ümumi KPI kartı referansı (məs: `card:12`). */
+  commentRefId?: string | number | null;
 }
 
-const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus, onOpenTarget }: Props) => {
+const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus, onOpenTarget, commentRefId }: Props) => {
   const totals = useMemo(() => {
     const counts = { held: 0, in_progress: 0, deferred: 0, missed: 0 } as Record<ReviewStatusValue, number>;
     data.targets.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
@@ -216,6 +219,17 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
               })}
             </div>
           </div>
+
+          {/* Block 4: Ümumi kart şərhləri — bu KPI kartına yazılan şərhlər */}
+          {commentRefId != null && (
+            <div className="rounded-2xl border border-border bg-card shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <ClipboardList className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">Kart üzrə şərhlər</h3>
+              </div>
+              <KpiCommentThread refId={commentRefId} placeholder="KPI kartı üzrə şərhinizi yazın..." />
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

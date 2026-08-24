@@ -1,13 +1,20 @@
 // Əməkdaşlar üzrə KPI kartı üçün əlavə tabların məzmunu:
 // Hədəflər / Performans dinamikası / Reviewlər.
-import { useMemo } from "react";
-import { Clock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Clock, MessageSquare } from "lucide-react";
 import { withKartSuffix } from "@/lib/utils";
 import KpiAccordionList, { type AccordionKpi } from "@/components/kpi/KpiAccordionList";
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
 import { REVIEW_STATUS_STYLES } from "@/components/kpi/LifecycleView";
 import { computeReviewStatus, getLifecycleWithFallback } from "@/lib/kpiLifecycleStore";
 import { getAssignedTargetValues } from "@/lib/kpiSetStore";
+import {
+  fetchKpiComments,
+  formatCommentDate,
+  getCachedComments,
+  KPI_COMMENTS_EVT,
+  type KpiComment,
+} from "@/lib/kpiCommentsService";
 
 export type EmployeeCardTab = "empTargets" | "empDynamics" | "empReviews";
 
@@ -57,7 +64,24 @@ export default function EmployeeCardTabs({ card, tab }: Props) {
     return lc?.reviews || [];
   }, [card]);
 
+  // KPI kartına (ümumi kart səviyyəsində) yazılmış şərhlər — yalnız oxunur.
+  const cardRef = card ? `card:${card.id}` : null;
+  const [cardComments, setCardComments] = useState<KpiComment[]>(() => getCachedComments(cardRef));
+  useEffect(() => {
+    if (!cardRef) return;
+    setCardComments(getCachedComments(cardRef));
+    void fetchKpiComments(cardRef).then(setCardComments);
+    const onEvt = () => setCardComments(getCachedComments(cardRef));
+    window.addEventListener(KPI_COMMENTS_EVT, onEvt);
+    window.addEventListener("storage", onEvt);
+    return () => {
+      window.removeEventListener(KPI_COMMENTS_EVT, onEvt);
+      window.removeEventListener("storage", onEvt);
+    };
+  }, [cardRef]);
+
   if (!card) return null;
+
 
   if (tab === "empTargets") {
     return <KpiAccordionList items={accordionItems} emptyLabel="Bu əməkdaş üçün hədəf tapılmadı." />;
@@ -115,6 +139,35 @@ export default function EmployeeCardTabs({ card, tab }: Props) {
           })}
         </div>
       )}
+
+      {/* KPI kartına yazılmış şərhlər (KPI izlənməsi → Reviewlər kartından) */}
+      <div className="mt-5 pt-4 border-t border-border">
+        <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-primary" /> Kart üzrə şərhlər
+        </h4>
+        {cardComments.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic text-center py-6 border border-dashed border-border rounded-lg">
+            Bu KPI kartı üzrə şərh yazılmayıb.
+          </p>
+        ) : (
+          <div className="space-y-2.5">
+            {[...cardComments].reverse().map(c => (
+              <div key={c.id} className="flex gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-primary/15 text-primary shrink-0 flex items-center justify-center text-xs font-semibold">
+                  {(c.author || "?").split(" ").map(x => x[0]).join("").slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs">
+                    <span className="font-medium text-foreground">{c.author}</span>
+                    <span className="text-muted-foreground"> · {formatCommentDate(c.createdAt)}</span>
+                  </div>
+                  <div className="mt-1 text-sm text-foreground rounded-lg bg-secondary/50 border border-border px-3 py-2 break-words whitespace-pre-wrap">{c.text}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

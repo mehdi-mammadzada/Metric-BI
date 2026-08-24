@@ -1759,7 +1759,7 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
               const ALL_TABS: [typeof tab, string][] = [
                 ["general", "Ümumi"], ["execution", "İcra"], ["fact", "Fakt"],
                 ["evaluation", "Qiymət."], ["history", "Tarixçə"], ["review", "Review"],
-                ["comments", "Şərhlər"], ["performance", "Performans"], ["attachments", "Əlavələr"],
+                ["performance", "Performans"], ["attachments", "Əlavələr"],
               ];
               const visible = ALL_TABS.filter(([k]) => !tabsFilter || tabsFilter.includes(k));
               return (
@@ -1863,9 +1863,6 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
                 </div>
               </TabsContent>
 
-              <TabsContent value="comments" className="mt-0">
-                <KpiCommentThread refId={`target:${target.id}`} />
-              </TabsContent>
 
 
               <TabsContent value="performance" className="mt-0 space-y-3">
@@ -2210,6 +2207,7 @@ const ReviewsView = () => {
           onOpenChange={(o) => !o && setOverview(null)}
           title={withKartSuffix(overview.row.cardName)}
           data={overview.data}
+          commentRefId={`card:${overview.row.cardId}`}
           onChangeStatus={() => setStatusDialog({ row: overview.row })}
           onOpenTarget={(idx) => {
             const t = overview.row.targets[idx];
@@ -2218,7 +2216,7 @@ const ReviewsView = () => {
         />
       )}
 
-      <TargetDetailDrawer data={targetDetail} onClose={() => setTargetDetail(null)} tabsFilter={["review", "comments", "performance"]} />
+      <TargetDetailDrawer data={targetDetail} onClose={() => setTargetDetail(null)} tabsFilter={["review", "performance"]} />
 
       <ReviewStatusChangeDialog
         open={!!statusDialog}
