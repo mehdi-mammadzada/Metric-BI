@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
 import ExportMenu from "@/components/common/ExportMenu";
-import { Wallet, Plus, Trash2, ChevronDown, ChevronUp, X, FileSpreadsheet, Filter as FilterIcon, Columns, Download, Search, Eye, User as UserIcon, Calendar, FileText, ArrowLeft } from "lucide-react";
+import { Wallet, Plus, Trash2, ChevronDown, ChevronUp, X, FileSpreadsheet, Filter as FilterIcon, Columns, Download, Search, Eye, User as UserIcon, Calendar, FileText, ArrowLeft, Pencil } from "lucide-react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -59,6 +59,9 @@ const SalaryPage = () => {
 
   const [showAdd, setShowAdd] = useState(false);
   const [operatorView, setOperatorView] = useState<AggRow | null>(null);
+  const [editRow, setEditRow] = useState<AggRow | null>(null);
+  const [editSalary, setEditSalary] = useState<string>("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Import flow
   const [importStep, setImportStep] = useState<"closed" | "ask-template" | "pick-period">("closed");
@@ -161,6 +164,44 @@ const SalaryPage = () => {
     return out;
   }, [records, employees, appliedYear, appliedMonth]);
 
+
+  const openEdit = (row: AggRow) => {
+    const p = row.allPeriods.find(pp => pp.year === appliedYear && pp.month === appliedMonth);
+    setEditRow(row);
+    setEditSalary(String(p?.salary ?? 0));
+  };
+
+  const saveEdit = async () => {
+    if (!editRow || appliedYear == null || appliedMonth == null) return;
+    const value = Number(editSalary);
+    if (!Number.isFinite(value) || value < 0) {
+      toast.error("Düzgün məbləğ daxil edin");
+      return;
+    }
+    const current = editRow.allPeriods.find(p => p.year === appliedYear && p.month === appliedMonth);
+    setSavingEdit(true);
+    try {
+      await addRecord({
+        employeeId: editRow.employee.id,
+        operator: editRow.operatorName || "HR Departamenti",
+        periods: [{
+          id: current?.id ?? Date.now(),
+          month: appliedMonth,
+          year: appliedYear,
+          salary: value,
+          totalDays: current?.totalDays ?? 22,
+          workedDays: current?.workedDays ?? current?.totalDays ?? 22,
+        }],
+      });
+      setRecords(getRecords());
+      toast.success(`${appliedMonth} ${appliedYear} əməkhaqqısı yeniləndi`);
+      setEditRow(null);
+    } catch {
+      toast.error("Yadda saxlanıla bilmədi");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const advCols = useMemo<DataTableColumn<AggRow>[]>(() => COLUMNS.map(c => ({
     key: c.key,
@@ -592,18 +633,21 @@ const SalaryPage = () => {
                       />
                     </th>
                   ))}
+                  <th className="px-3 py-3 font-medium align-top select-none" style={{ width: "90px", minWidth: "90px" }}>
+                    Əməliyyat
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {appliedYear == null || appliedMonth == null ? (
                   <tr>
-                    <td colSpan={visibleColumns.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={visibleColumns.length + 1} className="px-4 py-12 text-center text-muted-foreground">
                       Cədvəli görmək üçün il və ay seçin
                     </td>
                   </tr>
                 ) : pagedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={visibleColumns.length} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={visibleColumns.length + 1} className="px-4 py-12 text-center text-muted-foreground">
                       Bu dövr üçün məlumat tapılmadı
                     </td>
                   </tr>
@@ -627,6 +671,15 @@ const SalaryPage = () => {
                           : getCellDisplay(row, c.key)}
                       </td>
                     ))}
+                    <td className="px-3 py-2" style={{ width: "90px", minWidth: "90px" }}>
+                      <button
+                        onClick={() => openEdit(row)}
+                        className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+                        title={`${appliedMonth} əməkhaqqısını redaktə et`}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -842,6 +895,42 @@ const SalaryPage = () => {
         row={operatorView}
         onClose={() => setOperatorView(null)}
       />
+
+      <Dialog open={!!editRow} onOpenChange={(o) => { if (!o) setEditRow(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Əməkhaqqını redaktə et</DialogTitle>
+          </DialogHeader>
+          {editRow && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2 text-sm">
+                <div className="font-medium">
+                  {editRow.employee.firstName} {editRow.employee.lastName}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Dövr: {appliedMonth} {appliedYear}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm text-muted-foreground">Əməkhaqqı (AZN)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={editSalary}
+                  onChange={(e) => setEditSalary(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRow(null)}>Ləğv et</Button>
+            <Button onClick={saveEdit} disabled={savingEdit}>
+              {savingEdit ? "Yadda saxlanılır..." : "Yadda saxla"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
