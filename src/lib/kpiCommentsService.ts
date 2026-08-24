@@ -46,14 +46,53 @@ const mapRow = (r: any): KpiComment => ({
   text: r.text || "",
 });
 
+/**
+ * Bir KPI kartına aid mümkün bütün ref variantlarını qaytarır.
+ * Kart bəzi modullarda uuid, bəzilərində köhnə nömrəli id ilə göstərilir —
+ * şərhlərin heç bir cihazda "yox olmaması" üçün hər iki variantla oxuyuruq.
+ */
+const variantCache = new Map<string, string[]>();
+
+const resolveRefVariants = async (ref: string): Promise<string[]> => {
+  if (variantCache.has(ref)) return variantCache.get(ref)!;
+  const variants = new Set<string>([ref]);
+  const m = /^card:(.+)$/.exec(ref);
+  const raw = m?.[1]?.trim();
+  if (raw) {
+    variants.add(raw);
+    try {
+      const isUuid = /^[0-9a-f-]{32,}$/i.test(raw);
+      const numeric = Number(raw);
+      const q = supabase.from("kpi_cards").select("id, legacy_numeric_id");
+      const { data } = isUuid
+        ? await q.eq("id", raw).maybeSingle()
+        : Number.isFinite(numeric)
+          ? await q.eq("legacy_numeric_id", numeric).maybeSingle()
+          : { data: null as any };
+      if (data) {
+        if (data.id) { variants.add(`card:${data.id}`); variants.add(String(data.id)); }
+        if (data.legacy_numeric_id != null) {
+          const n = String(Number(data.legacy_numeric_id));
+          variants.add(`card:${n}`);
+          variants.add(n);
+        }
+      }
+    } catch {}
+  }
+  const list = Array.from(variants);
+  variantCache.set(ref, list);
+  return list;
+};
+
 /** Bazadan şərhləri gətirir (ən yenilər əvvəldə) və lokal keşi yeniləyir. */
 export const fetchKpiComments = async (cardRef?: string | number | null): Promise<KpiComment[]> => {
   if (cardRef == null) return [];
   const ref = String(cardRef);
+  const refs = await resolveRefVariants(ref);
   const { data, error } = await supabase
     .from("kpi_card_comments")
     .select("id, card_ref, author_name, text, created_at")
-    .eq("card_ref", ref)
+    .in("card_ref", refs)
     .order("created_at", { ascending: false });
   if (error) return getCachedComments(ref);
   const rows = (data ?? []).map(mapRow);
@@ -84,6 +123,7 @@ export const addKpiComment = async (
   const rows = await fetchKpiComments(ref);
   return { ok: true, rows };
 };
+
 
 /** Şərhi silir (yalnız müəllif). */
 export const deleteKpiComment = async (cardRef: string | number, id: string): Promise<KpiComment[]> => {
