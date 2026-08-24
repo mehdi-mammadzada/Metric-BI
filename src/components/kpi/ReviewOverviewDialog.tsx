@@ -98,8 +98,9 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
             {/* Sol */}
             <div className="space-y-4">
               <MetaItem icon={<CalendarIcon className="w-4 h-4" />} label="Review növü" value={data.reviewType} />
-              <MetaItem icon={<CalendarIcon className="w-4 h-4" />} label="Plan tarixi" value={data.planDate} />
-              <MetaItem icon={<CalendarClock className="w-4 h-4" />} label="Növbəti review" value={data.nextReviewDate} />
+              <MetaItem icon={<CalendarIcon className="w-4 h-4" />} label="Başlama tarixi" value={data.startDate} />
+              <MetaItem icon={<CalendarClock className="w-4 h-4" />} label="Bitmə tarixi" value={data.endDate} />
+
             </div>
             {/* Orta */}
             <div className="lg:col-span-2">
