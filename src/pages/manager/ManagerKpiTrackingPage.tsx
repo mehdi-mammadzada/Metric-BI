@@ -1956,7 +1956,27 @@ const useReviewRows = (): ReviewRow[] => {
   const lifecycles = useKpiLifecycles();
   const sharedCards = useVisibleSharedKpiCards();
   const { user } = useAuth();
-  const aliases = useMemo(() => getIdentityAliases(user), [user]);
+  // İstifadəçinin alias-ları: identity helper + real Təşkilat əməkdaş qeydi (id / e-id / ad / email).
+  const aliases = useMemo(() => {
+    const set = new Set(getIdentityAliases(user));
+    const email = normalizeAlias(user?.email);
+    const name = normalizeAlias(user?.name);
+    const me = getEmployees().find((e: any) => {
+      const full = normalizeAlias(`${e.firstName} ${e.lastName}`);
+      return (email && normalizeAlias(e.email) === email)
+        || (name && full === name)
+        || (user?.supabaseUserId && normalizeAlias((e as any).authUserId) === normalizeAlias(user.supabaseUserId));
+    });
+    if (me) {
+      [me.email, `${me.firstName} ${me.lastName}`, String(me.id), `e${me.id}`].forEach(v => {
+        const n = normalizeAlias(v);
+        if (n) set.add(n);
+      });
+    }
+    if (email) set.add(email);
+    if (name) set.add(name);
+    return set;
+  }, [user]);
   const allRows = useMemo(() => {
     const today = iso(new Date());
     const employees = getEmployees();
