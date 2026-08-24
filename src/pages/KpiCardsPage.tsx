@@ -826,6 +826,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   const [hrCascadeDistribute, setHrCascadeDistribute] = useState<typeof hrCascade>(null);
   const [employeeDrilldown, setEmployeeDrilldown] = useState<string | null>(null);
   const [employeeCardView, setEmployeeCardView] = useState<{ card: any; employee: string } | null>(null);
+  // Əməkdaş baxışında kart səviyyəli dublikat tablar gizlədilir — seçim qalıbsa Ümumi-yə qaytar.
+  useEffect(() => {
+    if (employeeCardView && (detailTab === "reviewTrack" || detailTab === "history")) setDetailTab("general");
+  }, [employeeCardView, detailTab]);
   useEffect(() => {
     let timer: number | null = null;
     const refresh = () => import("@/lib/kpiCardStatusStore").then(m => m.fetchAllStatuses().then(setStatusMap));
@@ -2302,7 +2306,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                   const isPersonalCard = getAssignKindFor(selectedKpi.id) === "Fərdi";
                   const tabs = allTabs
                     .filter(([k]) => k !== "status" || hasMatrix)
-                    .filter(([k]) => !isPersonalCard || (k !== "reviewTrack" && k !== "history"));
+                    // Əməkdaş baxışında dublikat olmasın: kart səviyyəli review/dinamika tabları gizlədilir.
+                    .filter(([k]) => (!isPersonalCard && !employeeCardView) || (k !== "reviewTrack" && k !== "history"));
                   return tabs.map(([key, label]) => (
                     <button key={key} onClick={() => setDetailTab(key as any)} className={`px-3 py-2 text-sm font-medium whitespace-nowrap ${detailTab === key ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}>{label}</button>
                   ));
@@ -2332,7 +2337,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 );
               })()}
 
-              {detailTab === "reviewTrack" && (() => {
+              {detailTab === "reviewTrack" && !employeeCardView && (() => {
                 const lc = getLifecycleWithFallback(selectedKpi.id, withKartSuffix(selectedKpi.name), {
                   startDate: selectedKpi.startDate, endDate: selectedKpi.endDate, frequency: selectedKpi.frequency,
                 });
@@ -2673,7 +2678,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               )}
 
 
-              {detailTab === "history" && <PerformanceDynamicsDrilldownTab kpi={selectedKpi} />}
+              {detailTab === "history" && !employeeCardView && <PerformanceDynamicsDrilldownTab kpi={selectedKpi} />}
 
               {detailTab === "team" && (() => {
                 const initials = (n: string) => n.split(" ").filter(Boolean).slice(0, 2).map(s => s[0]?.toUpperCase() || "").join("");
