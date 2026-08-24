@@ -53,9 +53,11 @@ interface Props {
   data: ReviewOverviewData;
   onChangeStatus: () => void;
   onOpenTarget?: (index: number) => void;
+  /** Şərhlərin bağlandığı ümumi KPI kartı referansı (məs: `card:12`). */
+  commentRefId?: string | number | null;
 }
 
-const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus, onOpenTarget }: Props) => {
+const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus, onOpenTarget, commentRefId }: Props) => {
   const totals = useMemo(() => {
     const counts = { held: 0, in_progress: 0, deferred: 0, missed: 0 } as Record<ReviewStatusValue, number>;
     data.targets.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
