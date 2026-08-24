@@ -23,7 +23,9 @@ import type { ReviewStatusValue } from "./ReviewStatusChangeDialog";
 
 export interface ReviewOverviewData {
   reviewType: string;        // Aylıq, Həftəlik...
+  /** Review başlama tarixi */
   planDate: string;
+  /** Review bitmə tarixi */
   nextReviewDate: string;
   updatedAt: string;
   status: ReviewStatusValue;
@@ -97,8 +99,8 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
             {/* Sol */}
             <div className="space-y-4">
               <MetaItem icon={<CalendarIcon className="w-4 h-4" />} label="Review növü" value={data.reviewType} />
-              <MetaItem icon={<CalendarIcon className="w-4 h-4" />} label="Plan tarixi" value={data.planDate} />
-              <MetaItem icon={<CalendarClock className="w-4 h-4" />} label="Növbəti review" value={data.nextReviewDate} />
+              <MetaItem icon={<CalendarIcon className="w-4 h-4" />} label="Başlama tarixi" value={data.planDate} />
+              <MetaItem icon={<CalendarClock className="w-4 h-4" />} label="Bitmə tarixi" value={data.nextReviewDate} />
             </div>
             {/* Orta */}
             <div className="lg:col-span-2">
@@ -138,16 +140,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Block 2: KPI Summary strip */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <SummaryCard tone="indigo" label="Ortalama Progress" value={`${totals.avg}%`} icon={<TrendingUp className="w-4 h-4" />} />
-            <SummaryCard tone="emerald" label="Tamamlanan KPI" value={`${totals.held} / ${totals.total}`} sub={`${pct(totals.held)}%`} icon={<Check className="w-4 h-4" />} />
-            <SummaryCard tone="amber" label="İcrada olan KPI" value={`${totals.in_progress} / ${totals.total}`} sub={`${pct(totals.in_progress)}%`} icon={<Clock className="w-4 h-4" />} />
-            <SummaryCard tone="violet" label="Təxirə salınan KPI" value={`${totals.deferred} / ${totals.total}`} sub={`${pct(totals.deferred)}%`} icon={<CalendarClock className="w-4 h-4" />} />
-            <SummaryCard tone="rose" label="Keçirilmədi olan KPI" value={`${totals.missed} / ${totals.total}`} sub={`${pct(totals.missed)}%`} icon={<XCircle className="w-4 h-4" />} />
-            <SummaryCard tone="sky" label="Növbəti Review" value={data.nextReviewDate} icon={<CalendarIcon className="w-4 h-4" />} />
           </div>
 
           {/* Block 3: Targets table */}
