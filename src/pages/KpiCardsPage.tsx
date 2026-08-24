@@ -2300,7 +2300,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 {(() => {
                   const hasMatrix = !!selectedKpi.matrixId;
                   const empTabs: readonly (readonly [string, string])[] = employeeCardView
-                    ? [["empDynamics", "Performans dinamikası"], ["empReviews", "Reviewlər"]]
+                    ? [["empDynamics", "Performans dinamikası"], ["empReviews", "Review İzləmə"]]
                     : [];
                   const allTabs: readonly (readonly [string, string])[] = [["general", "Ümumi"], ["bsc", "Balanced Scorecard"], ["lifecycle", "Lifecycle"], ["reviewTrack", "Review İzləmə"], ["history", "Performans Dinamikası"], ["team", "KPI Üzvləri"], ["comments", "Şərhlər"], ...empTabs, ["status", "Təsdiqləmə Matrisi"], ["setStatus", "Təyin Statusu"]];
                   const isPersonalCard = getAssignKindFor(selectedKpi.id) === "Fərdi";
@@ -2337,175 +2337,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 );
               })()}
 
-              {detailTab === "reviewTrack" && !employeeCardView && (() => {
-                const lc = getLifecycleWithFallback(selectedKpi.id, withKartSuffix(selectedKpi.name), {
-                  startDate: selectedKpi.startDate, endDate: selectedKpi.endDate, frequency: selectedKpi.frequency,
-                });
-                const reviews = lc?.reviews || [];
-                const today = new Date(); today.setHours(0, 0, 0, 0);
-                return (
-                  <div className="bg-card rounded-lg border border-border p-4">
-                    <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-primary" /> Review Tarixçəsi
-                    </h4>
-                    {reviews.length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic text-center py-8">
-                        Bu KPI üçün hələ review təyin olunmayıb.
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {reviews.map((r, i) => {
-                          const computed = computeReviewStatus(r);
-                          const styleDef = REVIEW_STATUS_STYLES[computed];
-                          const BadgeIcon = styleDef.badgeIcon;
-                          const status = (computed === "held" || computed === "missed" || computed === "deferred")
-                            ? "completed" : computed === "in_progress" ? "in_progress" : "pending";
-                          const reviewer = (selectedKpi.team && selectedKpi.team[0]?.name) || selectedKpi.responsible || "—";
-                          return (
-                            <div key={r.id} className={`flex items-start gap-3 p-3 rounded-lg border ${styleDef.card}`}>
-                              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
-                                #{i + 1}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2 flex-wrap">
-                                  <p className="text-sm font-semibold text-foreground">Review #{i + 1} · {r.period}</p>
-                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${styleDef.badge}`}>
-                                    <BadgeIcon className="w-3 h-3" />{styleDef.badgeLabel}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-4 gap-y-0.5">
-                                  <span>Başlama: {r.start || "—"}</span>
-                                  <span>Bitmə: {r.end || "—"}</span>
-                                  <span>Məsul: {reviewer}</span>
-                                </div>
-                                {r.outcomeComment && (
-                                  <div className={`mt-2 p-2 rounded-md border ${computed === "deferred" ? "border-violet-200 bg-violet-50 dark:bg-violet-950/40 dark:border-violet-900" : "border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-900"}`}>
-                                    <p className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground">
-                                      {computed === "deferred" ? "Təxirə salınma səbəbi" : "Review nəticəsi"}
-                                    </p>
-                                    <p className="text-xs text-foreground mt-0.5">{r.outcomeComment}</p>
-                                  </div>
-                                )}
+              {detailTab === "reviewTrack" && !employeeCardView && (
+                <EmployeeCardTabs card={selectedKpi} tab="empReviews" />
+              )}
 
-                                {(() => {
-                                  // Review-a aid şərhlər — kart-səviyyəli şərh store-undan default-la seed
-                                  const key = `kpi_review_comments_v1::${selectedKpi.id}::${r.id}`;
-                                  let comments: { author: string; date: string; text: string }[] = [];
-                                  try {
-                                    const raw = localStorage.getItem(key);
-                                    if (raw) comments = JSON.parse(raw);
-                                  } catch {}
-                                  if (comments.length === 0) {
-                                    comments = status === "completed"
-                                      ? [
-                                          { author: reviewer, date: r.end || "", text: `Review #${i + 1} tamamlandı. Hədəflərin icrası ${selectedKpi.progress ?? 0}% səviyyəsindədir. Növbəti dövr üçün fokus saxlanılır.` },
-                                          { author: "HR", date: r.end || "", text: "Review qeydləri sistemə daxil edildi." },
-                                          { author: "Rəhbər", date: r.end || "", text: "Nəticələr planla uyğundur, davam etmək tövsiyə olunur." },
-                                          { author: reviewer, date: r.end || "", text: "Növbəti dövr üçün fokus sahələri müəyyənləşdirildi və komanda ilə paylaşıldı." },
-                                          { author: "Əməkdaş", date: r.end || "", text: "Verilən rəy nəzərə alındı, tədbir planı hazırlanır." },
-                                        ]
-                                      : status === "in_progress"
-                                      ? [
-                                          { author: reviewer, date: r.start || "", text: `Review #${i + 1} davam edir — cari icra dinamikası müsbətdir.` },
-                                          { author: "HR", date: r.start || "", text: "Ara qeydlər sistemə daxil edildi, review davam etdirilir." },
-                                        ]
-                                      : [
-                                          { author: "Sistem", date: r.start || "", text: `Review #${i + 1} planlaşdırılıb — başlama tarixindən sonra qeydlər əlavə oluna bilər.` },
-                                        ];
-                                  }
-                                  const filter = reviewCommentFilters[r.id] || { author: "", date: "" };
-                                  const availableAuthors = Array.from(new Set(comments.map(c => c.author).filter(Boolean)));
-                                  const filteredComments = comments.filter(c => {
-                                    if (filter.author && c.author !== filter.author) return false;
-                                    if (filter.date && !(c.date || "").includes(filter.date)) return false;
-                                    return true;
-                                  });
-                                  const isExpanded = expandedReviews.has(r.id);
-                                  const showAll = isExpanded || filteredComments.length <= 3;
-                                  const visible = showAll ? filteredComments : filteredComments.slice(0, 3);
-                                  const hiddenCount = filteredComments.length - 3;
-                                  const toggle = () => setExpandedReviews(prev => {
-                                    const next = new Set(prev);
-                                    if (next.has(r.id)) next.delete(r.id); else next.add(r.id);
-                                    return next;
-                                  });
-                                  const setFilter = (patch: Partial<{ author: string; date: string }>) =>
-                                    setReviewCommentFilters(prev => ({ ...prev, [r.id]: { ...filter, ...patch } }));
-                                  return (
-                                    <div className="mt-3 pt-3 border-t border-border/60">
-                                      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-                                        <p className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Review şərhləri</p>
-                                        <div className="flex items-center gap-1.5">
-                                          <select
-                                            value={filter.author}
-                                            onChange={(e) => setFilter({ author: e.target.value })}
-                                            className="text-[11px] px-2 py-1 rounded border border-border bg-background text-foreground"
-                                          >
-                                            <option value="">Bütün müəlliflər</option>
-                                            {availableAuthors.map(a => <option key={a} value={a}>{a}</option>)}
-                                          </select>
-                                          <input
-                                            type="date"
-                                            value={filter.date}
-                                            onChange={(e) => setFilter({ date: e.target.value })}
-                                            className="text-[11px] px-2 py-1 rounded border border-border bg-background text-foreground"
-                                          />
-                                          {(filter.author || filter.date) && (
-                                            <button
-                                              type="button"
-                                              onClick={() => setFilter({ author: "", date: "" })}
-                                              className="text-[11px] px-2 py-1 rounded border border-border bg-background text-muted-foreground hover:text-foreground"
-                                            >
-                                              Sıfırla
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div className="rounded-lg border border-border/60 bg-background/40 overflow-hidden">
-                                        <div className="p-2 space-y-2 transition-all duration-[250ms] ease-out">
-                                          {visible.length === 0 && (
-                                            <div className="text-center text-[11px] text-muted-foreground py-4">
-                                              Filtrə uyğun şərh tapılmadı.
-                                            </div>
-                                          )}
-                                          {visible.map((c, ci) => (
-                                            <div key={ci} className="flex items-start gap-2 p-2 rounded-md bg-background/80 border border-border/50">
-                                              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-semibold shrink-0">
-                                                {(c.author || "?")[0]}
-                                              </div>
-                                              <div className="flex-1 min-w-0">
-                                                <div className="flex items-center justify-between gap-2">
-                                                  <p className="text-[11px] font-semibold text-foreground">{c.author}</p>
-                                                  {c.date && <p className="text-[10px] text-muted-foreground">{c.date}</p>}
-                                                </div>
-                                                <p className="text-xs text-foreground/90 mt-0.5">{c.text}</p>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                        {filteredComments.length > 3 && (
-                                          <button
-                                            type="button"
-                                            onClick={toggle}
-                                            className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 text-[13px] font-medium text-primary bg-[#F8FAFC] hover:bg-[#F1F5F9] dark:bg-secondary/60 dark:hover:bg-secondary transition-colors cursor-pointer"
-                                          >
-                                            {isExpanded ? "Daha az göstər" : `${hiddenCount} daha çox şərh var`}
-                                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
               {isExtraTab(detailTab) && <KpiExtraTabContent kpi={selectedKpi} tab={detailTab} />}
 
               {detailTab === "general" && (
