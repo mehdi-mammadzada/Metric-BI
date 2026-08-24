@@ -18,6 +18,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import KpiCommentThread from "./KpiCommentThread";
 import type { ReviewStatusValue } from "./ReviewStatusChangeDialog";
 
 export interface ReviewOverviewData {
