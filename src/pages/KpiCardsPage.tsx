@@ -553,6 +553,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
           period: d.frequency || "Aylıq",
           start: r.start || "",
           end: r.end || "",
+          name: r.name || `Review #${i + 1}`,
+          reviewerNames: (r.reviewerNames && r.reviewerNames.length ? r.reviewerNames : (r.reviewerName ? [r.reviewerName] : [])),
         })),
       });
       void flushLifecycleToCloud();
