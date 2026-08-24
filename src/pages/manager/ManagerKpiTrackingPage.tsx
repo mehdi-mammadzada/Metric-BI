@@ -2088,11 +2088,14 @@ type ReviewCardGroup = {
 };
 
 const groupReviewRows = (rows: ReviewRow[], mode: "individual" | "bulk"): ReviewCardGroup[] => {
-  const map = new Map<number, ReviewCardGroup>();
+  // Hər KPI kartının hər review-u ayrı sətir kimi qruplaşdırılır.
+  const map = new Map<string, ReviewCardGroup>();
   rows.filter(r => r.assignmentMode === mode).forEach(r => {
-    let g = map.get(r.cardId);
+    const gk = `${r.cardId}:${r.reviewId}`;
+    let g = map.get(gk);
     if (!g) {
       g = {
+        groupKey: gk,
         cardId: r.cardId,
         cardName: r.cardName,
         reviewId: r.reviewId,
@@ -2105,10 +2108,11 @@ const groupReviewRows = (rows: ReviewRow[], mode: "individual" | "bulk"): Review
         employees: [],
         overallProgress: 0,
       };
-      map.set(r.cardId, g);
+      map.set(gk, g);
     }
     g.employees.push(r);
   });
+
   const list = Array.from(map.values());
   list.forEach(g => {
     g.overallProgress = g.employees.length
