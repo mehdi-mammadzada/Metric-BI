@@ -2300,7 +2300,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 {(() => {
                   const hasMatrix = !!selectedKpi.matrixId;
                   const empTabs: readonly (readonly [string, string])[] = employeeCardView
-                    ? [["empDynamics", "Performans dinamikası"], ["empReviews", "Reviewlər"]]
+                    ? [["empDynamics", "Performans dinamikası"], ["empReviews", "Review İzləmə"]]
                     : [];
                   const allTabs: readonly (readonly [string, string])[] = [["general", "Ümumi"], ["bsc", "Balanced Scorecard"], ["lifecycle", "Lifecycle"], ["reviewTrack", "Review İzləmə"], ["history", "Performans Dinamikası"], ["team", "KPI Üzvləri"], ["comments", "Şərhlər"], ...empTabs, ["status", "Təsdiqləmə Matrisi"], ["setStatus", "Təyin Statusu"]];
                   const isPersonalCard = getAssignKindFor(selectedKpi.id) === "Fərdi";
