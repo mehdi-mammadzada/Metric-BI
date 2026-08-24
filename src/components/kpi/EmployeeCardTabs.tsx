@@ -26,9 +26,16 @@ const toNum = (v: unknown): number => {
 interface Props {
   card: any;
   tab: EmployeeCardTab;
+  /** Əməkdaş adı — verildikdə şərhlər yalnız bu əməkdaşa aid oxunur. */
+  employeeName?: string | null;
 }
 
-export default function EmployeeCardTabs({ card, tab }: Props) {
+/** Əməkdaş səviyyəli şərh referansı — reviewlar və kart görünüşü eyni açardan istifadə edir. */
+export const employeeCommentRef = (cardId: string | number, employeeKey: string | number) =>
+  `card:${cardId}:emp:${String(employeeKey).trim().toLowerCase().replace(/\s+/g, " ")}`;
+
+export default function EmployeeCardTabs({ card, tab, employeeName }: Props) {
+
   const accordionItems: AccordionKpi[] = useMemo(() => {
     if (!card) return [];
     // Hədəf dəyərləri vahid mənbədən: rəhbərin təyin etdiyi aktual dəyər üstündür.
@@ -64,8 +71,9 @@ export default function EmployeeCardTabs({ card, tab }: Props) {
     return lc?.reviews || [];
   }, [card]);
 
-  // KPI kartına (ümumi kart səviyyəsində) yazılmış şərhlər — yalnız oxunur.
-  const cardRef = card ? `card:${card.id}` : null;
+  // KPI kartına yazılmış şərhlər — əməkdaş görünüşündə yalnız həmin əməkdaşın şərhləri.
+  const cardRef = card ? (employeeName ? employeeCommentRef(card.id, employeeName) : `card:${card.id}`) : null;
+
   const [cardComments, setCardComments] = useState<KpiComment[]>(() => getCachedComments(cardRef));
   const [filterAuthor, setFilterAuthor] = useState("");
   const [filterDate, setFilterDate] = useState("");
