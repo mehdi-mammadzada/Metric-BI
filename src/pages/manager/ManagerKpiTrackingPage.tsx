@@ -1,6 +1,6 @@
 // Rəhbər · KPI İzlənməsi — 3 kart: Mənim KPI-larım / Komanda KPI-ları / Tabeçilikdəkilərin KPI-ları.
 import { withKartSuffix } from "@/lib/utils";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
 import { Badge } from "@/components/ui/badge";
@@ -1966,19 +1966,18 @@ const useReviewRows = (): ReviewRow[] => {
 
     lifecycles.forEach((lc: CardLifecycle) => {
       if (!lc.reviews || lc.reviews.length === 0) return;
-      const active = lc.reviews.find(isActive)
-        ?? [...lc.reviews].sort((a, b) => (a.start || "").localeCompare(b.start || ""))[0];
-      if (!active) return;
-      const reviewStatus = computeReviewStatus(active);
-
       const sharedCard: SharedKpiCard | undefined = sharedCards.find(c => c.numericId === lc.cardId);
       const assigneeIds = sharedCard?.assigneeIds ?? [];
-
       // Review yalnız real təyin olunmuş əməkdaşlar üçün göstərilir — dublikat/demo sətir yaradılmır.
       if (assigneeIds.length === 0) return;
 
-      const activeIndex = [...lc.reviews].sort((a, b) => (a.start || "").localeCompare(b.start || "")).findIndex(r => r.id === active.id);
-      const reviewName = (active as any).name || `Review #${activeIndex >= 0 ? activeIndex + 1 : 1}`;
+      const sorted = [...lc.reviews].sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+
+      // Bütün reviewlər ayrı-ayrılıqda sətir kimi düşür.
+      sorted.forEach((active, activeIndex) => {
+      const reviewStatus = computeReviewStatus(active);
+      const reviewName = (active as any).name || `Review #${activeIndex + 1}`;
+
 
       // Review-u keçirən şəxslər: kart yaradılarkən seçilmiş adlar, yoxdursa iştirakçılar/qiymətləndiricilər.
       const reviewerIds = (active.participantIds && active.participantIds.length
@@ -2024,7 +2023,7 @@ const useReviewRows = (): ReviewRow[] => {
           };
         });
         rows.push({
-          key: `${lc.cardId}-${aid}`,
+          key: `${lc.cardId}-${active.id}-${aid}`,
           cardId: lc.cardId,
           reviewId: active.id,
           cardName: lc.cardName,
@@ -2049,7 +2048,9 @@ const useReviewRows = (): ReviewRow[] => {
         });
 
       });
+      });
     });
+
 
     return rows;
   }, [lifecycles, sharedCards]);
@@ -2073,6 +2074,7 @@ type ReviewColKey = "cardName" | "reviewName" | "count" | "progress" | "status" 
 
 /** Bir KPI kartı üzrə qruplaşdırılmış review sətri. */
 type ReviewCardGroup = {
+  groupKey: string;
   cardId: number;
   cardName: string;
   reviewId: string;
@@ -2087,11 +2089,14 @@ type ReviewCardGroup = {
 };
 
 const groupReviewRows = (rows: ReviewRow[], mode: "individual" | "bulk"): ReviewCardGroup[] => {
-  const map = new Map<number, ReviewCardGroup>();
+  // Hər KPI kartının hər review-u ayrı sətir kimi qruplaşdırılır.
+  const map = new Map<string, ReviewCardGroup>();
   rows.filter(r => r.assignmentMode === mode).forEach(r => {
-    let g = map.get(r.cardId);
+    const gk = `${r.cardId}:${r.reviewId}`;
+    let g = map.get(gk);
     if (!g) {
       g = {
+        groupKey: gk,
         cardId: r.cardId,
         cardName: r.cardName,
         reviewId: r.reviewId,
@@ -2104,10 +2109,11 @@ const groupReviewRows = (rows: ReviewRow[], mode: "individual" | "bulk"): Review
         employees: [],
         overallProgress: 0,
       };
-      map.set(r.cardId, g);
+      map.set(gk, g);
     }
     g.employees.push(r);
   });
+
   const list = Array.from(map.values());
   list.forEach(g => {
     g.overallProgress = g.employees.length
@@ -2126,7 +2132,7 @@ const ReviewsView = () => {
     cardName: "", reviewName: "", count: "", progress: "", status: "", start: "", end: "", updated: "",
   });
   const setCol = (k: ReviewColKey) => (v: string) => setColF(p => ({ ...p, [k]: v }));
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [overview, setOverview] = useState<{ row: ReviewRow | null; group: ReviewCardGroup; data: ReviewOverviewData; commentRef: string } | null>(null);
   const [statusDialog, setStatusDialog] = useState<{ cardId: number; cardName: string; reviewId: string; status: ReviewComputedStatus } | null>(null);
   const [reasonDialog, setReasonDialog] = useState<{ title: string; label: string; text: string } | null>(null);
@@ -2293,15 +2299,15 @@ const ReviewsView = () => {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredIndividual.length === 0 ? emptyRow(7, "Fərdi review mərhələsində olan KPI kartı yoxdur.") : filteredIndividual.map(g => (
-                    <>
+                    <React.Fragment key={g.groupKey}>
                       <tr
-                        key={g.cardId}
-                        onClick={() => setExpanded(expanded === g.cardId ? null : g.cardId)}
+                        key={g.groupKey}
+                        onClick={() => setExpanded(expanded === g.groupKey ? null : g.groupKey)}
                         className="hover:bg-secondary/30 cursor-pointer"
                       >
                         <td className="px-4 py-3 font-medium text-foreground">
                           <span className="inline-flex items-center gap-2">
-                            {expanded === g.cardId ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                            {expanded === g.groupKey ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                             {withKartSuffix(g.cardName)}
                           </span>
                         </td>
@@ -2312,8 +2318,8 @@ const ReviewsView = () => {
                         <td className="px-4 py-3 text-muted-foreground">{g.reviewEnd}</td>
                         <td className="px-4 py-3 text-muted-foreground">{g.updatedAt}</td>
                       </tr>
-                      {expanded === g.cardId && (
-                        <tr key={`${g.cardId}-drill`} className="bg-secondary/20">
+                      {expanded === g.groupKey && (
+                        <tr key={`${g.groupKey}-drill`} className="bg-secondary/20">
                           <td colSpan={7} className="px-4 py-3">
                             <div className="rounded-lg border border-border bg-card overflow-hidden">
                               <table className="w-full text-sm">
@@ -2356,7 +2362,7 @@ const ReviewsView = () => {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
@@ -2383,7 +2389,7 @@ const ReviewsView = () => {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredBulk.length === 0 ? emptyRow(8, "Toplu review mərhələsində olan KPI kartı yoxdur.") : filteredBulk.map(g => (
-                    <tr key={g.cardId} className="hover:bg-secondary/30">
+                    <tr key={g.groupKey} className="hover:bg-secondary/30">
                       <td className="px-4 py-3 font-medium text-foreground">
                         <span className="inline-flex items-center gap-2">
                           {withKartSuffix(g.cardName)}
