@@ -23,9 +23,10 @@ import type { ReviewStatusValue } from "./ReviewStatusChangeDialog";
 
 export interface ReviewOverviewData {
   reviewType: string;        // Aylıq, Həftəlik...
-  planDate: string;
-  nextReviewDate: string;
+  startDate: string;
+  endDate: string;
   updatedAt: string;
+
   status: ReviewStatusValue;
   overallProgress: number;   // 0-100
   reviewers: { name: string; position: string; badge: string; avatarSeed?: string }[];
