@@ -67,6 +67,8 @@ export default function EmployeeCardTabs({ card, tab }: Props) {
   // KPI kartına (ümumi kart səviyyəsində) yazılmış şərhlər — yalnız oxunur.
   const cardRef = card ? `card:${card.id}` : null;
   const [cardComments, setCardComments] = useState<KpiComment[]>(() => getCachedComments(cardRef));
+  const [filterAuthor, setFilterAuthor] = useState("");
+  const [filterDate, setFilterDate] = useState("");
   useEffect(() => {
     if (!cardRef) return;
     setCardComments(getCachedComments(cardRef));
