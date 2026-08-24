@@ -139,6 +139,35 @@ export default function EmployeeCardTabs({ card, tab }: Props) {
           })}
         </div>
       )}
+
+      {/* KPI kartına yazılmış şərhlər (KPI izlənməsi → Reviewlər kartından) */}
+      <div className="mt-5 pt-4 border-t border-border">
+        <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-primary" /> Kart üzrə şərhlər
+        </h4>
+        {cardComments.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic text-center py-6 border border-dashed border-border rounded-lg">
+            Bu KPI kartı üzrə şərh yazılmayıb.
+          </p>
+        ) : (
+          <div className="space-y-2.5">
+            {[...cardComments].reverse().map(c => (
+              <div key={c.id} className="flex gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-primary/15 text-primary shrink-0 flex items-center justify-center text-xs font-semibold">
+                  {(c.author || "?").split(" ").map(x => x[0]).join("").slice(0, 2).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs">
+                    <span className="font-medium text-foreground">{c.author}</span>
+                    <span className="text-muted-foreground"> · {formatCommentDate(c.createdAt)}</span>
+                  </div>
+                  <div className="mt-1 text-sm text-foreground rounded-lg bg-secondary/50 border border-border px-3 py-2 break-words whitespace-pre-wrap">{c.text}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
