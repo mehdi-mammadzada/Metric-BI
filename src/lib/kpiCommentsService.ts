@@ -38,6 +38,17 @@ export const getCachedComments = (cardRef?: string | number | null): KpiComment[
   return readCache()[String(cardRef)] ?? [];
 };
 
+/** Konkret review-a bağlı şərh referansı: `<base>#rev:<reviewId>`. */
+export const reviewCommentRef = (base: string | number, reviewId: string | number) =>
+  `${String(base)}#rev:${String(reviewId)}`;
+
+/** Şərhin hansı review-a aid olduğunu qaytarır (yoxdursa null — ümumi şərh). */
+export const commentReviewId = (cardRef?: string | null): string | null => {
+  const m = /#rev:(.+)$/.exec(String(cardRef ?? ""));
+  return m ? m[1] : null;
+};
+
+
 const mapRow = (r: any): KpiComment => ({
   id: String(r.id),
   cardRef: String(r.card_ref),
@@ -99,17 +110,20 @@ export const fetchKpiComments = async (cardRef?: string | number | null): Promis
   const base = supabase
     .from("kpi_card_comments")
     .select("id, card_ref, author_name, text, created_at");
+  // Review-a bağlı (`#rev:`) və əməkdaş səviyyəli şərhləri də əhatə edən pattern-lər.
+  const isEmp = /:emp:/.test(ref);
+  const patterns = refs.flatMap(r => (isEmp ? [`${r}#rev:%`] : [`${r}:emp:%`, `${r}#rev:%`]));
   const [exact, scoped] = await Promise.all([
     base.in("card_ref", refs).order("created_at", { ascending: false }),
-    // Yalnız kart səviyyəli baxışda alt (əməkdaş) şərhləri də çəkirik.
-    /:emp:/.test(ref)
+    patterns.length === 0
       ? Promise.resolve({ data: [] as any[], error: null })
       : supabase
           .from("kpi_card_comments")
           .select("id, card_ref, author_name, text, created_at")
-          .or(refs.map(r => `card_ref.like.${r}:emp:%`).join(","))
+          .or(patterns.map(p => `card_ref.like.${p}`).join(","))
           .order("created_at", { ascending: false }),
   ]);
+
   if (exact.error) return getCachedComments(ref);
   const byId = new Map<string, KpiComment>();
   for (const r of [...(exact.data ?? []), ...((scoped as any).data ?? [])]) {
