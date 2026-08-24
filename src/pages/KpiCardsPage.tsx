@@ -2674,7 +2674,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               )}
 
 
-              {detailTab === "history" && <PerformanceDynamicsDrilldownTab kpi={selectedKpi} />}
+              {detailTab === "history" && !employeeCardView && <PerformanceDynamicsDrilldownTab kpi={selectedKpi} />}
 
               {detailTab === "team" && (() => {
                 const initials = (n: string) => n.split(" ").filter(Boolean).slice(0, 2).map(s => s[0]?.toUpperCase() || "").join("");
