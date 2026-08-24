@@ -1,6 +1,5 @@
 // Review Ümumi Baxış — Metric BI dizayn sisteminə uyğun böyük Dialog.
 // KPI izlənməsi → Reviewlar cədvəlində Eye ikonuna klik edildikdə açılır.
-import { useMemo } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,6 @@ import {
   ClipboardList,
   Eye,
   RefreshCw,
-  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import KpiCommentThread from "./KpiCommentThread";
@@ -61,15 +59,6 @@ interface Props {
 }
 
 const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus, onOpenTarget, commentRefId }: Props) => {
-  const totals = useMemo(() => {
-    const counts = { held: 0, in_progress: 0, deferred: 0, missed: 0 } as Record<ReviewStatusValue, number>;
-    data.targets.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
-    const total = data.targets.length;
-    const avg = total ? Math.round(data.targets.reduce((s, t) => s + t.progress, 0) / total) : 0;
-    return { ...counts, total, avg };
-  }, [data]);
-
-  const pct = (n: number) => (totals.total ? Math.round((n / totals.total) * 100) : 0);
   const cur = STATUS_META[data.status];
   const CurIcon = cur.icon;
   // Circle progress
@@ -237,30 +226,5 @@ const MetaItem = ({ icon, label, value }: { icon: React.ReactNode; label: string
     </div>
   </div>
 );
-
-const TONE_MAP: Record<string, { bg: string; text: string; iconBg: string; iconText: string }> = {
-  indigo:  { bg: "bg-indigo-50/70 dark:bg-indigo-500/10",   text: "text-indigo-700 dark:text-indigo-300",   iconBg: "bg-indigo-500/15",  iconText: "text-indigo-600" },
-  emerald: { bg: "bg-emerald-50/70 dark:bg-emerald-500/10", text: "text-emerald-700 dark:text-emerald-300", iconBg: "bg-emerald-500/15", iconText: "text-emerald-600" },
-  amber:   { bg: "bg-amber-50/70 dark:bg-amber-500/10",     text: "text-amber-700 dark:text-amber-300",     iconBg: "bg-amber-500/15",   iconText: "text-amber-600" },
-  violet:  { bg: "bg-violet-50/70 dark:bg-violet-500/10",   text: "text-violet-700 dark:text-violet-300",   iconBg: "bg-violet-500/15",  iconText: "text-violet-600" },
-  rose:    { bg: "bg-rose-50/70 dark:bg-rose-500/10",       text: "text-rose-700 dark:text-rose-300",       iconBg: "bg-rose-500/15",    iconText: "text-rose-600" },
-  sky:     { bg: "bg-sky-50/70 dark:bg-sky-500/10",         text: "text-sky-700 dark:text-sky-300",         iconBg: "bg-sky-500/15",     iconText: "text-sky-600" },
-};
-
-const SummaryCard = ({ tone, label, value, sub, icon }: { tone: keyof typeof TONE_MAP; label: string; value: string; sub?: string; icon: React.ReactNode }) => {
-  const t = TONE_MAP[tone];
-  return (
-    <div className={cn("rounded-2xl border border-border p-4 shadow-sm", t.bg)}>
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
-        <span className={cn("w-7 h-7 rounded-lg flex items-center justify-center", t.iconBg, t.iconText)}>{icon}</span>
-      </div>
-      <div className="flex items-end justify-between gap-2">
-        <span className={cn("text-xl font-bold tabular-nums", t.text)}>{value}</span>
-        {sub && <span className={cn("text-xs font-semibold tabular-nums", t.text)}>{sub}</span>}
-      </div>
-    </div>
-  );
-};
 
 export default ReviewOverviewDialog;
