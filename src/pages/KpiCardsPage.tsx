@@ -2302,7 +2302,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                   const isPersonalCard = getAssignKindFor(selectedKpi.id) === "Fərdi";
                   const tabs = allTabs
                     .filter(([k]) => k !== "status" || hasMatrix)
-                    .filter(([k]) => !isPersonalCard || (k !== "reviewTrack" && k !== "history"));
+                    // Əməkdaş baxışında dublikat olmasın: kart səviyyəli review/dinamika tabları gizlədilir.
+                    .filter(([k]) => (!isPersonalCard && !employeeCardView) || (k !== "reviewTrack" && k !== "history"));
                   return tabs.map(([key, label]) => (
                     <button key={key} onClick={() => setDetailTab(key as any)} className={`px-3 py-2 text-sm font-medium whitespace-nowrap ${detailTab === key ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}>{label}</button>
                   ));
