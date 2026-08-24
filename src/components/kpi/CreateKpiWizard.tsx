@@ -32,7 +32,7 @@ export const HEDEF_TYPES: HedefType[] = [
   "Faiz", "Nisbət", "Boolean", "Zaman",
 ];
 
-const FREQUENCY_DEFAULTS = ["Aylıq", "Rüblük", "6 Aylıq", "İllik", "Custom"];
+const FREQUENCY_DEFAULTS = ["Günlük", "Həftəlik", "Aylıq", "Rüblük", "6 Aylıq", "İllik", "Custom"];
 const SCORING_DEFAULTS = ["1-3 Bal Sistemi", "1-5 Bal Sistemi", "1-10 Bal Sistemi", "Faiz (0-100)"];
 const EVALUATOR_TYPE_DEFAULTS = ["Şəxs", "Komanda", "Struktur", "Özü", "İnteqrasiya"];
 
@@ -257,6 +257,13 @@ const addMonths = (iso: string, months: number): string => {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
   const target = new Date(d.getFullYear(), d.getMonth() + months, d.getDate());
+  return toISO(target);
+};
+const addDays = (iso: string, days: number): string => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
   return toISO(target);
 };
 const quarterRange = (year: number, q: 1 | 2 | 3 | 4): [string, string] => {
@@ -646,7 +653,9 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
   const setFrequency = (f: string) => {
     setDraft(p => {
       const next = { ...p, frequency: f };
-      if (f === "Aylıq" && p.startDate) next.endDate = addMonths(p.startDate, 1);
+      if (f === "Günlük" && p.startDate) next.endDate = addDays(p.startDate, 1);
+      else if (f === "Həftəlik" && p.startDate) next.endDate = addDays(p.startDate, 7);
+      else if (f === "Aylıq" && p.startDate) next.endDate = addMonths(p.startDate, 1);
       else if (f === "6 Aylıq" && p.startDate) next.endDate = addMonths(p.startDate, 6);
       else if (f === "İllik" && p.startDate) next.endDate = addMonths(p.startDate, 12);
       else if (f === "Rüblük") {
@@ -659,7 +668,9 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
   const setStartDate = (s: string) => {
     setDraft(p => {
       const next: CreateKpiWizardDraft = { ...p, startDate: s };
-      if (p.frequency === "Aylıq") next.endDate = addMonths(s, 1);
+      if (p.frequency === "Günlük") next.endDate = addDays(s, 1);
+      else if (p.frequency === "Həftəlik") next.endDate = addDays(s, 7);
+      else if (p.frequency === "Aylıq") next.endDate = addMonths(s, 1);
       else if (p.frequency === "6 Aylıq") next.endDate = addMonths(s, 6);
       else if (p.frequency === "İllik") next.endDate = addMonths(s, 12);
       return next;

@@ -95,7 +95,7 @@ const RAW_SEED: DropdownCatalog[] = [
     "Məbləğ", "Say", "İcra", "Səriştə", "Fərdi İnkişaf", "Faiz", "Nisbət", "Boolean", "Zaman",
   ]},
   { id: "frequencies", name: "Dövr", system: true, values: [
-    "Aylıq", "Rüblük", "6 Aylıq", "İllik", "Custom",
+    "Günlük", "Həftəlik", "Aylıq", "Rüblük", "6 Aylıq", "İllik", "Custom",
   ]},
   { id: "kpi_lifecycle_periods", name: "KPI Lifecycle Dövrləri", system: true, values: []},
   { id: "kpi_statuses", name: "KPI Kartı Statusları", system: true, values: [
