@@ -38,6 +38,17 @@ export const getCachedComments = (cardRef?: string | number | null): KpiComment[
   return readCache()[String(cardRef)] ?? [];
 };
 
+/** Konkret review-a bağlı şərh referansı: `<base>#rev:<reviewId>`. */
+export const reviewCommentRef = (base: string | number, reviewId: string | number) =>
+  `${String(base)}#rev:${String(reviewId)}`;
+
+/** Şərhin hansı review-a aid olduğunu qaytarır (yoxdursa null — ümumi şərh). */
+export const commentReviewId = (cardRef?: string | null): string | null => {
+  const m = /#rev:(.+)$/.exec(String(cardRef ?? ""));
+  return m ? m[1] : null;
+};
+
+
 const mapRow = (r: any): KpiComment => ({
   id: String(r.id),
   cardRef: String(r.card_ref),
