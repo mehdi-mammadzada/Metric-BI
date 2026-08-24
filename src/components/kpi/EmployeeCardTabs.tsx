@@ -92,6 +92,17 @@ export default function EmployeeCardTabs({ card, tab }: Props) {
   }
 
   const reviewer = (card.team && card.team[0]?.name) || card.responsible || "—";
+  const authors = Array.from(new Set(cardComments.map(c => c.author).filter(Boolean)));
+  const filteredComments = cardComments.filter(c => {
+    if (filterAuthor && c.author !== filterAuthor) return false;
+    if (filterDate) {
+      const d = new Date(c.createdAt);
+      const iso = isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+      if (iso !== filterDate) return false;
+    }
+    return true;
+  });
+
 
   return (
     <div className="bg-card rounded-lg border border-border p-4">
