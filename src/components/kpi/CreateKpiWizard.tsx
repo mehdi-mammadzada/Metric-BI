@@ -1733,6 +1733,16 @@ function Step2Targets({
         </DialogContent>
       </Dialog>
 
+      {unifiedEvalPickerOpen && (
+        <EvaluatorPickerDialog
+          initialEvaluators={unifiedEvaluators}
+          employeeOptions={employeeOptions}
+          onClose={() => setUnifiedEvalPickerOpen(false)}
+          onSave={(evs) => { setUnifiedEvaluators(evs); setUnifiedEvalPickerOpen(false); }}
+          title="Vahid qiymətləndirici"
+        />
+      )}
+
 
 
       {draft.targets.length === 0 && (
