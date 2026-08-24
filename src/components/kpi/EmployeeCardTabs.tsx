@@ -64,7 +64,24 @@ export default function EmployeeCardTabs({ card, tab }: Props) {
     return lc?.reviews || [];
   }, [card]);
 
+  // KPI kartına (ümumi kart səviyyəsində) yazılmış şərhlər — yalnız oxunur.
+  const cardRef = card ? `card:${card.id}` : null;
+  const [cardComments, setCardComments] = useState<KpiComment[]>(() => getCachedComments(cardRef));
+  useEffect(() => {
+    if (!cardRef) return;
+    setCardComments(getCachedComments(cardRef));
+    void fetchKpiComments(cardRef).then(setCardComments);
+    const onEvt = () => setCardComments(getCachedComments(cardRef));
+    window.addEventListener(KPI_COMMENTS_EVT, onEvt);
+    window.addEventListener("storage", onEvt);
+    return () => {
+      window.removeEventListener(KPI_COMMENTS_EVT, onEvt);
+      window.removeEventListener("storage", onEvt);
+    };
+  }, [cardRef]);
+
   if (!card) return null;
+
 
   if (tab === "empTargets") {
     return <KpiAccordionList items={accordionItems} emptyLabel="Bu əməkdaş üçün hədəf tapılmadı." />;
