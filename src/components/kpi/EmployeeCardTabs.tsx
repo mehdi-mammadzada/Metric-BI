@@ -1,13 +1,20 @@
 // Əməkdaşlar üzrə KPI kartı üçün əlavə tabların məzmunu:
 // Hədəflər / Performans dinamikası / Reviewlər.
-import { useMemo } from "react";
-import { Clock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Clock, MessageSquare } from "lucide-react";
 import { withKartSuffix } from "@/lib/utils";
 import KpiAccordionList, { type AccordionKpi } from "@/components/kpi/KpiAccordionList";
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
 import { REVIEW_STATUS_STYLES } from "@/components/kpi/LifecycleView";
 import { computeReviewStatus, getLifecycleWithFallback } from "@/lib/kpiLifecycleStore";
 import { getAssignedTargetValues } from "@/lib/kpiSetStore";
+import {
+  fetchKpiComments,
+  formatCommentDate,
+  getCachedComments,
+  KPI_COMMENTS_EVT,
+  type KpiComment,
+} from "@/lib/kpiCommentsService";
 
 export type EmployeeCardTab = "empTargets" | "empDynamics" | "empReviews";
 
