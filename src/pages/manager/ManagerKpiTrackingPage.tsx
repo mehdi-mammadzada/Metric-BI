@@ -2132,7 +2132,7 @@ const ReviewsView = () => {
     cardName: "", reviewName: "", count: "", progress: "", status: "", start: "", end: "", updated: "",
   });
   const setCol = (k: ReviewColKey) => (v: string) => setColF(p => ({ ...p, [k]: v }));
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [overview, setOverview] = useState<{ row: ReviewRow | null; group: ReviewCardGroup; data: ReviewOverviewData; commentRef: string } | null>(null);
   const [statusDialog, setStatusDialog] = useState<{ cardId: number; cardName: string; reviewId: string; status: ReviewComputedStatus } | null>(null);
   const [reasonDialog, setReasonDialog] = useState<{ title: string; label: string; text: string } | null>(null);
@@ -2299,15 +2299,15 @@ const ReviewsView = () => {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredIndividual.length === 0 ? emptyRow(7, "Fərdi review mərhələsində olan KPI kartı yoxdur.") : filteredIndividual.map(g => (
-                    <>
+                    <React.Fragment key={g.groupKey}>
                       <tr
-                        key={g.cardId}
-                        onClick={() => setExpanded(expanded === g.cardId ? null : g.cardId)}
+                        key={g.groupKey}
+                        onClick={() => setExpanded(expanded === g.groupKey ? null : g.groupKey)}
                         className="hover:bg-secondary/30 cursor-pointer"
                       >
                         <td className="px-4 py-3 font-medium text-foreground">
                           <span className="inline-flex items-center gap-2">
-                            {expanded === g.cardId ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                            {expanded === g.groupKey ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                             {withKartSuffix(g.cardName)}
                           </span>
                         </td>
@@ -2318,8 +2318,8 @@ const ReviewsView = () => {
                         <td className="px-4 py-3 text-muted-foreground">{g.reviewEnd}</td>
                         <td className="px-4 py-3 text-muted-foreground">{g.updatedAt}</td>
                       </tr>
-                      {expanded === g.cardId && (
-                        <tr key={`${g.cardId}-drill`} className="bg-secondary/20">
+                      {expanded === g.groupKey && (
+                        <tr key={`${g.groupKey}-drill`} className="bg-secondary/20">
                           <td colSpan={7} className="px-4 py-3">
                             <div className="rounded-lg border border-border bg-card overflow-hidden">
                               <table className="w-full text-sm">
@@ -2389,7 +2389,7 @@ const ReviewsView = () => {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredBulk.length === 0 ? emptyRow(8, "Toplu review mərhələsində olan KPI kartı yoxdur.") : filteredBulk.map(g => (
-                    <tr key={g.cardId} className="hover:bg-secondary/30">
+                    <tr key={g.groupKey} className="hover:bg-secondary/30">
                       <td className="px-4 py-3 font-medium text-foreground">
                         <span className="inline-flex items-center gap-2">
                           {withKartSuffix(g.cardName)}
