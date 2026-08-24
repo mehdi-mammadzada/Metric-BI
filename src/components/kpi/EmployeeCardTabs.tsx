@@ -9,12 +9,14 @@ import { REVIEW_STATUS_STYLES } from "@/components/kpi/LifecycleView";
 import { computeReviewStatus, getLifecycleWithFallback } from "@/lib/kpiLifecycleStore";
 import { getAssignedTargetValues } from "@/lib/kpiSetStore";
 import {
+  commentReviewId,
   fetchKpiComments,
   formatCommentDate,
   getCachedComments,
   KPI_COMMENTS_EVT,
   type KpiComment,
 } from "@/lib/kpiCommentsService";
+
 
 export type EmployeeCardTab = "empTargets" | "empDynamics" | "empReviews";
 
