@@ -1623,6 +1623,7 @@ function Step2Targets({
   const [unifiedOpen, setUnifiedOpen] = useState(false);
   const [unifiedAssigner, setUnifiedAssigner] = useState<string>("");
   const [unifiedEvaluators, setUnifiedEvaluators] = useState<WizardEvaluatorRef[]>([]);
+  const [unifiedEvalPickerOpen, setUnifiedEvalPickerOpen] = useState(false);
   // Applied markers — once applied, target-level pickers are locked
   const [unifiedAssignerApplied, setUnifiedAssignerApplied] = useState<string>("");
   const [unifiedEvaluatorsApplied, setUnifiedEvaluatorsApplied] = useState<WizardEvaluatorRef[]>([]);
@@ -1686,11 +1687,28 @@ function Step2Targets({
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Qiymətləndirici(lər) — çəkilər cəmi 100%</label>
-              <UnifiedEvaluatorsEditor
-                employeeOptions={employeeOptions}
-                evaluators={unifiedEvaluators}
-                onChange={setUnifiedEvaluators}
-              />
+              <div className="mt-1 rounded-lg border border-border bg-background p-2 space-y-2">
+                {unifiedEvaluators.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Hələ qiymətləndirici seçilməyib.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {unifiedEvaluators.map(e => (
+                      <span key={e.id} className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-300">
+                        {e.name.split(" — ")[0]}
+                        {unifiedEvaluators.length > 1 && <span className="text-[10px] opacity-80">({e.weight}%)</span>}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setUnifiedEvalPickerOpen(true)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-indigo-400 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  {unifiedEvaluators.length === 0 ? "Qiymətləndirici seç" : "Dəyiş"}
+                </button>
+              </div>
             </div>
           </div>
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
@@ -1714,6 +1732,16 @@ function Step2Targets({
           </div>
         </DialogContent>
       </Dialog>
+
+      {unifiedEvalPickerOpen && (
+        <EvaluatorPickerDialog
+          initialEvaluators={unifiedEvaluators}
+          employeeOptions={employeeOptions}
+          onClose={() => setUnifiedEvalPickerOpen(false)}
+          onSave={(evs) => { setUnifiedEvaluators(evs); setUnifiedEvalPickerOpen(false); }}
+          title="Vahid qiymətləndirici"
+        />
+      )}
 
 
 
@@ -1904,13 +1932,14 @@ function Step2Targets({
               )}
             </div>
 
-            {/* Qiymətləndirici — 4-tab Dialog (Şəxs / Komanda / Özü / İnteqrasiya) */}
+            {/* Qiymətləndirici — 5-tab Dialog (Şəxs / Komanda / Struktur / Özü / İnteqrasiya) */}
             {evalPickerFor === t.id && !unifiedEvaluatorsApplied.length && (
               <EvaluatorPickerDialog
-                target={t}
+                initialEvaluators={t.evaluators}
                 employeeOptions={employeeOptions}
                 onClose={() => setEvalPickerFor(null)}
                 onSave={(evs) => { updHedef(t.id, { evaluators: evs, evaluator: evs[0]?.name || "" }); setEvalPickerFor(null); }}
+                title={t.name || "Hədəf"}
               />
             )}
 
@@ -2342,14 +2371,15 @@ const INTEGRATION_SYSTEMS: { name: string; fields: string[] }[] = [
   { name: "SIEM Platform", fields: ["İnsident sayı", "Təhlükə səviyyəsi", "Uyğunluq xalı"] },
 ];
 
-function EvaluatorPickerDialog({ target, employeeOptions, onClose, onSave }: {
-  target: WizardHedef;
+function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, onSave, title }: {
+  initialEvaluators: WizardEvaluatorRef[];
   employeeOptions: { value: string; label: string }[];
   onClose: () => void;
   onSave: (evs: WizardEvaluatorRef[]) => void;
+  title?: string;
 }) {
   const initialTab: "person" | "team" | "structure" | "self" | "integration" = (() => {
-    const first = target.evaluators[0]?.name || "";
+    const first = initialEvaluators[0]?.name || "";
     if (first.startsWith("[Komanda]")) return "team";
     if (first.startsWith("[Struktur]")) return "structure";
     if (first === "[Özü]") return "self";
@@ -2359,7 +2389,7 @@ function EvaluatorPickerDialog({ target, employeeOptions, onClose, onSave }: {
   const [tab, setTab] = useState<"person" | "team" | "structure" | "self" | "integration">(initialTab);
   const evaluatorTypeLabels = useCatalogValues("evaluator_types", EVALUATOR_TYPE_DEFAULTS);
   const [personEvs, setPersonEvs] = useState<WizardEvaluatorRef[]>(
-    initialTab === "person" ? target.evaluators : []
+    initialTab === "person" ? initialEvaluators : []
   );
   const [personSearch, setPersonSearch] = useState("");
   const filteredEmployeeOptions = useMemo(() => {
@@ -2369,12 +2399,12 @@ function EvaluatorPickerDialog({ target, employeeOptions, onClose, onSave }: {
   }, [personSearch, employeeOptions]);
   const teams = useMemo(() => getTeams(), []);
   const [teamName, setTeamName] = useState<string>(
-    initialTab === "team" ? (target.evaluators[0]?.name.replace("[Komanda] ", "").split(" — ")[0] || "") : ""
+    initialTab === "team" ? (initialEvaluators[0]?.name.replace("[Komanda] ", "").split(" — ")[0] || "") : ""
   );
   const [teamSearch, setTeamSearch] = useState("");
   const [teamMemberEvs, setTeamMemberEvs] = useState<WizardEvaluatorRef[]>(
-    initialTab === "team" && target.evaluators.length > 0 && !target.evaluators[0].name.startsWith("[Komanda]")
-      ? target.evaluators : []
+    initialTab === "team" && initialEvaluators.length > 0 && !initialEvaluators[0].name.startsWith("[Komanda]")
+      ? initialEvaluators : []
   );
   const [randomCount, setRandomCount] = useState<number>(1);
   const [teamMemberSearch, setTeamMemberSearch] = useState("");
@@ -2410,12 +2440,12 @@ function EvaluatorPickerDialog({ target, employeeOptions, onClose, onSave }: {
   const structureList = useMemo(() => flattenStructures(getStructures()), []);
   const allEmployees = useMemo(() => getEmployees().filter(e => e.active), []);
   const [structPath, setStructPath] = useState<string>(
-    initialTab === "structure" ? (target.evaluators[0]?.name.replace("[Struktur] ", "").split(" — ")[0] || "") : ""
+    initialTab === "structure" ? (initialEvaluators[0]?.name.replace("[Struktur] ", "").split(" — ")[0] || "") : ""
   );
   const [structSearch, setStructSearch] = useState("");
   const [structMemberEvs, setStructMemberEvs] = useState<WizardEvaluatorRef[]>(
-    initialTab === "structure" && target.evaluators.length > 0 && !target.evaluators[0].name.startsWith("[Struktur]")
-      ? target.evaluators : []
+    initialTab === "structure" && initialEvaluators.length > 0 && !initialEvaluators[0].name.startsWith("[Struktur]")
+      ? initialEvaluators : []
   );
   const [structRandomCount, setStructRandomCount] = useState<number>(1);
   const [structMemberSearch, setStructMemberSearch] = useState("");
@@ -2449,7 +2479,7 @@ function EvaluatorPickerDialog({ target, employeeOptions, onClose, onSave }: {
   };
 
   const initialIntegrationName = initialTab === "integration"
-    ? (target.evaluators[0]?.name.replace("[İnteqrasiya] ", "").split(" · ")[0] || "")
+    ? (initialEvaluators[0]?.name.replace("[İnteqrasiya] ", "").split(" · ")[0] || "")
     : "";
   const [integration, setIntegration] = useState<string>(initialIntegrationName);
   const [integrationSearch, setIntegrationSearch] = useState("");
@@ -2518,7 +2548,7 @@ function EvaluatorPickerDialog({ target, employeeOptions, onClose, onSave }: {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-indigo-600" />
-            Qiymətləndirici seçimi — "{target.name || "Hədəf"}"
+            Qiymətləndirici seçimi — "{title || "Qiymətləndirici seçimi"}"
           </DialogTitle>
         </DialogHeader>
 
