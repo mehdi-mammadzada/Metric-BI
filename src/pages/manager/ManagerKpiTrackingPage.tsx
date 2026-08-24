@@ -41,6 +41,7 @@ import ReviewStatusChangeDialog, { type ReviewStatusValue } from "@/components/k
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
 import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import { employeeCommentRef } from "@/components/kpi/EmployeeCardTabs";
+import { reviewCommentRef } from "@/lib/kpiCommentsService";
 
 
 type Stage = "assigned" | "evaluated" | "pending_assign";
@@ -2064,6 +2065,7 @@ type ReviewCardGroup = {
   cardId: number;
   cardName: string;
   reviewId: string;
+  reviewLabel: string;
   reviewStatus: ReviewComputedStatus;
   reviewStart: string;
   reviewEnd: string;
@@ -2082,6 +2084,7 @@ const groupReviewRows = (rows: ReviewRow[], mode: "individual" | "bulk"): Review
         cardId: r.cardId,
         cardName: r.cardName,
         reviewId: r.reviewId,
+        reviewLabel: r.reviewLabel,
         reviewStatus: r.reviewStatus,
         reviewStart: r.reviewStart,
         reviewEnd: r.reviewEnd,
@@ -2168,7 +2171,7 @@ const ReviewsView = () => {
       row,
       group: g,
       data,
-      commentRef: employeeCommentRef(g.cardId, row.empName),
+      commentRef: reviewCommentRef(employeeCommentRef(g.cardId, row.empName), g.reviewId),
     });
   };
 
@@ -2188,7 +2191,7 @@ const ReviewsView = () => {
         : [{ name: "—", position: "Təyin olunmayıb", badge: "Review keçirən" }],
       targets: first ? buildTargets(first, g.reviewStatus, g.outcomeComment) : [],
     };
-    setOverview({ row: null, group: g, data, commentRef: `card:${g.cardId}` });
+    setOverview({ row: null, group: g, data, commentRef: reviewCommentRef(`card:${g.cardId}`, g.reviewId) });
   };
 
 
@@ -2286,6 +2289,7 @@ const ReviewsView = () => {
                         <td className="px-4 py-3 font-medium text-foreground">
                           <span className="inline-flex items-center gap-2">
                             {expanded === g.cardId ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                            <Badge className="bg-sky-500/15 text-sky-700 hover:bg-sky-500/15 border-0 font-medium shrink-0">{g.reviewLabel}</Badge>
                             {withKartSuffix(g.cardName)}
                           </span>
                         </td>
@@ -2366,7 +2370,12 @@ const ReviewsView = () => {
                 <tbody className="divide-y divide-border">
                   {filteredBulk.length === 0 ? emptyRow(7, "Toplu review mərhələsində olan KPI kartı yoxdur.") : filteredBulk.map(g => (
                     <tr key={g.cardId} className="hover:bg-secondary/30">
-                      <td className="px-4 py-3 font-medium text-foreground">{withKartSuffix(g.cardName)}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        <span className="inline-flex items-center gap-2">
+                          <Badge className="bg-sky-500/15 text-sky-700 hover:bg-sky-500/15 border-0 font-medium shrink-0">{g.reviewLabel}</Badge>
+                          {withKartSuffix(g.cardName)}
+                        </span>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <Progress value={g.overallProgress} className="h-2 flex-1" />
