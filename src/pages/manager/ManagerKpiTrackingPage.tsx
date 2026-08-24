@@ -1966,19 +1966,18 @@ const useReviewRows = (): ReviewRow[] => {
 
     lifecycles.forEach((lc: CardLifecycle) => {
       if (!lc.reviews || lc.reviews.length === 0) return;
-      const active = lc.reviews.find(isActive)
-        ?? [...lc.reviews].sort((a, b) => (a.start || "").localeCompare(b.start || ""))[0];
-      if (!active) return;
-      const reviewStatus = computeReviewStatus(active);
-
       const sharedCard: SharedKpiCard | undefined = sharedCards.find(c => c.numericId === lc.cardId);
       const assigneeIds = sharedCard?.assigneeIds ?? [];
-
       // Review yalnız real təyin olunmuş əməkdaşlar üçün göstərilir — dublikat/demo sətir yaradılmır.
       if (assigneeIds.length === 0) return;
 
-      const activeIndex = [...lc.reviews].sort((a, b) => (a.start || "").localeCompare(b.start || "")).findIndex(r => r.id === active.id);
-      const reviewName = (active as any).name || `Review #${activeIndex >= 0 ? activeIndex + 1 : 1}`;
+      const sorted = [...lc.reviews].sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+
+      // Bütün reviewlər ayrı-ayrılıqda sətir kimi düşür.
+      sorted.forEach((active, activeIndex) => {
+      const reviewStatus = computeReviewStatus(active);
+      const reviewName = (active as any).name || `Review #${activeIndex + 1}`;
+
 
       // Review-u keçirən şəxslər: kart yaradılarkən seçilmiş adlar, yoxdursa iştirakçılar/qiymətləndiricilər.
       const reviewerIds = (active.participantIds && active.participantIds.length
