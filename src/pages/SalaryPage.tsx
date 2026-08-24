@@ -895,6 +895,42 @@ const SalaryPage = () => {
         row={operatorView}
         onClose={() => setOperatorView(null)}
       />
+
+      <Dialog open={!!editRow} onOpenChange={(o) => { if (!o) setEditRow(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Əməkhaqqını redaktə et</DialogTitle>
+          </DialogHeader>
+          {editRow && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2 text-sm">
+                <div className="font-medium">
+                  {editRow.employee.firstName} {editRow.employee.lastName}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Dövr: {appliedMonth} {appliedYear}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm text-muted-foreground">Əməkhaqqı (AZN)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={editSalary}
+                  onChange={(e) => setEditSalary(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRow(null)}>Ləğv et</Button>
+            <Button onClick={saveEdit} disabled={savingEdit}>
+              {savingEdit ? "Yadda saxlanılır..." : "Yadda saxla"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
