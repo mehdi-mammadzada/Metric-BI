@@ -56,10 +56,13 @@ const variantCache = new Map<string, string[]>();
 const resolveRefVariants = async (ref: string): Promise<string[]> => {
   if (variantCache.has(ref)) return variantCache.get(ref)!;
   const variants = new Set<string>([ref]);
-  const m = /^card:(.+)$/.exec(ref);
-  const raw = m?.[1]?.trim();
+  // Əməkdaş səviyyəli ref (card:<id>:emp:<ad>) üçün kart səviyyəsini də əlavə edirik.
+  const emp = /^card:([^:]+):emp:/.exec(ref);
+  const m = /^card:([^:]+)$/.exec(ref);
+  const raw = (emp?.[1] || m?.[1] || (/^card:/.test(ref) ? "" : ref))?.trim();
   if (raw) {
     variants.add(raw);
+    variants.add(`card:${raw}`);
     try {
       const isUuid = /^[0-9a-f-]{32,}$/i.test(raw);
       const numeric = Number(raw);
@@ -84,18 +87,36 @@ const resolveRefVariants = async (ref: string): Promise<string[]> => {
   return list;
 };
 
-/** Bazadan şərhləri gətirir (ən yenilər əvvəldə) və lokal keşi yeniləyir. */
+/**
+ * Bazadan şərhləri gətirir (ən yenilər əvvəldə) və lokal keşi yeniləyir.
+ * Kart səviyyəsində oxunduqda əməkdaş səviyyəli (card:<id>:emp:<ad>) şərhlər də daxil olur;
+ * əməkdaş səviyyəsində isə kartın ümumi şərhləri də görünür.
+ */
 export const fetchKpiComments = async (cardRef?: string | number | null): Promise<KpiComment[]> => {
   if (cardRef == null) return [];
   const ref = String(cardRef);
   const refs = await resolveRefVariants(ref);
-  const { data, error } = await supabase
+  const base = supabase
     .from("kpi_card_comments")
-    .select("id, card_ref, author_name, text, created_at")
-    .in("card_ref", refs)
-    .order("created_at", { ascending: false });
-  if (error) return getCachedComments(ref);
-  const rows = (data ?? []).map(mapRow);
+    .select("id, card_ref, author_name, text, created_at");
+  const [exact, scoped] = await Promise.all([
+    base.in("card_ref", refs).order("created_at", { ascending: false }),
+    // Yalnız kart səviyyəli baxışda alt (əməkdaş) şərhləri də çəkirik.
+    /:emp:/.test(ref)
+      ? Promise.resolve({ data: [] as any[], error: null })
+      : supabase
+          .from("kpi_card_comments")
+          .select("id, card_ref, author_name, text, created_at")
+          .or(refs.map(r => `card_ref.like.${r}:emp:%`).join(","))
+          .order("created_at", { ascending: false }),
+  ]);
+  if (exact.error) return getCachedComments(ref);
+  const byId = new Map<string, KpiComment>();
+  for (const r of [...(exact.data ?? []), ...((scoped as any).data ?? [])]) {
+    const c = mapRow(r);
+    byId.set(c.id, c);
+  }
+  const rows = Array.from(byId.values()).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   writeCache(ref, rows);
   return rows;
 };
