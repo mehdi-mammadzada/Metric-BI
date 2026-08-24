@@ -1687,11 +1687,28 @@ function Step2Targets({
             </div>
             <div>
               <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Qiymətləndirici(lər) — çəkilər cəmi 100%</label>
-              <UnifiedEvaluatorsEditor
-                employeeOptions={employeeOptions}
-                evaluators={unifiedEvaluators}
-                onChange={setUnifiedEvaluators}
-              />
+              <div className="mt-1 rounded-lg border border-border bg-background p-2 space-y-2">
+                {unifiedEvaluators.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Hələ qiymətləndirici seçilməyib.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {unifiedEvaluators.map(e => (
+                      <span key={e.id} className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-300">
+                        {e.name.split(" — ")[0]}
+                        {unifiedEvaluators.length > 1 && <span className="text-[10px] opacity-80">({e.weight}%)</span>}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setUnifiedEvalPickerOpen(true)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded border border-indigo-400 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  {unifiedEvaluators.length === 0 ? "Qiymətləndirici seç" : "Dəyiş"}
+                </button>
+              </div>
             </div>
           </div>
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
