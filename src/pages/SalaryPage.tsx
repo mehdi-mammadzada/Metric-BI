@@ -633,21 +633,18 @@ const SalaryPage = () => {
                       />
                     </th>
                   ))}
-                  <th className="px-3 py-3 font-medium align-top select-none" style={{ width: "90px", minWidth: "90px" }}>
-                    Əməliyyat
-                  </th>
                 </tr>
               </thead>
               <tbody>
                 {appliedYear == null || appliedMonth == null ? (
                   <tr>
-                    <td colSpan={visibleColumns.length + 1} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={visibleColumns.length} className="px-4 py-12 text-center text-muted-foreground">
                       Cədvəli görmək üçün il və ay seçin
                     </td>
                   </tr>
                 ) : pagedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={visibleColumns.length + 1} className="px-4 py-12 text-center text-muted-foreground">
+                    <td colSpan={visibleColumns.length} className="px-4 py-12 text-center text-muted-foreground">
                       Bu dövr üçün məlumat tapılmadı
                     </td>
                   </tr>
@@ -660,26 +657,26 @@ const SalaryPage = () => {
                       <td key={c.key} className="px-3 py-2 truncate" style={{ width: `${getColWidth(c.key)}px`, minWidth: `${getColWidth(c.key)}px` }}>
                         {c.key === "no" ? startIdx + idx + 1
                           : c.key === "operator" ? (
-                            <button
-                              onClick={() => setOperatorView(row)}
-                              className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
-                              title="Əməkdaşın məlumatları"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setOperatorView(row)}
+                                className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+                                title="Əməkdaşın məlumatları"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => openEdit(row)}
+                                className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+                                title={`${appliedMonth} əməkhaqqısını redaktə et`}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                            </div>
                           )
                           : getCellDisplay(row, c.key)}
                       </td>
                     ))}
-                    <td className="px-3 py-2" style={{ width: "90px", minWidth: "90px" }}>
-                      <button
-                        onClick={() => openEdit(row)}
-                        className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
-                        title={`${appliedMonth} əməkhaqqısını redaktə et`}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
