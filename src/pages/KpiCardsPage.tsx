@@ -826,6 +826,10 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   const [hrCascadeDistribute, setHrCascadeDistribute] = useState<typeof hrCascade>(null);
   const [employeeDrilldown, setEmployeeDrilldown] = useState<string | null>(null);
   const [employeeCardView, setEmployeeCardView] = useState<{ card: any; employee: string } | null>(null);
+  // Əməkdaş baxışında kart səviyyəli dublikat tablar gizlədilir — seçim qalıbsa Ümumi-yə qaytar.
+  useEffect(() => {
+    if (employeeCardView && (detailTab === "reviewTrack" || detailTab === "history")) setDetailTab("general");
+  }, [employeeCardView, detailTab]);
   useEffect(() => {
     let timer: number | null = null;
     const refresh = () => import("@/lib/kpiCardStatusStore").then(m => m.fetchAllStatuses().then(setStatusMap));
