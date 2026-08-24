@@ -2074,6 +2074,7 @@ type ReviewColKey = "cardName" | "reviewName" | "count" | "progress" | "status" 
 
 /** Bir KPI kartı üzrə qruplaşdırılmış review sətri. */
 type ReviewCardGroup = {
+  groupKey: string;
   cardId: number;
   cardName: string;
   reviewId: string;
