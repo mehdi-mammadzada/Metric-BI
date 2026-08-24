@@ -41,6 +41,7 @@ import ReviewStatusChangeDialog, { type ReviewStatusValue } from "@/components/k
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
 import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import { employeeCommentRef } from "@/components/kpi/EmployeeCardTabs";
+import { getIdentityAliases, normalizeAlias } from "@/lib/identity";
 
 
 type Stage = "assigned" | "evaluated" | "pending_assign";
@@ -1923,6 +1924,10 @@ type ReviewRow = {
   execution: ExecutionStatus | null;
   targets: CardTarget[];
   assignmentMode: "individual" | "bulk";
+  /** Review-u həyata keçirən şəxs(lər). */
+  reviewers: { name: string; position: string }[];
+  /** Reviewerlərin identity alias-ları (filtrasiya üçün). */
+  reviewerAliases: string[];
 };
 
 
@@ -1950,12 +1955,31 @@ const execLabel: Record<ExecutionStatus, { label: string; cls: string }> = {
 const useReviewRows = (): ReviewRow[] => {
   const lifecycles = useKpiLifecycles();
   const sharedCards = useVisibleSharedKpiCards();
-  return useMemo(() => {
+  const { user } = useAuth();
+  const aliases = useMemo(() => getIdentityAliases(user), [user]);
+  const allRows = useMemo(() => {
     const today = iso(new Date());
     const employees = getEmployees();
     const rows: ReviewRow[] = [];
 
     const isActive = (r: LifecycleReview) => r.start && r.end && r.start <= today && today <= r.end;
+
+    const resolveReviewers = (refs: unknown[]): { name: string; position: string }[] => {
+      const out: { name: string; position: string }[] = [];
+      const seen = new Set<string>();
+      refs.forEach((ref) => {
+        const raw = String(ref ?? "").trim();
+        if (!raw) return;
+        const idNum = Number(raw.replace(/^e/, ""));
+        const emp = Number.isFinite(idNum) ? employees.find(e => e.id === idNum) : undefined;
+        const name = emp ? `${emp.firstName} ${emp.lastName}` : raw;
+        const key = name.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push({ name, position: emp?.positionName || "—" });
+      });
+      return out;
+    };
 
 
 
@@ -1969,6 +1993,21 @@ const useReviewRows = (): ReviewRow[] => {
 
       const sharedCard: SharedKpiCard | undefined = sharedCards.find(c => c.numericId === lc.cardId);
       const assigneeIds = sharedCard?.assigneeIds ?? [];
+      const reviewers = resolveReviewers(
+        (active.participantIds && active.participantIds.length
+          ? active.participantIds
+          : sharedCard?.evaluatorIds) ?? [],
+      );
+      const reviewerAliases = Array.from(new Set([
+        ...((active.participantIds || []).map(v => normalizeAlias(v))),
+        ...((sharedCard?.evaluatorIds || []).map(v => normalizeAlias(v))),
+        ...reviewers.flatMap(r => {
+          const emp = employees.find(e => `${e.firstName} ${e.lastName}`.toLowerCase() === r.name.toLowerCase());
+          return emp
+            ? [normalizeAlias(emp.email), normalizeAlias(`${emp.firstName} ${emp.lastName}`), normalizeAlias(emp.id), normalizeAlias(`e${emp.id}`)]
+            : [normalizeAlias(r.name)];
+        }),
+      ].filter(Boolean)));
 
       // Review yalnız real təyin olunmuş əməkdaşlar üçün göstərilir — dublikat/demo sətir yaradılmır.
       if (assigneeIds.length === 0) return;
@@ -2014,6 +2053,8 @@ const useReviewRows = (): ReviewRow[] => {
           execution: exec,
           targets: realTargets,
           assignmentMode: sharedCard?.assignmentMode === "bulk" ? "bulk" : "individual",
+          reviewers,
+          reviewerAliases,
         });
 
       });
@@ -2021,6 +2062,12 @@ const useReviewRows = (): ReviewRow[] => {
 
     return rows;
   }, [lifecycles, sharedCards]);
+
+  // Review yalnız onu həyata keçirən şəxsin hesabında görünür.
+  return useMemo(
+    () => allRows.filter(r => r.reviewerAliases.some(a => aliases.has(a))),
+    [allRows, aliases],
+  );
 };
 
 const ReviewsCount = () => {
@@ -2139,7 +2186,7 @@ const ReviewsView = () => {
       updatedAt: g.updatedAt,
       status: toOverviewStatus(g.reviewStatus),
       overallProgress: row.progress,
-      reviewers: [{ name: row.empName, position: row.position, badge: "İştirakçı" }],
+      reviewers: row.reviewers.map(r => ({ name: r.name, position: r.position, badge: "Review keçirir" })),
       targets: buildTargets(row, g.reviewStatus, g.outcomeComment),
     };
     setOverview({
@@ -2160,7 +2207,11 @@ const ReviewsView = () => {
       updatedAt: g.updatedAt,
       status: toOverviewStatus(g.reviewStatus),
       overallProgress: g.overallProgress,
-      reviewers: g.employees.map(e => ({ name: e.empName, position: e.position, badge: "Üzv" })),
+      reviewers: Array.from(
+        new Map(
+          g.employees.flatMap(e => e.reviewers).map(r => [r.name.toLowerCase(), r]),
+        ).values(),
+      ).map(r => ({ name: r.name, position: r.position, badge: "Review keçirir" })),
       targets: first ? buildTargets(first, g.reviewStatus, g.outcomeComment) : [],
     };
     setOverview({ row: null, group: g, data, commentRef: `card:${g.cardId}` });
