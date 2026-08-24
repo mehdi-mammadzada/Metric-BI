@@ -27,6 +27,10 @@ export interface LifecycleReview extends LifecycleStage {
   outcomeBy?: string;
   /** Review üçün seçilmiş iştirakçı əməkdaş id-ləri (Təşkilat modulundan). */
   participantIds?: string[];
+  /** KPI kartı yaradılarkən verilmiş review adı (məs. "Review #1"). */
+  name?: string;
+  /** KPI kartı yaradılarkən seçilmiş review-u keçirəcək şəxs(lər)in adları. */
+  reviewerNames?: string[];
 }
 
 
