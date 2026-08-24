@@ -1904,13 +1904,14 @@ function Step2Targets({
               )}
             </div>
 
-            {/* Qiymətləndirici — 4-tab Dialog (Şəxs / Komanda / Özü / İnteqrasiya) */}
+            {/* Qiymətləndirici — 5-tab Dialog (Şəxs / Komanda / Struktur / Özü / İnteqrasiya) */}
             {evalPickerFor === t.id && !unifiedEvaluatorsApplied.length && (
               <EvaluatorPickerDialog
-                target={t}
+                initialEvaluators={t.evaluators}
                 employeeOptions={employeeOptions}
                 onClose={() => setEvalPickerFor(null)}
                 onSave={(evs) => { updHedef(t.id, { evaluators: evs, evaluator: evs[0]?.name || "" }); setEvalPickerFor(null); }}
+                title={t.name || "Hədəf"}
               />
             )}
 
