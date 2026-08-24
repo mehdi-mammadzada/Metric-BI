@@ -2035,81 +2035,177 @@ const SubordinatesCount = ({ scopePath }: { scopePath?: string | null }) => {
 };
 
 
-type ReviewColKey = "cardName" | "department" | "division" | "position" | "progress" | "status" | "start" | "updated";
+type ReviewColKey = "cardName" | "count" | "progress" | "status" | "start" | "end" | "updated";
+
+/** Bir KPI kartı üzrə qruplaşdırılmış review sətri. */
+type ReviewCardGroup = {
+  cardId: number;
+  cardName: string;
+  reviewId: string;
+  reviewStatus: ReviewComputedStatus;
+  reviewStart: string;
+  reviewEnd: string;
+  updatedAt: string;
+  outcomeComment?: string;
+  employees: ReviewRow[];
+  overallProgress: number;
+};
+
+const groupReviewRows = (rows: ReviewRow[], mode: "individual" | "bulk"): ReviewCardGroup[] => {
+  const map = new Map<number, ReviewCardGroup>();
+  rows.filter(r => r.assignmentMode === mode).forEach(r => {
+    let g = map.get(r.cardId);
+    if (!g) {
+      g = {
+        cardId: r.cardId,
+        cardName: r.cardName,
+        reviewId: r.reviewId,
+        reviewStatus: r.reviewStatus,
+        reviewStart: r.reviewStart,
+        reviewEnd: r.reviewEnd,
+        updatedAt: r.updatedAt,
+        outcomeComment: r.outcomeComment,
+        employees: [],
+        overallProgress: 0,
+      };
+      map.set(r.cardId, g);
+    }
+    g.employees.push(r);
+  });
+  const list = Array.from(map.values());
+  list.forEach(g => {
+    g.overallProgress = g.employees.length
+      ? Math.round(g.employees.reduce((s, e) => s + e.progress, 0) / g.employees.length)
+      : 0;
+  });
+  return list;
+};
 
 const ReviewsView = () => {
   const rows = useReviewRows();
   const { user } = useAuth();
+  const [tab, setTab] = useState<"individual" | "bulk">("individual");
   const [q, setQ] = useState("");
   const [colF, setColF] = useState<Record<ReviewColKey, string>>({
-    cardName: "", department: "", division: "", position: "", progress: "", status: "", start: "", updated: "",
+    cardName: "", count: "", progress: "", status: "", start: "", end: "", updated: "",
   });
   const setCol = (k: ReviewColKey) => (v: string) => setColF(p => ({ ...p, [k]: v }));
-  const [overview, setOverview] = useState<{ row: ReviewRow; data: ReviewOverviewData } | null>(null);
-  const [statusDialog, setStatusDialog] = useState<{ row: ReviewRow } | null>(null);
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const [overview, setOverview] = useState<{ row: ReviewRow | null; group: ReviewCardGroup; data: ReviewOverviewData; commentRef: string } | null>(null);
+  const [statusDialog, setStatusDialog] = useState<{ cardId: number; cardName: string; reviewId: string; status: ReviewComputedStatus } | null>(null);
   const [reasonDialog, setReasonDialog] = useState<{ title: string; label: string; text: string } | null>(null);
   const [targetDetail, setTargetDetail] = useState<{ cardId: string; cardName: string; target: CardTarget } | null>(null);
 
-  const filtered = useMemo(() => {
+  const individualGroups = useMemo(() => groupReviewRows(rows, "individual"), [rows]);
+  const bulkGroups = useMemo(() => groupReviewRows(rows, "bulk"), [rows]);
+
+  const filterGroups = (groups: ReviewCardGroup[]) => {
     const s = q.trim().toLowerCase();
     const m = (val: string, f: string) => !f.trim() || String(val ?? "").toLowerCase().includes(f.trim().toLowerCase());
-    return rows.filter(r => {
-      const global = !s || (
-        r.cardName.toLowerCase().includes(s) ||
-        r.empName.toLowerCase().includes(s) ||
-        r.department.toLowerCase().includes(s) ||
-        r.division.toLowerCase().includes(s) ||
-        r.position.toLowerCase().includes(s)
-      );
+    return groups.filter(g => {
+      const global = !s || withKartSuffix(g.cardName).toLowerCase().includes(s)
+        || g.employees.some(e => e.empName.toLowerCase().includes(s));
       if (!global) return false;
-      return m(withKartSuffix(r.cardName), colF.cardName)
-        && m(r.department, colF.department)
-        && m(r.division, colF.division)
-        && m(r.position, colF.position)
-        && m(`${r.progress}`, colF.progress)
-        && m(REVIEW_STATUS_STYLES[r.reviewStatus]?.badgeLabel || "", colF.status)
-        && m(r.reviewStart, colF.start)
-        && m(r.updatedAt, colF.updated);
+      return m(withKartSuffix(g.cardName), colF.cardName)
+        && m(`${g.employees.length}`, colF.count)
+        && m(`${g.overallProgress}`, colF.progress)
+        && m(REVIEW_STATUS_STYLES[g.reviewStatus]?.badgeLabel || "", colF.status)
+        && m(g.reviewStart, colF.start)
+        && m(g.reviewEnd, colF.end)
+        && m(g.updatedAt, colF.updated);
     });
-  }, [rows, q, colF]);
+  };
 
+  const filteredIndividual = useMemo(() => filterGroups(individualGroups), [individualGroups, q, colF]);
+  const filteredBulk = useMemo(() => filterGroups(bulkGroups), [bulkGroups, q, colF]);
 
   const toOverviewStatus = (s: ReviewComputedStatus): ReviewStatusValue =>
     s === "held" ? "held" : s === "deferred" ? "deferred" : s === "missed" ? "missed" : "in_progress";
 
-  const buildOverviewData = (r: ReviewRow): ReviewOverviewData => {
-    const targets = r.targets.map((t) => {
+  const buildTargets = (row: ReviewRow, status: ReviewComputedStatus, note?: string) =>
+    row.targets.map((t) => {
       const pct = safePct(t.fakt, t.plan);
-      return { name: t.name, progress: Number.isFinite(pct) ? pct : 0, status: toOverviewStatus(r.reviewStatus), lastScore: "—", note: r.outcomeComment || "" };
+      return { name: t.name, progress: Number.isFinite(pct) ? pct : 0, status: toOverviewStatus(status), lastScore: "—", note: note || "" };
     });
-    return {
-      reviewType: r.reviewLabel,
-      planDate: r.reviewStart,
-      nextReviewDate: "—",
-      updatedAt: r.updatedAt,
-      status: toOverviewStatus(r.reviewStatus),
-      overallProgress: r.progress,
-      reviewers: [{ name: r.empName, position: r.position, badge: "İştirakçı" }],
-      targets,
+
+  /** Fərdi KPI → yalnız həmin əməkdaşın review-u. */
+  const openIndividual = (g: ReviewCardGroup, row: ReviewRow) => {
+    const data: ReviewOverviewData = {
+      reviewType: row.reviewLabel,
+      planDate: g.reviewStart,
+      nextReviewDate: g.reviewEnd,
+      updatedAt: g.updatedAt,
+      status: toOverviewStatus(g.reviewStatus),
+      overallProgress: row.progress,
+      reviewers: [{ name: row.empName, position: row.position, badge: "İştirakçı" }],
+      targets: buildTargets(row, g.reviewStatus, g.outcomeComment),
     };
+    setOverview({
+      row,
+      group: g,
+      data,
+      commentRef: employeeCommentRef(g.cardId, row.empName),
+    });
   };
 
-  const openOverview = (r: ReviewRow) => setOverview({ row: r, data: buildOverviewData(r) });
+  /** Toplu KPI → bütün üzvlər və vahid ümumi progress. */
+  const openBulk = (g: ReviewCardGroup) => {
+    const first = g.employees[0];
+    const data: ReviewOverviewData = {
+      reviewType: first?.reviewLabel || "Review",
+      planDate: g.reviewStart,
+      nextReviewDate: g.reviewEnd,
+      updatedAt: g.updatedAt,
+      status: toOverviewStatus(g.reviewStatus),
+      overallProgress: g.overallProgress,
+      reviewers: g.employees.map(e => ({ name: e.empName, position: e.position, badge: "Üzv" })),
+      targets: first ? buildTargets(first, g.reviewStatus, g.outcomeComment) : [],
+    };
+    setOverview({ row: null, group: g, data, commentRef: `card:${g.cardId}` });
+  };
 
   const saveStatus = (v: { status: ReviewStatusValue; comment: string }) => {
     if (!statusDialog) return;
-    setReviewOutcome(statusDialog.row.cardId, statusDialog.row.cardName, undefined, statusDialog.row.reviewId, {
+    setReviewOutcome(statusDialog.cardId, statusDialog.cardName, undefined, statusDialog.reviewId, {
       status: v.status,
       comment: v.comment,
       by: user?.name || "Rəhbər",
     });
     toast({ title: "Review statusu yeniləndi" });
     setStatusDialog(null);
-    // Refresh overview data if the dialog was opened from it
-    if (overview && overview.row.reviewId === statusDialog.row.reviewId) {
-      setOverview({ row: overview.row, data: { ...overview.data, status: v.status } });
-    }
+    if (overview) setOverview({ ...overview, data: { ...overview.data, status: v.status } });
   };
+
+  const StatusBadge = ({ g }: { g: ReviewCardGroup }) => {
+    const st = REVIEW_STATUS_STYLES[g.reviewStatus];
+    const Icon = st.badgeIcon;
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (g.outcomeComment) setReasonDialog({
+            title: withKartSuffix(g.cardName),
+            label: g.reviewStatus === "deferred" ? "Təxirə salınma səbəbi" : "Review nəticəsi",
+            text: g.outcomeComment,
+          });
+        }}
+        title={g.outcomeComment ? "Səbəbə bax" : undefined}
+        className={g.outcomeComment ? "cursor-pointer" : "cursor-default"}
+      >
+        <span className={`${st.badge} inline-flex items-center justify-center gap-1.5 h-7 w-[150px] px-2 rounded-full border-0 text-xs font-medium leading-none whitespace-nowrap`}>
+          <Icon className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">{st.badgeLabel}</span>
+        </span>
+      </button>
+    );
+  };
+
+  const emptyRow = (cols: number, label: string) => (
+    <tr>
+      <td colSpan={cols} className="px-4 py-12 text-center text-sm text-muted-foreground">{label}</td>
+    </tr>
+  );
 
   return (
     <>
@@ -2121,101 +2217,174 @@ const ReviewsView = () => {
           <input
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder="KPI, əməkdaş, departament, şöbə və ya vəzifə üzrə axtarış..."
+            placeholder="KPI kartı və ya əməkdaş üzrə axtarış..."
             className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
-        <Badge className="bg-sky-500/15 text-sky-700 hover:bg-sky-500/15">Review: {filtered.length}</Badge>
+        <Badge className="bg-sky-500/15 text-sky-700 hover:bg-sky-500/15">
+          Review: {(tab === "individual" ? filteredIndividual : filteredBulk).length}
+        </Badge>
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary/50 text-muted-foreground text-xs uppercase">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="KPI Kartının adı" value={colF.cardName} onChange={setCol("cardName")} /></th>
-                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Departament" value={colF.department} onChange={setCol("department")} /></th>
-                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Şöbə" value={colF.division} onChange={setCol("division")} /></th>
-                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Vəzifə" value={colF.position} onChange={setCol("position")} /></th>
-                <th className="text-left px-4 py-3 font-medium align-top w-[180px]"><ColumnSearchHeader label="Progress" value={colF.progress} onChange={setCol("progress")} placeholder="Məs: 60" /></th>
-                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review statusu" value={colF.status} onChange={setCol("status")} /></th>
-                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review başlanma" value={colF.start} onChange={setCol("start")} placeholder="Məs: 01.08.2026" /></th>
-                <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Son yenilənmə" value={colF.updated} onChange={setCol("updated")} placeholder="Məs: 01.08.2026" /></th>
-                <th className="text-right px-4 py-3 font-medium align-top">Əməliyyat</th>
-              </tr>
+      <Tabs value={tab} onValueChange={(v) => { setTab(v as "individual" | "bulk"); setExpanded(null); }}>
+        <TabsList className="mb-3">
+          <TabsTrigger value="individual">Fərdi Reviewlər</TabsTrigger>
+          <TabsTrigger value="bulk">Toplu Reviewlər</TabsTrigger>
+        </TabsList>
 
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                    Hazırda Review mərhələsində olan KPI kartı yoxdur.
-                  </td>
-                </tr>
-              ) : filtered.map(r => {
-                const reviewStyle = REVIEW_STATUS_STYLES[r.reviewStatus];
-                const ReviewIcon = reviewStyle.badgeIcon;
-                return (
-                  <tr key={r.key} className="hover:bg-secondary/30">
-                    <td className="px-4 py-3 font-medium text-foreground">{withKartSuffix(r.cardName)}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{r.department}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{r.division}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{r.position}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Progress value={r.progress} className="h-2 flex-1" />
-                        <span className="text-xs tabular-nums font-medium w-9 text-right">{r.progress}%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => r.outcomeComment && setReasonDialog({
-                          title: withKartSuffix(r.cardName),
-                          label: r.reviewStatus === "deferred" ? "Təxirə salınma səbəbi" : "Review nəticəsi",
-                          text: r.outcomeComment,
-                        })}
-                        title={r.outcomeComment ? "Səbəbə bax" : undefined}
-                        className={r.outcomeComment ? "cursor-pointer" : "cursor-default"}
-                      >
-                        <span className={`${reviewStyle.badge} inline-flex items-center justify-center gap-1.5 h-7 w-[150px] px-2 rounded-full border-0 text-xs font-medium leading-none whitespace-nowrap`}>
-                          <ReviewIcon className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">{reviewStyle.badgeLabel}</span>
-                        </span>
-                      </button>
-                    </td>
-
-                    <td className="px-4 py-3 text-muted-foreground">{r.reviewStart}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{r.updatedAt}</td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => openOverview(r)}
-                        className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label="Bax"
-                        title="Review-a bax"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </td>
+        {/* ---------- FƏRDİ: kart başına 1 sətir + drill-down ---------- */}
+        <TabsContent value="individual" className="mt-0">
+          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/50 text-muted-foreground text-xs uppercase">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="KPI Kartı" value={colF.cardName} onChange={setCol("cardName")} /></th>
+                    <th className="text-left px-4 py-3 font-medium align-top w-[140px]"><ColumnSearchHeader label="Əməkdaş sayı" value={colF.count} onChange={setCol("count")} placeholder="Məs: 3" /></th>
+                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review statusu" value={colF.status} onChange={setCol("status")} /></th>
+                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review başlanma" value={colF.start} onChange={setCol("start")} placeholder="Məs: 01.08.2026" /></th>
+                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review bitmə" value={colF.end} onChange={setCol("end")} placeholder="Məs: 31.08.2026" /></th>
+                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Son yenilənmə" value={colF.updated} onChange={setCol("updated")} placeholder="Məs: 01.08.2026" /></th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredIndividual.length === 0 ? emptyRow(6, "Fərdi review mərhələsində olan KPI kartı yoxdur.") : filteredIndividual.map(g => (
+                    <>
+                      <tr
+                        key={g.cardId}
+                        onClick={() => setExpanded(expanded === g.cardId ? null : g.cardId)}
+                        className="hover:bg-secondary/30 cursor-pointer"
+                      >
+                        <td className="px-4 py-3 font-medium text-foreground">
+                          <span className="inline-flex items-center gap-2">
+                            {expanded === g.cardId ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                            {withKartSuffix(g.cardName)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground tabular-nums">{g.employees.length}</td>
+                        <td className="px-4 py-3"><StatusBadge g={g} /></td>
+                        <td className="px-4 py-3 text-muted-foreground">{g.reviewStart}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{g.reviewEnd}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{g.updatedAt}</td>
+                      </tr>
+                      {expanded === g.cardId && (
+                        <tr key={`${g.cardId}-drill`} className="bg-secondary/20">
+                          <td colSpan={6} className="px-4 py-3">
+                            <div className="rounded-lg border border-border bg-card overflow-hidden">
+                              <table className="w-full text-sm">
+                                <thead className="bg-secondary/40 text-muted-foreground text-[11px] uppercase">
+                                  <tr>
+                                    <th className="text-left px-3 py-2 font-medium">Əməkdaş</th>
+                                    <th className="text-left px-3 py-2 font-medium">Vəzifə</th>
+                                    <th className="text-left px-3 py-2 font-medium">Struktur</th>
+                                    <th className="text-left px-3 py-2 font-medium w-[180px]">Progress</th>
+                                    <th className="text-right px-3 py-2 font-medium w-20">Əməliyyat</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border">
+                                  {g.employees.map(e => (
+                                    <tr key={e.key} className="hover:bg-secondary/30">
+                                      <td className="px-3 py-2 font-medium text-foreground">{e.empName}</td>
+                                      <td className="px-3 py-2 text-muted-foreground">{e.position}</td>
+                                      <td className="px-3 py-2 text-muted-foreground">{[e.department, e.division].filter(v => v && v !== "—").join(" › ") || "—"}</td>
+                                      <td className="px-3 py-2">
+                                        <div className="flex items-center gap-2">
+                                          <Progress value={e.progress} className="h-2 flex-1" />
+                                          <span className="text-xs tabular-nums font-medium w-9 text-right">{e.progress}%</span>
+                                        </div>
+                                      </td>
+                                      <td className="px-3 py-2 text-right">
+                                        <button
+                                          onClick={() => openIndividual(g, e)}
+                                          className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                                          aria-label="Bax"
+                                          title="Fərdi review-a bax"
+                                        >
+                                          <Eye className="w-4 h-4" />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ---------- TOPLU: kart başına 1 sətir, vahid ümumi progress ---------- */}
+        <TabsContent value="bulk" className="mt-0">
+          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/50 text-muted-foreground text-xs uppercase">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="KPI Kartı" value={colF.cardName} onChange={setCol("cardName")} /></th>
+                    <th className="text-left px-4 py-3 font-medium align-top w-[180px]"><ColumnSearchHeader label="Ümumi Progress" value={colF.progress} onChange={setCol("progress")} placeholder="Məs: 60" /></th>
+                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review statusu" value={colF.status} onChange={setCol("status")} /></th>
+                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review başlanma" value={colF.start} onChange={setCol("start")} placeholder="Məs: 01.08.2026" /></th>
+                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review bitmə" value={colF.end} onChange={setCol("end")} placeholder="Məs: 31.08.2026" /></th>
+                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Son yenilənmə" value={colF.updated} onChange={setCol("updated")} placeholder="Məs: 01.08.2026" /></th>
+                    <th className="text-right px-4 py-3 font-medium align-top">Əməliyyat</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredBulk.length === 0 ? emptyRow(7, "Toplu review mərhələsində olan KPI kartı yoxdur.") : filteredBulk.map(g => (
+                    <tr key={g.cardId} className="hover:bg-secondary/30">
+                      <td className="px-4 py-3 font-medium text-foreground">{withKartSuffix(g.cardName)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Progress value={g.overallProgress} className="h-2 flex-1" />
+                          <span className="text-xs tabular-nums font-medium w-9 text-right">{g.overallProgress}%</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3"><StatusBadge g={g} /></td>
+                      <td className="px-4 py-3 text-muted-foreground">{g.reviewStart}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{g.reviewEnd}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{g.updatedAt}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => openBulk(g)}
+                          className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label="Bax"
+                          title="Review-a bax"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {overview && (
         <ReviewOverviewDialog
           open={!!overview}
           onOpenChange={(o) => !o && setOverview(null)}
-          title={withKartSuffix(overview.row.cardName)}
+          title={withKartSuffix(overview.group.cardName) + (overview.row ? ` · ${overview.row.empName}` : "")}
           data={overview.data}
-          commentRefId={`card:${overview.row.cardId}`}
-          onChangeStatus={() => setStatusDialog({ row: overview.row })}
+          commentRefId={overview.commentRef}
+          onChangeStatus={() => setStatusDialog({
+            cardId: overview.group.cardId,
+            cardName: overview.group.cardName,
+            reviewId: overview.group.reviewId,
+            status: overview.group.reviewStatus,
+          })}
           onOpenTarget={(idx) => {
-            const t = overview.row.targets[idx];
-            if (t) setTargetDetail({ cardId: overview.row.key, cardName: overview.row.cardName, target: t });
+            const src = overview.row || overview.group.employees[0];
+            const t = src?.targets[idx];
+            if (t) setTargetDetail({ cardId: src.key, cardName: overview.group.cardName, target: t });
           }}
         />
       )}
@@ -2225,7 +2394,7 @@ const ReviewsView = () => {
       <ReviewStatusChangeDialog
         open={!!statusDialog}
         onOpenChange={(o) => !o && setStatusDialog(null)}
-        currentStatus={statusDialog ? toOverviewStatus(statusDialog.row.reviewStatus) : "in_progress"}
+        currentStatus={statusDialog ? toOverviewStatus(statusDialog.status) : "in_progress"}
         onSave={saveStatus}
       />
 
@@ -2241,9 +2410,9 @@ const ReviewsView = () => {
         </DialogContent>
       </Dialog>
     </>
-
   );
 };
+
 
 export default ManagerKpiTrackingPage;
 
