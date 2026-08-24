@@ -2134,12 +2134,14 @@ const ReviewsView = () => {
   const openIndividual = (g: ReviewCardGroup, row: ReviewRow) => {
     const data: ReviewOverviewData = {
       reviewType: row.reviewLabel,
-      planDate: g.reviewStart,
-      nextReviewDate: g.reviewEnd,
+      startDate: g.reviewStart,
+      endDate: g.reviewEnd,
       updatedAt: g.updatedAt,
       status: toOverviewStatus(g.reviewStatus),
       overallProgress: row.progress,
-      reviewers: [{ name: row.empName, position: row.position, badge: "İştirakçı" }],
+      reviewers: row.reviewers.length
+        ? row.reviewers.map(r => ({ name: r.name, position: r.position, badge: "Review keçirən" }))
+        : [{ name: "—", position: "Təyin olunmayıb", badge: "Review keçirən" }],
       targets: buildTargets(row, g.reviewStatus, g.outcomeComment),
     };
     setOverview({
@@ -2153,18 +2155,22 @@ const ReviewsView = () => {
   /** Toplu KPI → bütün üzvlər və vahid ümumi progress. */
   const openBulk = (g: ReviewCardGroup) => {
     const first = g.employees[0];
+    const reviewers = first?.reviewers ?? [];
     const data: ReviewOverviewData = {
       reviewType: first?.reviewLabel || "Review",
-      planDate: g.reviewStart,
-      nextReviewDate: g.reviewEnd,
+      startDate: g.reviewStart,
+      endDate: g.reviewEnd,
       updatedAt: g.updatedAt,
       status: toOverviewStatus(g.reviewStatus),
       overallProgress: g.overallProgress,
-      reviewers: g.employees.map(e => ({ name: e.empName, position: e.position, badge: "Üzv" })),
+      reviewers: reviewers.length
+        ? reviewers.map(r => ({ name: r.name, position: r.position, badge: "Review keçirən" }))
+        : [{ name: "—", position: "Təyin olunmayıb", badge: "Review keçirən" }],
       targets: first ? buildTargets(first, g.reviewStatus, g.outcomeComment) : [],
     };
     setOverview({ row: null, group: g, data, commentRef: `card:${g.cardId}` });
   };
+
 
   const saveStatus = (v: { status: ReviewStatusValue; comment: string }) => {
     if (!statusDialog) return;
