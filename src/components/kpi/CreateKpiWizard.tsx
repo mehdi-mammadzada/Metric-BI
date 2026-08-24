@@ -2342,11 +2342,12 @@ const INTEGRATION_SYSTEMS: { name: string; fields: string[] }[] = [
   { name: "SIEM Platform", fields: ["İnsident sayı", "Təhlükə səviyyəsi", "Uyğunluq xalı"] },
 ];
 
-function EvaluatorPickerDialog({ target, employeeOptions, onClose, onSave }: {
-  target: WizardHedef;
+function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, onSave, title }: {
+  initialEvaluators: WizardEvaluatorRef[];
   employeeOptions: { value: string; label: string }[];
   onClose: () => void;
   onSave: (evs: WizardEvaluatorRef[]) => void;
+  title?: string;
 }) {
   const initialTab: "person" | "team" | "structure" | "self" | "integration" = (() => {
     const first = target.evaluators[0]?.name || "";
