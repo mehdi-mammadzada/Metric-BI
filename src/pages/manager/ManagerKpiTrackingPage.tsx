@@ -1,6 +1,6 @@
 // Rəhbər · KPI İzlənməsi — 3 kart: Mənim KPI-larım / Komanda KPI-ları / Tabeçilikdəkilərin KPI-ları.
 import { withKartSuffix } from "@/lib/utils";
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
 import { Badge } from "@/components/ui/badge";
@@ -2362,7 +2362,7 @@ const ReviewsView = () => {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
