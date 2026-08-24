@@ -1922,7 +1922,10 @@ type ReviewRow = {
   updatedAt: string;
   execution: ExecutionStatus | null;
   targets: CardTarget[];
+  /** Review-u keçirən şəxs(lər) — iştirakçılar/qiymətləndiricilər. */
+  reviewers: { name: string; position: string }[];
   assignmentMode: "individual" | "bulk";
+
 };
 
 
