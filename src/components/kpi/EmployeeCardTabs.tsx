@@ -71,8 +71,9 @@ export default function EmployeeCardTabs({ card, tab, employeeName }: Props) {
     return lc?.reviews || [];
   }, [card]);
 
-  // KPI kartına (ümumi kart səviyyəsində) yazılmış şərhlər — yalnız oxunur.
-  const cardRef = card ? `card:${card.id}` : null;
+  // KPI kartına yazılmış şərhlər — əməkdaş görünüşündə yalnız həmin əməkdaşın şərhləri.
+  const cardRef = card ? (employeeName ? employeeCommentRef(card.id, employeeName) : `card:${card.id}`) : null;
+
   const [cardComments, setCardComments] = useState<KpiComment[]>(() => getCachedComments(cardRef));
   const [filterAuthor, setFilterAuthor] = useState("");
   const [filterDate, setFilterDate] = useState("");
