@@ -1976,6 +1976,21 @@ const useReviewRows = (): ReviewRow[] => {
       // Review yalnız real təyin olunmuş əməkdaşlar üçün göstərilir — dublikat/demo sətir yaradılmır.
       if (assigneeIds.length === 0) return;
 
+      // Review-u keçirən şəxslər: review iştirakçıları, yoxdursa kartın qiymətləndiriciləri.
+      const reviewerIds = (active.participantIds && active.participantIds.length
+        ? active.participantIds
+        : (sharedCard?.evaluatorIds ?? [])) as (string | number)[];
+      const reviewers = reviewerIds
+        .map(rid => {
+          const n = Number(String(rid).replace(/^e/, ""));
+          const emp = employees.find(e => e.id === n);
+          return emp
+            ? { name: `${emp.firstName} ${emp.lastName}`, position: emp.positionName || "—" }
+            : null;
+        })
+        .filter((x): x is { name: string; position: string } => !!x);
+
+
 
       assigneeIds.forEach((aid) => {
         const empIdNum = Number(String(aid).replace(/^e/, ""));
