@@ -1955,14 +1955,8 @@ const useReviewRows = (): ReviewRow[] => {
   const lifecycles = useKpiLifecycles();
   const sharedCards = useVisibleSharedKpiCards();
   return useMemo(() => {
-    const today = iso(new Date());
     const employees = getEmployees();
     const rows: ReviewRow[] = [];
-
-    const isActive = (r: LifecycleReview) => r.start && r.end && r.start <= today && today <= r.end;
-
-
-
 
     lifecycles.forEach((lc: CardLifecycle) => {
       if (!lc.reviews || lc.reviews.length === 0) return;
@@ -1973,9 +1967,10 @@ const useReviewRows = (): ReviewRow[] => {
 
       const sorted = [...lc.reviews].sort((a, b) => (a.start || "").localeCompare(b.start || ""));
 
-      // Bütün reviewlər ayrı-ayrılıqda sətir kimi düşür.
+      // Yalnız icra dövrünə çatmış reviewlər görünsün; planlaşdırılanlar (bugün başlama tarixindən əvvəl) göstərilmir.
       sorted.forEach((active, activeIndex) => {
       const reviewStatus = computeReviewStatus(active);
+      if (reviewStatus === "pending") return;
       const reviewName = (active as any).name || `Review #${activeIndex + 1}`;
 
 
