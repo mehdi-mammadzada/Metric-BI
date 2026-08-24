@@ -2186,7 +2186,7 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
           <div className="flex items-start justify-between gap-3">
             <DialogTitle className="flex items-center gap-2 text-lg">
               <Star className="w-5 h-5 text-amber-500" />
-              "{target.name || "Hədəf"}" üçün bal intervalları (1–{max})
+              "{title || "Qiymətləndirici seçimi"}" üçün bal intervalları (1–{max})
             </DialogTitle>
             {needsMinMax && (
               <button
@@ -2350,7 +2350,7 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
   title?: string;
 }) {
   const initialTab: "person" | "team" | "structure" | "self" | "integration" = (() => {
-    const first = target.evaluators[0]?.name || "";
+    const first = initialEvaluators[0]?.name || "";
     if (first.startsWith("[Komanda]")) return "team";
     if (first.startsWith("[Struktur]")) return "structure";
     if (first === "[Özü]") return "self";
@@ -2360,7 +2360,7 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
   const [tab, setTab] = useState<"person" | "team" | "structure" | "self" | "integration">(initialTab);
   const evaluatorTypeLabels = useCatalogValues("evaluator_types", EVALUATOR_TYPE_DEFAULTS);
   const [personEvs, setPersonEvs] = useState<WizardEvaluatorRef[]>(
-    initialTab === "person" ? target.evaluators : []
+    initialTab === "person" ? initialEvaluators : []
   );
   const [personSearch, setPersonSearch] = useState("");
   const filteredEmployeeOptions = useMemo(() => {
@@ -2370,12 +2370,12 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
   }, [personSearch, employeeOptions]);
   const teams = useMemo(() => getTeams(), []);
   const [teamName, setTeamName] = useState<string>(
-    initialTab === "team" ? (target.evaluators[0]?.name.replace("[Komanda] ", "").split(" — ")[0] || "") : ""
+    initialTab === "team" ? (initialEvaluators[0]?.name.replace("[Komanda] ", "").split(" — ")[0] || "") : ""
   );
   const [teamSearch, setTeamSearch] = useState("");
   const [teamMemberEvs, setTeamMemberEvs] = useState<WizardEvaluatorRef[]>(
-    initialTab === "team" && target.evaluators.length > 0 && !target.evaluators[0].name.startsWith("[Komanda]")
-      ? target.evaluators : []
+    initialTab === "team" && initialEvaluators.length > 0 && !initialEvaluators[0].name.startsWith("[Komanda]")
+      ? initialEvaluators : []
   );
   const [randomCount, setRandomCount] = useState<number>(1);
   const [teamMemberSearch, setTeamMemberSearch] = useState("");
@@ -2411,12 +2411,12 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
   const structureList = useMemo(() => flattenStructures(getStructures()), []);
   const allEmployees = useMemo(() => getEmployees().filter(e => e.active), []);
   const [structPath, setStructPath] = useState<string>(
-    initialTab === "structure" ? (target.evaluators[0]?.name.replace("[Struktur] ", "").split(" — ")[0] || "") : ""
+    initialTab === "structure" ? (initialEvaluators[0]?.name.replace("[Struktur] ", "").split(" — ")[0] || "") : ""
   );
   const [structSearch, setStructSearch] = useState("");
   const [structMemberEvs, setStructMemberEvs] = useState<WizardEvaluatorRef[]>(
-    initialTab === "structure" && target.evaluators.length > 0 && !target.evaluators[0].name.startsWith("[Struktur]")
-      ? target.evaluators : []
+    initialTab === "structure" && initialEvaluators.length > 0 && !initialEvaluators[0].name.startsWith("[Struktur]")
+      ? initialEvaluators : []
   );
   const [structRandomCount, setStructRandomCount] = useState<number>(1);
   const [structMemberSearch, setStructMemberSearch] = useState("");
@@ -2450,7 +2450,7 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
   };
 
   const initialIntegrationName = initialTab === "integration"
-    ? (target.evaluators[0]?.name.replace("[İnteqrasiya] ", "").split(" · ")[0] || "")
+    ? (initialEvaluators[0]?.name.replace("[İnteqrasiya] ", "").split(" · ")[0] || "")
     : "";
   const [integration, setIntegration] = useState<string>(initialIntegrationName);
   const [integrationSearch, setIntegrationSearch] = useState("");
@@ -2519,7 +2519,7 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-indigo-600" />
-            Qiymətləndirici seçimi — "{target.name || "Hədəf"}"
+            Qiymətləndirici seçimi — "{title || "Qiymətləndirici seçimi"}"
           </DialogTitle>
         </DialogHeader>
 
