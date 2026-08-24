@@ -2333,7 +2333,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 );
               })()}
 
-              {detailTab === "reviewTrack" && (() => {
+              {detailTab === "reviewTrack" && !employeeCardView && (() => {
                 const lc = getLifecycleWithFallback(selectedKpi.id, withKartSuffix(selectedKpi.name), {
                   startDate: selectedKpi.startDate, endDate: selectedKpi.endDate, frequency: selectedKpi.frequency,
                 });
