@@ -40,6 +40,8 @@ import ReviewOverviewDialog, { type ReviewOverviewData } from "@/components/kpi/
 import ReviewStatusChangeDialog, { type ReviewStatusValue } from "@/components/kpi/ReviewStatusChangeDialog";
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
 import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
+import { employeeCommentRef } from "@/components/kpi/EmployeeCardTabs";
+
 
 type Stage = "assigned" | "evaluated" | "pending_assign";
 type KpiStatus = TargetStatus;
