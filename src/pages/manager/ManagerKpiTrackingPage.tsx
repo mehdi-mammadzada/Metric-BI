@@ -1920,7 +1920,9 @@ type ReviewRow = {
   updatedAt: string;
   execution: ExecutionStatus | null;
   targets: CardTarget[];
+  assignmentMode: "individual" | "bulk";
 };
+
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const fmtDate = (s?: string) => {
