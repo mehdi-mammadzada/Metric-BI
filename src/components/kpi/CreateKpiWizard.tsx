@@ -2187,7 +2187,7 @@ function ScoresDialog({ target, scoreMax, onClose, onSave }: {
           <div className="flex items-start justify-between gap-3">
             <DialogTitle className="flex items-center gap-2 text-lg">
               <Star className="w-5 h-5 text-amber-500" />
-              "{title || "Qiymətləndirici seçimi"}" üçün bal intervalları (1–{max})
+              "{target.name || "Hədəf"}" üçün bal intervalları (1–{max})
             </DialogTitle>
             {needsMinMax && (
               <button
