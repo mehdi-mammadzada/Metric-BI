@@ -2031,6 +2031,8 @@ const useReviewRows = (): ReviewRow[] => {
           updatedAt: (lc.updatedAt || "").slice(0, 10) ? fmtDate((lc.updatedAt || "").slice(0, 10)) : fmtDate(active.start),
           execution: exec,
           targets: realTargets,
+          reviewers,
+
           assignmentMode: sharedCard?.assignmentMode === "bulk" ? "bulk" : "individual",
         });
 
