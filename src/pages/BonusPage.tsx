@@ -15,6 +15,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useSampleResultsSeed } from "@/lib/sampleResultsSeed";
+import { useBonusEmployees } from "@/lib/bonusEmployeesData";
+
 
 type Periodicity = "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly" | "other";
 
