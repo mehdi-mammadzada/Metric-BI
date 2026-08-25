@@ -70,6 +70,16 @@ const persist = (rows: SubKpi[]) => {
 export const getSubKpis = (assigneeId: string): SubKpi[] =>
   load().filter(k => k.assigneeId === assigneeId);
 
+/** Verilmiş sətirləri id-ə görə əlavə edir / əvəzləyir. */
+export const upsertSubKpis = (rows: SubKpi[]) => {
+  if (rows.length === 0) return;
+  const list = load();
+  const map = new Map(list.map(k => [k.id, k]));
+  rows.forEach(r => map.set(r.id, { ...map.get(r.id), ...r }));
+  persist(Array.from(map.values()));
+};
+
+
 export const saveSubKpiEvaluation = (
   id: string,
   patch: Partial<Pick<SubKpi, "evaluatedScore" | "actual" | "selfComment" | "challenges" | "evidence" | "nextPlan">>,

@@ -17,6 +17,8 @@ import { MONTHS } from "@/lib/salaryStore";
 import { cn, withKartSuffix } from "@/lib/utils";
 import { useVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { calcCompletion, getSubKpis, isEvaluated } from "@/lib/kpiEvaluationStore";
+import { useSampleResultsSeed } from "@/lib/sampleResultsSeed";
+
 
 const YEARS = [2025, 2026];
 
@@ -66,7 +68,9 @@ export interface KpiScoresPageProps {
 type Periodicity = "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly" | "other";
 
 const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle }: KpiScoresPageProps = {}) => {
+  useSampleResultsSeed();
   const employees = useMemo(() => employeesOverride || getEmployees().filter(e => e.active), [employeesOverride]);
+
   const cards = useVisibleSharedKpiCards();
   const employeeById = useMemo(() => {
     const map = new Map<string, ReturnType<typeof getEmployees>[number]>();

@@ -15,6 +15,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useSampleResultsSeed } from "@/lib/sampleResultsSeed";
+import { useBonusEmployees } from "@/lib/bonusEmployeesData";
+
 
 type Periodicity = "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly" | "other";
 
@@ -44,7 +47,10 @@ export interface BonusPageProps {
 }
 
 const BonusPage = ({ employeesOverride, hideChrome, hideCalcButton, heroTitle, heroSubtitle }: BonusPageProps = {}) => {
-  const employees = employeesOverride || DEFAULT_BONUS_EMPLOYEES;
+  useSampleResultsSeed();
+  const derived = useBonusEmployees();
+  const employees = employeesOverride || derived;
+
   const [periodicity, setPeriodicity] = useState<Periodicity | "">("monthly");
   const [weekDate, setWeekDate] = useState<Date | undefined>();
   const [year, setYear] = useState<string>("2026");
@@ -304,7 +310,7 @@ const BonusPage = ({ employeesOverride, hideChrome, hideCalcButton, heroTitle, h
         </div>
 
         <div className="bg-card rounded-xl border border-border overflow-hidden">
-          <BonusResultTable result={result} setDetailEmp={setDetailEmp} />
+          <BonusResultTable result={result && result.length ? result : defaultRows} setDetailEmp={setDetailEmp} />
         </div>
       </main>
 
