@@ -16,7 +16,7 @@ interface Props {
   previousParticipantIds?: string[];
   /** Əvvəlki review-ləri keçirən şəxslərin adları (id olmadıqda ad üzrə uyğunlaşdırılır). */
   previousParticipantNames?: string[];
-  onCreate: (payload: { start: string; end: string; participantIds: string[] }) => void;
+  onCreate: (payload: { start: string; end: string; participantIds: string[]; reviewerNames: string[] }) => void;
 }
 
 type Mode = "previous" | "new";
@@ -32,6 +32,14 @@ const AVATAR_COLORS = [
   "bg-rose-100 text-rose-700",
   "bg-cyan-100 text-cyan-700",
 ];
+
+const normalizePersonName = (value: string) =>
+  String(value || "")
+    .split("·")[0]
+    .split("—")[0]
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
 
 const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousParticipantNames, onCreate }: Props) => {
   const [start, setStart] = useState("");
@@ -50,14 +58,14 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
     const ids = new Set((previousParticipantIds || []).map(String));
     const names = new Set(
       (previousParticipantNames || [])
-        .map(n => String(n).trim().toLowerCase())
+        .map(normalizePersonName)
         .filter(Boolean),
     );
     if (ids.size === 0 && names.size === 0) return [];
     return activeEmployees.filter(e => {
       if (ids.has(String(e.id))) return true;
-      const full = `${e.firstName || ""} ${e.lastName || ""}`.trim().toLowerCase();
-      const rev = `${e.lastName || ""} ${e.firstName || ""}`.trim().toLowerCase();
+      const full = normalizePersonName(`${e.firstName || ""} ${e.lastName || ""}`);
+      const rev = normalizePersonName(`${e.lastName || ""} ${e.firstName || ""}`);
       return names.has(full) || names.has(rev);
     });
   }, [previousParticipantIds, previousParticipantNames, activeEmployees]);
@@ -119,7 +127,12 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
 
   const handleCreate = () => {
     if (!canCreate) return;
-    onCreate({ start, end, participantIds: Array.from(selected) });
+    const participantIds = Array.from(selected);
+    const selectedNames = activeEmployees
+      .filter(e => selected.has(String(e.id)))
+      .map(e => `${e.firstName} ${e.lastName}`.trim())
+      .filter(Boolean);
+    onCreate({ start, end, participantIds, reviewerNames: selectedNames });
     onOpenChange(false);
   };
 

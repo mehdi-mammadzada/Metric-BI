@@ -153,7 +153,7 @@ export const appendReviewToCard = (
   cardId: number,
   cardName: string,
   meta: CardMeta | undefined,
-  review: { start: string; end: string; period?: string; participantIds?: string[] },
+  review: { start: string; end: string; period?: string; participantIds?: string[]; reviewerNames?: string[] },
 ): LifecycleReview => {
   const base = getLifecycle(cardId) || getLifecycleWithFallback(cardId, cardName, meta);
   const id = `r${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -163,6 +163,7 @@ export const appendReviewToCard = (
     start: review.start,
     end: review.end,
     participantIds: review.participantIds,
+    reviewerNames: review.reviewerNames,
   };
   const nextReviews = [...(base.reviews || []), newReview].sort((a, b) =>
     (a.start || "").localeCompare(b.start || ""),

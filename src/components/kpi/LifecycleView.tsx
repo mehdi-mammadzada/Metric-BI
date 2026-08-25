@@ -218,13 +218,14 @@ const LifecycleView = ({ lifecycle, editable, cardId, cardName, cardMeta }: Life
     const names = new Set<string>();
     for (const r of lifecycle.reviews) {
       for (const n of r.reviewerNames || []) if (n) names.add(String(n));
+      if ((r as { reviewerName?: string }).reviewerName) names.add(String((r as { reviewerName?: string }).reviewerName));
     }
     return Array.from(names);
   })();
 
-  const handleCreate = ({ start, end, participantIds }: { start: string; end: string; participantIds: string[] }) => {
-    if (!canCreate) return;
-    appendReviewToCard(cardId!, cardName!, cardMeta, { start, end, participantIds });
+  const handleCreate = ({ start, end, participantIds, reviewerNames }: { start: string; end: string; participantIds: string[]; reviewerNames: string[] }) => {
+    if (!canCreate || cardId == null || !cardName) return;
+    appendReviewToCard(cardId, cardName, cardMeta, { start, end, participantIds, reviewerNames });
     toast({ title: "Yeni review yaradıldı" });
   };
 
