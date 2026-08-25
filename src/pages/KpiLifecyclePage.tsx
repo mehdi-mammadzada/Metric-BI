@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
-import { Workflow, Eye, Save, Upload, Trash2, FileText } from "lucide-react";
-import { useKpiLifecycles, type CardLifecycle, setCardLifecycle } from "@/lib/kpiLifecycleStore";
+import { Workflow, Eye, Save, Trash2, FileText } from "lucide-react";
+import { useKpiLifecycles, type CardLifecycle } from "@/lib/kpiLifecycleStore";
 import LifecycleDetailDialog from "@/components/kpi/LifecycleDetailDialog";
 import { DataTable } from "@/components/common/DataTable";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { withKartSuffix } from "@/lib/utils";
 import {
   useLifecycleTemplates, addLifecycleTemplate, deleteLifecycleTemplate,
   updateLifecycleTemplate, toggleLifecycleTemplateActive,
-  buildTemplateOffsets, resolveTemplateLifecycle,
+  buildTemplateOffsets,
   type LifecycleTemplate,
 } from "@/lib/lifecycleTemplatesStore";
 import { Pencil, CalendarClock } from "lucide-react";
@@ -28,7 +28,6 @@ const KpiLifecyclePage = () => {
   const [viewing, setViewing] = useState<CardLifecycle | null>(null);
   const [tab, setTab] = useState<"plans" | "templates">("plans");
   const [saveDialog, setSaveDialog] = useState<CardLifecycle | null>(null);
-  const [loadDialog, setLoadDialog] = useState<CardLifecycle | null>(null);
   const [tplName, setTplName] = useState("");
   const [tplDesc, setTplDesc] = useState("");
   const [detailTpl, setDetailTpl] = useState<LifecycleTemplate | null>(null);
@@ -65,15 +64,6 @@ const KpiLifecyclePage = () => {
     setSaveDialog(null);
     setTplName("");
     setTplDesc("");
-  };
-
-  const handleApplyTemplate = (tpl: LifecycleTemplate) => {
-    if (!loadDialog) return;
-    const base = loadDialog.assignment?.start || new Date().toISOString().slice(0, 10);
-    const resolved = resolveTemplateLifecycle(tpl, base);
-    setCardLifecycle(loadDialog.cardId, loadDialog.cardName, resolved);
-    toast.success(`"${tpl.name}" şablonu "${loadDialog.cardName}" üçün tətbiq edildi`);
-    setLoadDialog(null);
   };
 
   return (
@@ -138,7 +128,7 @@ const KpiLifecyclePage = () => {
                     render: (l) => <span className="text-xs text-muted-foreground">{l.updatedAt.slice(0, 10)}</span>,
                   },
                   {
-                    key: "op", label: "Əməliyyat", width: 220, align: "center", filterType: "none",
+                    key: "op", label: "Əməliyyat", width: 160, align: "center", filterType: "none",
                     render: (l) => (
                       <div className="flex items-center justify-center gap-1">
                         <button
@@ -157,14 +147,6 @@ const KpiLifecyclePage = () => {
                         >
                           <Save className="w-4 h-4" />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setLoadDialog(l)}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-sky-500/10 text-sky-600"
-                          title="Şablondan yüklə"
-                        >
-                          <Upload className="w-4 h-4" />
-                        </button>
                       </div>
                     ),
                   },
@@ -175,40 +157,7 @@ const KpiLifecyclePage = () => {
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-foreground">Lifecycle Şablonları</h3>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground">{templates.length} şablon</span>
-                  <label className="inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90">
-                    <Upload className="w-4 h-4" />
-                    Şablon yüklə
-                    <input
-                      type="file"
-                      accept="application/json,.json"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          const text = await file.text();
-                          const parsed = JSON.parse(text);
-                          const data = parsed.data || parsed;
-                          if (!data || typeof data !== "object" || !Array.isArray(data.reviews)) {
-                            toast.error("Yanlış şablon formatı");
-                            return;
-                          }
-                          addLifecycleTemplate({
-                            name: parsed.name || file.name.replace(/\.json$/i, ""),
-                            description: parsed.description,
-                            data,
-                          });
-                          toast.success("Şablon yükləndi");
-                        } catch {
-                          toast.error("Faylı oxumaq mümkün olmadı");
-                        }
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                </div>
+                <span className="text-xs text-muted-foreground">{templates.length} şablon</span>
               </div>
               {templates.length === 0 ? (
                 <div className="py-12 text-center text-muted-foreground text-sm">
@@ -308,40 +257,6 @@ const KpiLifecyclePage = () => {
             <DialogFooter>
               <Button variant="outline" onClick={() => setSaveDialog(null)}>Ləğv et</Button>
               <Button onClick={handleSaveTemplate} className="gap-2"><Save className="w-4 h-4" /> Yadda saxla</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={!!loadDialog} onOpenChange={(o) => !o && setLoadDialog(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Şablondan yüklə — {loadDialog ? withKartSuffix(loadDialog.cardName) : ""}</DialogTitle>
-            </DialogHeader>
-            {templates.filter(t => t.active).length === 0 ? (
-              <div className="py-6 text-center text-sm text-muted-foreground">Hələ heç bir aktiv şablon yoxdur.</div>
-            ) : (
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                {templates.filter(t => t.active).map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => handleApplyTemplate(t)}
-                    className="w-full text-left border border-border rounded-lg p-3 hover:border-primary/50 hover:bg-secondary/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-primary" />
-                      <span className="font-medium text-sm text-foreground">{t.name}</span>
-                      {t.isSystem && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">Sistem</span>}
-                    </div>
-                    {t.description && <p className="text-xs text-muted-foreground mt-1">{t.description}</p>}
-                    <div className="mt-2 text-[11px] text-muted-foreground">
-                      Təyinat {t.data.assignment?.period ?? "—"} • Qiymətləndirmə {t.data.evaluation?.period ?? "—"} • Bonus {t.data.bonus?.period ?? "—"} • {t.data.reviews.length} review
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setLoadDialog(null)}>Bağla</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
