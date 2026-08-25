@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { getEmployees, type OrgEmployee } from "@/lib/orgStore";
 
 interface Props {
@@ -15,6 +14,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   /** Əvvəlki review iştirakçıları — id siyahısı. Boş və ya undefined ola bilər. */
   previousParticipantIds?: string[];
+  /** Əvvəlki review-ləri keçirən şəxslərin adları (id olmadıqda ad üzrə uyğunlaşdırılır). */
+  previousParticipantNames?: string[];
   onCreate: (payload: { start: string; end: string; participantIds: string[] }) => void;
 }
 
@@ -32,7 +33,7 @@ const AVATAR_COLORS = [
   "bg-cyan-100 text-cyan-700",
 ];
 
-const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, onCreate }: Props) => {
+const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousParticipantNames, onCreate }: Props) => {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [mode, setMode] = useState<Mode>("previous");
@@ -47,9 +48,19 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, onCreate 
 
   const prevList = useMemo(() => {
     const ids = new Set((previousParticipantIds || []).map(String));
-    if (ids.size === 0) return [];
-    return activeEmployees.filter(e => ids.has(String(e.id)));
-  }, [previousParticipantIds, activeEmployees]);
+    const names = new Set(
+      (previousParticipantNames || [])
+        .map(n => String(n).trim().toLowerCase())
+        .filter(Boolean),
+    );
+    if (ids.size === 0 && names.size === 0) return [];
+    return activeEmployees.filter(e => {
+      if (ids.has(String(e.id))) return true;
+      const full = `${e.firstName || ""} ${e.lastName || ""}`.trim().toLowerCase();
+      const rev = `${e.lastName || ""} ${e.firstName || ""}`.trim().toLowerCase();
+      return names.has(full) || names.has(rev);
+    });
+  }, [previousParticipantIds, previousParticipantNames, activeEmployees]);
 
   const hasPrevious = prevList.length > 0;
 
@@ -117,6 +128,7 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, onCreate 
   const previewList = mode === "previous" && !showAll && filtered.length > PREVIEW
     ? filtered.slice(0, PREVIEW)
     : filtered;
+  void PREVIEW;
   const hiddenCount = filtered.length - previewList.length;
 
   const avatarClass = (id: string) => {
@@ -203,7 +215,7 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, onCreate 
             </div>
 
             <div className="border border-border rounded-md">
-              <ScrollArea className="max-h-72">
+              <div className="max-h-72 overflow-y-auto">
                 <ul className="divide-y divide-border">
                   {previewList.length === 0 && (
                     <li className="p-4 text-center text-sm text-muted-foreground">
@@ -263,7 +275,7 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, onCreate 
                     Yığ
                   </button>
                 )}
-              </ScrollArea>
+              </div>
             </div>
           </div>
         </div>
