@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
-import { Workflow, Eye, Save, Upload, Trash2, FileText } from "lucide-react";
-import { useKpiLifecycles, type CardLifecycle, setCardLifecycle } from "@/lib/kpiLifecycleStore";
+import { Workflow, Eye, Save, Trash2, FileText } from "lucide-react";
+import { useKpiLifecycles, type CardLifecycle } from "@/lib/kpiLifecycleStore";
 import LifecycleDetailDialog from "@/components/kpi/LifecycleDetailDialog";
 import { DataTable } from "@/components/common/DataTable";
 import { Button } from "@/components/ui/button";
