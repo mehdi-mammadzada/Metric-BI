@@ -417,9 +417,11 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         bonusEnd: lc?.bonus?.end || "",
         reviews: (lc?.reviews || []).map((r, i) => ({
           id: r.id || `r-${i}`,
-          name: `Review ${i + 1}`,
+          name: r.name || `Review ${i + 1}`,
           start: r.start,
           end: r.end,
+          reviewerName: r.reviewerName,
+          reviewerNames: r.reviewerNames || [],
         })),
       },
       targets: targets as any,

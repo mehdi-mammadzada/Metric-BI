@@ -47,7 +47,6 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
   const [mode, setMode] = useState<Mode>("previous");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
-  const [showAll, setShowAll] = useState(false);
 
   const activeEmployees = useMemo(
     () => getEmployees().filter(e => e.active !== false),
@@ -75,7 +74,7 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
   // Reset on open
   useEffect(() => {
     if (open) {
-      setStart(""); setEnd(""); setQuery(""); setShowAll(false);
+      setStart(""); setEnd(""); setQuery("");
       if (hasPrevious) {
         setMode("previous");
         setSelected(new Set(prevList.map(e => String(e.id))));
@@ -93,7 +92,6 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
       setSelected(new Set());
     }
     setQuery("");
-    setShowAll(false);
   }, [mode, prevList]);
 
   const listForMode: OrgEmployee[] = mode === "previous" ? prevList : activeEmployees;
@@ -136,13 +134,7 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
     onOpenChange(false);
   };
 
-  // Preview limit for "previous" mode
-  const PREVIEW = 4;
-  const previewList = mode === "previous" && !showAll && filtered.length > PREVIEW
-    ? filtered.slice(0, PREVIEW)
-    : filtered;
-  void PREVIEW;
-  const hiddenCount = filtered.length - previewList.length;
+  const previewList = filtered;
 
   const avatarClass = (id: string) => {
     const n = Array.from(String(id)).reduce((a, c) => a + c.charCodeAt(0), 0);
@@ -270,24 +262,6 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
                     );
                   })}
                 </ul>
-                {mode === "previous" && hiddenCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAll(true)}
-                    className="w-full text-center text-sm text-primary hover:underline py-2.5 border-t border-border"
-                  >
-                    + {hiddenCount} nəfər daha
-                  </button>
-                )}
-                {mode === "previous" && showAll && filtered.length > PREVIEW && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAll(false)}
-                    className="w-full text-center text-sm text-primary hover:underline py-2.5 border-t border-border"
-                  >
-                    Yığ
-                  </button>
-                )}
               </div>
             </div>
           </div>
