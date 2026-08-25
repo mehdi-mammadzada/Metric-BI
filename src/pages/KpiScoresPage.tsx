@@ -17,6 +17,8 @@ import { MONTHS } from "@/lib/salaryStore";
 import { cn, withKartSuffix } from "@/lib/utils";
 import { useVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { calcCompletion, getSubKpis, isEvaluated } from "@/lib/kpiEvaluationStore";
+import { useSampleResultsSeed } from "@/lib/sampleResultsSeed";
+
 
 const YEARS = [2025, 2026];
 
