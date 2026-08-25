@@ -261,40 +261,6 @@ const KpiLifecyclePage = () => {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={!!loadDialog} onOpenChange={(o) => !o && setLoadDialog(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Şablondan yüklə — {loadDialog ? withKartSuffix(loadDialog.cardName) : ""}</DialogTitle>
-            </DialogHeader>
-            {templates.filter(t => t.active).length === 0 ? (
-              <div className="py-6 text-center text-sm text-muted-foreground">Hələ heç bir aktiv şablon yoxdur.</div>
-            ) : (
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                {templates.filter(t => t.active).map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => handleApplyTemplate(t)}
-                    className="w-full text-left border border-border rounded-lg p-3 hover:border-primary/50 hover:bg-secondary/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-primary" />
-                      <span className="font-medium text-sm text-foreground">{t.name}</span>
-                      {t.isSystem && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">Sistem</span>}
-                    </div>
-                    {t.description && <p className="text-xs text-muted-foreground mt-1">{t.description}</p>}
-                    <div className="mt-2 text-[11px] text-muted-foreground">
-                      Təyinat {t.data.assignment?.period ?? "—"} • Qiymətləndirmə {t.data.evaluation?.period ?? "—"} • Bonus {t.data.bonus?.period ?? "—"} • {t.data.reviews.length} review
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setLoadDialog(null)}>Bağla</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
         {/* Şablon detalı */}
         <Dialog open={!!detailTpl} onOpenChange={(o) => !o && setDetailTpl(null)}>
           <DialogContent className="max-w-lg">
