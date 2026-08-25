@@ -206,8 +206,20 @@ const LifecycleView = ({ lifecycle, editable, cardId, cardName, cardMeta }: Life
 
   // Ən son review-un iştirakçıları — "əvvəlki review iştirakçıları" seçimi üçün.
   const previousParticipantIds = (() => {
-    const sorted = [...lifecycle.reviews].sort((a, b) => (b.start || "").localeCompare(a.start || ""));
-    return sorted.find(r => r.participantIds && r.participantIds.length > 0)?.participantIds || [];
+    const ids = new Set<string>();
+    for (const r of lifecycle.reviews) {
+      for (const id of r.participantIds || []) ids.add(String(id));
+    }
+    return Array.from(ids);
+  })();
+
+  // Kart yaradılarkən review-u keçirmək üçün seçilmiş şəxslərin adları.
+  const previousParticipantNames = (() => {
+    const names = new Set<string>();
+    for (const r of lifecycle.reviews) {
+      for (const n of r.reviewerNames || []) if (n) names.add(String(n));
+    }
+    return Array.from(names);
   })();
 
   const handleCreate = ({ start, end, participantIds }: { start: string; end: string; participantIds: string[] }) => {
@@ -264,6 +276,7 @@ const LifecycleView = ({ lifecycle, editable, cardId, cardName, cardMeta }: Life
         open={newReviewOpen}
         onOpenChange={setNewReviewOpen}
         previousParticipantIds={previousParticipantIds}
+        previousParticipantNames={previousParticipantNames}
         onCreate={handleCreate}
       />
     </div>

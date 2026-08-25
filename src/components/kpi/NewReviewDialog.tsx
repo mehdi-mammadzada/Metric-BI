@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { getEmployees, type OrgEmployee } from "@/lib/orgStore";
 
 interface Props {
@@ -276,7 +275,7 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
                     Yığ
                   </button>
                 )}
-              </ScrollArea>
+              </div>
             </div>
           </div>
         </div>
