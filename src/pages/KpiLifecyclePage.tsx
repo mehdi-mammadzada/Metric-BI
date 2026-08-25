@@ -28,7 +28,6 @@ const KpiLifecyclePage = () => {
   const [viewing, setViewing] = useState<CardLifecycle | null>(null);
   const [tab, setTab] = useState<"plans" | "templates">("plans");
   const [saveDialog, setSaveDialog] = useState<CardLifecycle | null>(null);
-  const [loadDialog, setLoadDialog] = useState<CardLifecycle | null>(null);
   const [tplName, setTplName] = useState("");
   const [tplDesc, setTplDesc] = useState("");
   const [detailTpl, setDetailTpl] = useState<LifecycleTemplate | null>(null);
@@ -65,15 +64,6 @@ const KpiLifecyclePage = () => {
     setSaveDialog(null);
     setTplName("");
     setTplDesc("");
-  };
-
-  const handleApplyTemplate = (tpl: LifecycleTemplate) => {
-    if (!loadDialog) return;
-    const base = loadDialog.assignment?.start || new Date().toISOString().slice(0, 10);
-    const resolved = resolveTemplateLifecycle(tpl, base);
-    setCardLifecycle(loadDialog.cardId, loadDialog.cardName, resolved);
-    toast.success(`"${tpl.name}" şablonu "${loadDialog.cardName}" üçün tətbiq edildi`);
-    setLoadDialog(null);
   };
 
   return (
