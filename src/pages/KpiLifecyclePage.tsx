@@ -157,40 +157,7 @@ const KpiLifecyclePage = () => {
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-foreground">Lifecycle Şablonları</h3>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground">{templates.length} şablon</span>
-                  <label className="inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90">
-                    <Upload className="w-4 h-4" />
-                    Şablon yüklə
-                    <input
-                      type="file"
-                      accept="application/json,.json"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          const text = await file.text();
-                          const parsed = JSON.parse(text);
-                          const data = parsed.data || parsed;
-                          if (!data || typeof data !== "object" || !Array.isArray(data.reviews)) {
-                            toast.error("Yanlış şablon formatı");
-                            return;
-                          }
-                          addLifecycleTemplate({
-                            name: parsed.name || file.name.replace(/\.json$/i, ""),
-                            description: parsed.description,
-                            data,
-                          });
-                          toast.success("Şablon yükləndi");
-                        } catch {
-                          toast.error("Faylı oxumaq mümkün olmadı");
-                        }
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                </div>
+                <span className="text-xs text-muted-foreground">{templates.length} şablon</span>
               </div>
               {templates.length === 0 ? (
                 <div className="py-12 text-center text-muted-foreground text-sm">
