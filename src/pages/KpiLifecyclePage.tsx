@@ -16,7 +16,7 @@ import { withKartSuffix } from "@/lib/utils";
 import {
   useLifecycleTemplates, addLifecycleTemplate, deleteLifecycleTemplate,
   updateLifecycleTemplate, toggleLifecycleTemplateActive,
-  buildTemplateOffsets, resolveTemplateLifecycle,
+  buildTemplateOffsets,
   type LifecycleTemplate,
 } from "@/lib/lifecycleTemplatesStore";
 import { Pencil, CalendarClock } from "lucide-react";
