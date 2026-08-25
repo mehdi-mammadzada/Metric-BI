@@ -44,7 +44,10 @@ export interface BonusPageProps {
 }
 
 const BonusPage = ({ employeesOverride, hideChrome, hideCalcButton, heroTitle, heroSubtitle }: BonusPageProps = {}) => {
-  const employees = employeesOverride || DEFAULT_BONUS_EMPLOYEES;
+  useSampleResultsSeed();
+  const derived = useBonusEmployees();
+  const employees = employeesOverride || derived;
+
   const [periodicity, setPeriodicity] = useState<Periodicity | "">("monthly");
   const [weekDate, setWeekDate] = useState<Date | undefined>();
   const [year, setYear] = useState<string>("2026");
