@@ -128,7 +128,7 @@ const KpiLifecyclePage = () => {
                     render: (l) => <span className="text-xs text-muted-foreground">{l.updatedAt.slice(0, 10)}</span>,
                   },
                   {
-                    key: "op", label: "Əməliyyat", width: 220, align: "center", filterType: "none",
+                    key: "op", label: "Əməliyyat", width: 160, align: "center", filterType: "none",
                     render: (l) => (
                       <div className="flex items-center justify-center gap-1">
                         <button
@@ -146,14 +146,6 @@ const KpiLifecyclePage = () => {
                           title="Şablon kimi yadda saxla"
                         >
                           <Save className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setLoadDialog(l)}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-sky-500/10 text-sky-600"
-                          title="Şablondan yüklə"
-                        >
-                          <Upload className="w-4 h-4" />
                         </button>
                       </div>
                     ),
