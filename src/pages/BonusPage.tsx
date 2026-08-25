@@ -310,7 +310,7 @@ const BonusPage = ({ employeesOverride, hideChrome, hideCalcButton, heroTitle, h
         </div>
 
         <div className="bg-card rounded-xl border border-border overflow-hidden">
-          <BonusResultTable result={result} setDetailEmp={setDetailEmp} />
+          <BonusResultTable result={result && result.length ? result : defaultRows} setDetailEmp={setDetailEmp} />
         </div>
       </main>
 
