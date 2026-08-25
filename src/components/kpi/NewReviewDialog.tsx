@@ -16,7 +16,7 @@ interface Props {
   previousParticipantIds?: string[];
   /** Əvvəlki review-ləri keçirən şəxslərin adları (id olmadıqda ad üzrə uyğunlaşdırılır). */
   previousParticipantNames?: string[];
-  onCreate: (payload: { start: string; end: string; participantIds: string[] }) => void;
+  onCreate: (payload: { start: string; end: string; participantIds: string[]; reviewerNames: string[] }) => void;
 }
 
 type Mode = "previous" | "new";
@@ -33,13 +33,20 @@ const AVATAR_COLORS = [
   "bg-cyan-100 text-cyan-700",
 ];
 
+const normalizePersonName = (value: string) =>
+  String(value || "")
+    .split("·")[0]
+    .split("—")[0]
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+
 const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousParticipantNames, onCreate }: Props) => {
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [mode, setMode] = useState<Mode>("previous");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
-  const [showAll, setShowAll] = useState(false);
 
   const activeEmployees = useMemo(
     () => getEmployees().filter(e => e.active !== false),
@@ -50,14 +57,14 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
     const ids = new Set((previousParticipantIds || []).map(String));
     const names = new Set(
       (previousParticipantNames || [])
-        .map(n => String(n).trim().toLowerCase())
+        .map(normalizePersonName)
         .filter(Boolean),
     );
     if (ids.size === 0 && names.size === 0) return [];
     return activeEmployees.filter(e => {
       if (ids.has(String(e.id))) return true;
-      const full = `${e.firstName || ""} ${e.lastName || ""}`.trim().toLowerCase();
-      const rev = `${e.lastName || ""} ${e.firstName || ""}`.trim().toLowerCase();
+      const full = normalizePersonName(`${e.firstName || ""} ${e.lastName || ""}`);
+      const rev = normalizePersonName(`${e.lastName || ""} ${e.firstName || ""}`);
       return names.has(full) || names.has(rev);
     });
   }, [previousParticipantIds, previousParticipantNames, activeEmployees]);
@@ -67,7 +74,7 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
   // Reset on open
   useEffect(() => {
     if (open) {
-      setStart(""); setEnd(""); setQuery(""); setShowAll(false);
+      setStart(""); setEnd(""); setQuery("");
       if (hasPrevious) {
         setMode("previous");
         setSelected(new Set(prevList.map(e => String(e.id))));
@@ -85,7 +92,6 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
       setSelected(new Set());
     }
     setQuery("");
-    setShowAll(false);
   }, [mode, prevList]);
 
   const listForMode: OrgEmployee[] = mode === "previous" ? prevList : activeEmployees;
@@ -119,17 +125,16 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
 
   const handleCreate = () => {
     if (!canCreate) return;
-    onCreate({ start, end, participantIds: Array.from(selected) });
+    const participantIds = Array.from(selected);
+    const selectedNames = activeEmployees
+      .filter(e => selected.has(String(e.id)))
+      .map(e => `${e.firstName} ${e.lastName}`.trim())
+      .filter(Boolean);
+    onCreate({ start, end, participantIds, reviewerNames: selectedNames });
     onOpenChange(false);
   };
 
-  // Preview limit for "previous" mode
-  const PREVIEW = 4;
-  const previewList = mode === "previous" && !showAll && filtered.length > PREVIEW
-    ? filtered.slice(0, PREVIEW)
-    : filtered;
-  void PREVIEW;
-  const hiddenCount = filtered.length - previewList.length;
+  const previewList = filtered;
 
   const avatarClass = (id: string) => {
     const n = Array.from(String(id)).reduce((a, c) => a + c.charCodeAt(0), 0);
@@ -257,24 +262,6 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
                     );
                   })}
                 </ul>
-                {mode === "previous" && hiddenCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAll(true)}
-                    className="w-full text-center text-sm text-primary hover:underline py-2.5 border-t border-border"
-                  >
-                    + {hiddenCount} nəfər daha
-                  </button>
-                )}
-                {mode === "previous" && showAll && filtered.length > PREVIEW && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAll(false)}
-                    className="w-full text-center text-sm text-primary hover:underline py-2.5 border-t border-border"
-                  >
-                    Yığ
-                  </button>
-                )}
               </div>
             </div>
           </div>

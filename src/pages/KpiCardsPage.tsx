@@ -417,9 +417,11 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         bonusEnd: lc?.bonus?.end || "",
         reviews: (lc?.reviews || []).map((r, i) => ({
           id: r.id || `r-${i}`,
-          name: `Review ${i + 1}`,
+          name: r.name || `Review ${i + 1}`,
           start: r.start,
           end: r.end,
+          reviewerName: r.reviewerName,
+          reviewerNames: r.reviewerNames || [],
         })),
       },
       targets: targets as any,
@@ -453,6 +455,27 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       return touched ? map : undefined;
     };
     // Build subKpis from wizard targets
+    const resolveReviewerIds = (names?: string[]): string[] => {
+      const normalizePersonName = (value: string) => String(value || "")
+        .split("·")[0]
+        .split("—")[0]
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+      const employees = getEmployees();
+      const ids = new Set<string>();
+      (names || []).forEach(name => {
+        const normalized = normalizePersonName(name);
+        if (!normalized) return;
+        const employee = employees.find(e => {
+          const full = normalizePersonName(`${e.firstName || ""} ${e.lastName || ""}`);
+          const reversed = normalizePersonName(`${e.lastName || ""} ${e.firstName || ""}`);
+          return full === normalized || reversed === normalized;
+        });
+        if (employee) ids.add(String(employee.id));
+      });
+      return Array.from(ids);
+    };
     const wizardSubKpis: SubKpi[] = (d.targets || []).map((t: any, i: number) => ({
       id: i + 1,
       name: t.name || `Hədəf ${i + 1}`,
@@ -548,14 +571,18 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         assignment: toStage(lc?.assignmentStart, lc?.assignmentEnd),
         evaluation: toStage(lc?.evaluationStart, lc?.evaluationEnd),
         bonus: toStage(lc?.bonusStart, lc?.bonusEnd),
-        reviews: (lc?.reviews || []).map((r, i) => ({
-          id: r.id || `r-${i}`,
-          period: d.frequency || "Aylıq",
-          start: r.start || "",
-          end: r.end || "",
-          name: r.name || `Review #${i + 1}`,
-          reviewerNames: (r.reviewerNames && r.reviewerNames.length ? r.reviewerNames : (r.reviewerName ? [r.reviewerName] : [])),
-        })),
+        reviews: (lc?.reviews || []).map((r, i) => {
+          const reviewerNames = (r.reviewerNames && r.reviewerNames.length ? r.reviewerNames : (r.reviewerName ? [r.reviewerName] : []));
+          return {
+            id: r.id || `r-${i}`,
+            period: d.frequency || "Aylıq",
+            start: r.start || "",
+            end: r.end || "",
+            name: r.name || `Review #${i + 1}`,
+            reviewerNames,
+            participantIds: resolveReviewerIds(reviewerNames),
+          };
+        }),
       });
       void flushLifecycleToCloud();
     } catch (err) { console.warn("lifecycle save failed", err); }
