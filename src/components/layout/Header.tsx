@@ -1,5 +1,8 @@
 import { Search, Bell, Moon, Sun, LogOut, Mail, Building2, Users as UsersIcon, CheckCircle2, AlertCircle, Clock, Globe, Shield, Trash2 } from "lucide-react";
-...
+import { useEffect, useMemo, useState, useRef } from "react";
+import { applyTheme, getStoredTheme } from "@/lib/theme";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { useNotificationsFor, markAllRead, deleteNotification, deleteAllNotifications } from "@/lib/notificationsStore";
 import { getCurrentEmployeeId } from "@/lib/scope";
 import { useTranslation } from "react-i18next";
