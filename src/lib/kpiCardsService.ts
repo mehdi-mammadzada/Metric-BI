@@ -442,6 +442,27 @@ let skipRehydrateUntil = 0;
 
 const markLocalDbWrite = () => { skipRehydrateUntil = Date.now() + 2500; };
 
+// Database writes update `updatedAt`. Including that server-generated value in
+// the snapshot signature made every realtime hydration look like a new local
+// edit, which could continuously re-upsert every KPI card and overload auth.
+const getFlushSignature = (
+  orgId: string,
+  shared: SharedKpiCard[],
+  status: Record<number, any>,
+  drafts: Record<string, any>,
+  flushLedger: ReturnType<typeof readTerminalLedger>,
+) => JSON.stringify({
+  orgId,
+  shared: shared.map(({ createdAt: _createdAt, updatedAt: _updatedAt, ...card }) => card),
+  status: Object.fromEntries(Object.entries(status).map(([key, value]) => {
+    if (!value || typeof value !== "object") return [key, value];
+    const { updated_at: _updatedAt, ...stableValue } = value;
+    return [key, stableValue];
+  })),
+  drafts,
+  flushLedger,
+});
+
 const scheduleFlush = () => {
   if (suppressFlush || !currentOrgId) return;
   pendingFlush = true;
@@ -464,15 +485,17 @@ export const flushLocalKpiCardsToCloud = async () => {
   pendingFlush = false;
 
   try {
+  // A large card set may take longer than the old 2.5-second suppression
+  // window. Ignore our own realtime events until the entire write completes.
+  skipRehydrateUntil = Number.POSITIVE_INFINITY;
   captureTerminalStatuses();
   const flushLedger = readTerminalLedger();
   const shared = getSharedKpiCards();
   const status = rawRead<Record<number, any>>(STATUS_KEY, {});
   const drafts = rawRead<Record<string, any>>(DRAFTS_KEY, {});
-  const signature = JSON.stringify({ orgId, shared, status, drafts, flushLedger });
+  const signature = getFlushSignature(orgId, shared, status, drafts, flushLedger);
   if (signature === lastFlushedSignature) return;
 
-  markLocalDbWrite();
   const existingModesRes = await supabase
     .from("kpi_cards")
     .select("id, legacy_numeric_id, assignment_mode, status")
@@ -597,6 +620,7 @@ export const flushLocalKpiCardsToCloud = async () => {
   lastFlushedSignature = signature;
   } finally {
     suppressFlush = false;
+    markLocalDbWrite();
     resolveFlush();
     flushInFlight = null;
   }
