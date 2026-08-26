@@ -60,6 +60,18 @@ export const markAllRead = (employeeId: string) => {
   import("./notificationsService").then(m => { void m.markAllReadCloud(employeeId); });
 };
 
+export const deleteNotification = (id: string) => {
+  const list = load().filter(n => n.id !== id);
+  save(list);
+  import("./notificationsService").then(m => { void m.deleteNotificationCloud(id); });
+};
+
+export const deleteAllNotifications = (employeeId: string) => {
+  const list = load().filter(n => n.toEmployeeId !== employeeId);
+  save(list);
+  import("./notificationsService").then(m => { void m.deleteAllNotificationsCloud(employeeId); });
+};
+
 
 export const useNotificationsFor = (employeeId: string | null): NotificationItem[] => {
   const [rows, setRows] = useState<NotificationItem[]>(() => load());

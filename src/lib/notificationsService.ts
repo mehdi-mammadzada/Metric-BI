@@ -115,3 +115,18 @@ export const markAllReadCloud = async (employeeId: string) => {
     .eq("to_employee_id", employeeId)
     .eq("read", false);
 };
+
+export const deleteNotificationCloud = async (id: string) => {
+  writeCache(readCache().filter(n => n.id !== id));
+  if (!currentOrgId) return;
+  await supabase.from("notifications").delete().eq("id", id);
+};
+
+export const deleteAllNotificationsCloud = async (employeeId: string) => {
+  writeCache(readCache().filter(n => n.toEmployeeId !== employeeId));
+  if (!currentOrgId) return;
+  await supabase.from("notifications")
+    .delete()
+    .eq("organization_id", currentOrgId)
+    .eq("to_employee_id", employeeId);
+};
