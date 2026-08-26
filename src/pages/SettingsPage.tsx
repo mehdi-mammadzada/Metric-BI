@@ -513,6 +513,11 @@ const SettingsPage = () => {
     },
   ];
   const [openCard, setOpenCard] = useUrlIndexView("card", tabCards.length);
+  // Refresh-dən sonra URL-dəki kart indeksi aktiv tabı da bərpa edir.
+  useEffect(() => {
+    if (openCard !== null) setTab(openCard);
+  }, [openCard]);
+
 
   return (
     <div className="min-h-screen">
