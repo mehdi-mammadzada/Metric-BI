@@ -26,6 +26,7 @@ const ru: Translation = {
     delete_all: "Удалить все",
     delete_notification: "Удалить уведомление",
     delete_all_confirm: "Вы уверены, что хотите удалить все уведомления?",
+    only_show_unread: "Только непрочитанные",
     permissions: "Разрешения",
     default_user: "Пользователь",
   },

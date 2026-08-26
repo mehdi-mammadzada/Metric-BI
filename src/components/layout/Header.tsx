@@ -1,4 +1,5 @@
 import { Search, Bell, Moon, Sun, LogOut, Mail, Building2, Users as UsersIcon, CheckCircle2, AlertCircle, Clock, Globe, Shield, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { applyTheme, getStoredTheme } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,6 +32,7 @@ const Header = ({ title, showVersion = true }: HeaderProps) => {
   const [showNotif, setShowNotif] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showLang, setShowLang] = useState(false);
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const lang = CODE_TO_UI[(i18n.language?.split("-")[0] as SupportedLang) || "az"] ?? "AZ";
   const setLang = (l: "AZ" | "ENG" | "RU") => {
     i18n.changeLanguage(UI_TO_CODE[l]);
@@ -60,6 +62,7 @@ const Header = ({ title, showVersion = true }: HeaderProps) => {
   })), [liveNotifs]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const displayedNotifications = showUnreadOnly ? notifications.filter(n => !n.read) : notifications;
 
 
   useEffect(() => {
@@ -180,10 +183,18 @@ const Header = ({ title, showVersion = true }: HeaderProps) => {
                 <h3 className="font-semibold text-foreground">{t("header.notifications")}</h3>
                 <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">{t("header.notifications_new", { count: unreadCount })}</span>
               </div>
+              <div className="px-4 py-2 border-b border-border flex items-center justify-between">
+                <span className="text-sm text-foreground">{t("header.only_show_unread")}</span>
+                <Switch
+                  checked={showUnreadOnly}
+                  onCheckedChange={setShowUnreadOnly}
+                  aria-label={t("header.only_show_unread")}
+                />
+              </div>
               <div className="max-h-96 overflow-y-auto">
-                {notifications.length === 0 ? (
+                {displayedNotifications.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">{t("header.notifications_empty")}</p>
-                ) : notifications.map(n => (
+                ) : displayedNotifications.map(n => (
                   <div
                     key={n.id}
                     onClick={() => { if (n.link) { navigate(n.link); setShowNotif(false); } }}

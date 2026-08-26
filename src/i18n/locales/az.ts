@@ -24,6 +24,7 @@ const az = {
     delete_all: "Hamısını sil",
     delete_notification: "Bildirişi sil",
     delete_all_confirm: "Bütün bildirişləri silmək istədiyinizə əminsiniz?",
+    only_show_unread: "Yalnız oxunmamışları göstər",
     permissions: "İcazələr",
     default_user: "İstifadəçi",
   },
