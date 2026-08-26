@@ -4,12 +4,13 @@ import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
 import { Sparkles, LayoutGrid, Users, ArrowUpRight } from "lucide-react";
 import KpiCardsPage from "./KpiCardsPage";
+import { useUrlView } from "@/lib/useUrlView";
 
 type View = null | "kart1" | "kart2";
 
 const KpiHubPage = () => {
   const { t } = useTranslation();
-  const [view, setView] = useState<View>(null);
+  const [view, setView] = useUrlView<"kart1" | "kart2">("view", ["kart1", "kart2"]);
 
   if (view === "kart1") {
     return <KpiCardsPage onBack={() => setView(null)} forcedKartView="kart1" />;

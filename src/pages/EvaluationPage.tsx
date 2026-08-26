@@ -1475,7 +1475,7 @@ const SECTIONS: { k: EvalSection; l: string; desc: string; icon: any; accent: st
 ];
 
 const EvaluationPage = () => {
-  const [section, setSection] = useState<EvalSection | null>(null);
+  const [section, setSection] = useUrlView<EvalSection>("section", ["teyinat", "status", "parametr", "seriste"]);
   const [, force] = useState(0);
   const active = SECTIONS.find(s => s.k === section);
   return (

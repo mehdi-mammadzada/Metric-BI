@@ -511,7 +511,7 @@ const SettingsPage = () => {
       iconBg: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
     },
   ];
-  const [openCard, setOpenCard] = useState<number | null>(null);
+  const [openCard, setOpenCard] = useUrlIndexView("card", tabCards.length);
 
   return (
     <div className="min-h-screen">

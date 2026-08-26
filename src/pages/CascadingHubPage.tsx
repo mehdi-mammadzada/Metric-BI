@@ -4,11 +4,12 @@ import { PageHero } from "@/components/ui/page-hero";
 import { GitBranch, Map, Activity, ArrowUpRight } from "lucide-react";
 import CascadingPage from "./CascadingPage";
 import CascadeTrackingPage from "./CascadeTrackingPage";
+import { useUrlView } from "@/lib/useUrlView";
 
 type View = null | "map" | "track";
 
 const CascadingHubPage = () => {
-  const [view, setView] = useState<View>(null);
+  const [view, setView] = useUrlView<"map" | "track">("view", ["map", "track"]);
 
   if (view === "map") return <CascadingPage onBack={() => setView(null)} />;
   if (view === "track") return <CascadeTrackingPage onBack={() => setView(null)} />;
