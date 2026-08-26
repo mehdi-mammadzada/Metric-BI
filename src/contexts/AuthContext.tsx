@@ -101,6 +101,15 @@ const storeSessionDirectly = (data: PasswordSignInData) => {
   localStorage.setItem(`${key}-code-verifier`, "");
 };
 
+const withPromiseTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} (timeout ${ms}ms)`)), ms)
+    ),
+  ]);
+};
+
 // Removes any leftover Supabase auth token from a previous (possibly broken or
 // expired) session. A stale refresh token makes the auth client start a retry
 // loop against /auth/v1/token which can starve the password grant request and
@@ -394,8 +403,11 @@ const buildAuthUserFromSupabase = async (
   supabaseUserId: string,
   email: string,
 ): Promise<AuthUser | null> => {
-  const { data: authContext, error: authContextError } = await (supabase as any)
-    .rpc("get_user_auth_context", { _user_id: supabaseUserId });
+  const { data: authContext, error: authContextError } = await withPromiseTimeout(
+    (supabase as any).rpc("get_user_auth_context", { _user_id: supabaseUserId }),
+    2500,
+    "Auth konteksti gecikdi",
+  ).catch(() => ({ data: null, error: { message: "Auth konteksti gecikdi" } }));
 
   if (!authContextError && authContext) {
     const user = buildAuthUserFromContext(authContext as AuthContextRpc, supabaseUserId, email);
@@ -404,11 +416,15 @@ const buildAuthUserFromSupabase = async (
 
   // Fallback for older environments where the optimized auth-context function
   // is not available yet.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, email, first_name, last_name, is_platform_super_admin, must_change_password")
-    .eq("id", supabaseUserId)
-    .maybeSingle();
+  const { data: profile } = await withPromiseTimeout(
+    supabase
+      .from("profiles")
+      .select("id, email, first_name, last_name, is_platform_super_admin, must_change_password")
+      .eq("id", supabaseUserId)
+      .maybeSingle(),
+    3500,
+    "Profil məlumatları gecikdi",
+  ).catch(() => ({ data: null }));
 
   if (!profile) return null;
 
@@ -416,7 +432,11 @@ const buildAuthUserFromSupabase = async (
     || (profile.email ?? email);
   const avatar = (fullName || email).charAt(0).toUpperCase();
 
-  const organizations = await fetchOrgMemberships(supabaseUserId);
+  const organizations = await withPromiseTimeout(
+    fetchOrgMemberships(supabaseUserId),
+    3000,
+    "Təşkilat məlumatları gecikdi",
+  ).catch(() => []);
   const currentOrgId = organizations[0]?.organizationId;
   const mustChangePassword = !!(profile as any).must_change_password;
 
@@ -443,7 +463,11 @@ const buildAuthUserFromSupabase = async (
   let dbCodes: string[] = [];
   let roleCodes: string[] = [];
   if (currentOrgId) {
-    const r = await fetchRoleDataForOrg(supabaseUserId, currentOrgId);
+    const r = await withPromiseTimeout(
+      fetchRoleDataForOrg(supabaseUserId, currentOrgId),
+      3000,
+      "Rol məlumatları gecikdi",
+    ).catch(() => ({ codes: [], roleCodes: [] }));
     dbCodes = r.codes;
     roleCodes = r.roleCodes;
   }
@@ -636,15 +660,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const LOGIN_TIMEOUT_MS = 15000;
 
 
-  const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
-    return Promise.race([
-      promise,
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`${label} (timeout ${ms}ms)`)), ms)
-      ),
-    ]);
-  };
-
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const lower = email.toLowerCase().trim();
 
@@ -655,11 +670,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await signInWithPasswordFast(lower, password, LOGIN_TIMEOUT_MS);
 
     if (!error && data?.user) {
-      const u = (await withTimeout(
+      const directUser = await withPromiseTimeout(
         fetchAuthUserDirect(data.user.id, data.user.email ?? lower, data.access_token, 3500),
         4000,
         "İstifadəçi məlumatları alınmadı"
-      ).catch(() => null)) ?? buildImmediateAuthUser(data, lower);
+      ).catch(() => null);
+
+      let u = directUser ?? buildImmediateAuthUser(data, lower);
+      if (!u) {
+        await withPromiseTimeout(
+          supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token }),
+          2500,
+          "Sessiya aktivləşdirilmədi",
+        ).catch(() => null);
+        u = await withPromiseTimeout(
+          buildAuthUserFromSupabase(data.user.id, data.user.email ?? lower),
+          7000,
+          "Profil məlumatları yüklənmədi",
+        ).catch(() => null);
+      }
       if (u) {
           setUser(u);
           startBusinessSyncs(u, { access_token: data.access_token, refresh_token: data.refresh_token });
@@ -671,7 +700,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // storage is enough to keep the UI responsive.
         const storageKey = getSupabaseStorageKey();
         if (storageKey) localStorage.removeItem(storageKey);
-        return { success: false, error: "Profil tapılmadı" };
+        return { success: false, error: "Profil məlumatları yüklənmədi. Zəhmət olmasa yenidən cəhd edin" };
       }
 
       return { success: false, error: error?.message ?? "Email və ya şifrə yanlışdır" };
