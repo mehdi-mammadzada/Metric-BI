@@ -26,6 +26,7 @@ const en: Translation = {
     delete_all: "Delete all",
     delete_notification: "Delete notification",
     delete_all_confirm: "Are you sure you want to delete all notifications?",
+    only_show_unread: "Only show unread",
     permissions: "Permissions",
     default_user: "User",
   },
