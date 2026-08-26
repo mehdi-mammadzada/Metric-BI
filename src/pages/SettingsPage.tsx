@@ -208,6 +208,7 @@ const permissionModules: { key: string; label: string; actions: { key: string; l
 ];
 
 import { getEmployees as _getEmployeesForRoles } from "@/lib/orgStore";
+import { useUrlIndexView } from "@/lib/useUrlView";
 
 const allUsers = _getEmployeesForRoles()
   .filter(e => e.active)
@@ -511,7 +512,12 @@ const SettingsPage = () => {
       iconBg: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
     },
   ];
-  const [openCard, setOpenCard] = useState<number | null>(null);
+  const [openCard, setOpenCard] = useUrlIndexView("card", tabCards.length);
+  // Refresh-dən sonra URL-dəki kart indeksi aktiv tabı da bərpa edir.
+  useEffect(() => {
+    if (openCard !== null) setTab(openCard);
+  }, [openCard]);
+
 
   return (
     <div className="min-h-screen">

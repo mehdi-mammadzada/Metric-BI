@@ -4,12 +4,13 @@ import { PageHero } from "@/components/ui/page-hero";
 import { Calculator, BookOpen, ArrowUpRight, Sparkles } from "lucide-react";
 import FormulasPage from "./FormulasPage";
 import FormulaAssignmentsPage from "./FormulaAssignmentsPage";
+import { useUrlView } from "@/lib/useUrlView";
 
 type Tab = "calc" | "formulas";
 
 
 const FormulasHubPage = () => {
-  const [tab, setTab] = useState<Tab | null>(null);
+  const [tab, setTab] = useUrlView<Tab>("view", ["calc", "formulas"]);
 
   if (tab === "calc") return <FormulaAssignmentsPage onBack={() => setTab(null)} />;
   if (tab === "formulas") return <FormulasPage onBack={() => setTab(null)} />;

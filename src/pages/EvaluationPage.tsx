@@ -40,6 +40,7 @@ import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import CompetencyMatrixTab from "@/components/evaluation/CompetencyMatrixTab";
 import { getCompetencyMatrices } from "@/lib/competencyMatrixStore";
 import { AlertTriangle } from "lucide-react";
+import { useUrlView } from "@/lib/useUrlView";
 
 // =============== Survey Dialog (HR sends evaluation request to employees) ===============
 const SurveyDialog = () => {
@@ -1475,7 +1476,7 @@ const SECTIONS: { k: EvalSection; l: string; desc: string; icon: any; accent: st
 ];
 
 const EvaluationPage = () => {
-  const [section, setSection] = useState<EvalSection | null>(null);
+  const [section, setSection] = useUrlView<EvalSection>("section", ["teyinat", "status", "parametr", "seriste"]);
   const [, force] = useState(0);
   const active = SECTIONS.find(s => s.k === section);
   return (
