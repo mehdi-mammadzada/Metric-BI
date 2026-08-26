@@ -40,6 +40,7 @@ import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import CompetencyMatrixTab from "@/components/evaluation/CompetencyMatrixTab";
 import { getCompetencyMatrices } from "@/lib/competencyMatrixStore";
 import { AlertTriangle } from "lucide-react";
+import { useUrlView } from "@/lib/useUrlView";
 
 // =============== Survey Dialog (HR sends evaluation request to employees) ===============
 const SurveyDialog = () => {

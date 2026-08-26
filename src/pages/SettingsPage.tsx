@@ -208,6 +208,7 @@ const permissionModules: { key: string; label: string; actions: { key: string; l
 ];
 
 import { getEmployees as _getEmployeesForRoles } from "@/lib/orgStore";
+import { useUrlIndexView } from "@/lib/useUrlView";
 
 const allUsers = _getEmployeesForRoles()
   .filter(e => e.active)
