@@ -1,9 +1,9 @@
-import { Search, Bell, Moon, Sun, LogOut, Mail, Building2, Users as UsersIcon, CheckCircle2, AlertCircle, Clock, Globe, Shield } from "lucide-react";
+import { Search, Bell, Moon, Sun, LogOut, Mail, Building2, Users as UsersIcon, CheckCircle2, AlertCircle, Clock, Globe, Shield, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { applyTheme, getStoredTheme } from "@/lib/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useNotificationsFor, markAllRead } from "@/lib/notificationsStore";
+import { useNotificationsFor, markAllRead, deleteNotification, deleteAllNotifications } from "@/lib/notificationsStore";
 import { getCurrentEmployeeId } from "@/lib/scope";
 import { useTranslation } from "react-i18next";
 import { UI_TO_CODE, CODE_TO_UI, type SupportedLang } from "@/i18n";
@@ -187,25 +187,39 @@ const Header = ({ title, showVersion = true }: HeaderProps) => {
                   <div
                     key={n.id}
                     onClick={() => { if (n.link) { navigate(n.link); setShowNotif(false); } }}
-                    className={`p-3 border-b border-border hover:bg-secondary cursor-pointer ${!n.read ? 'bg-primary/5' : ''}`}
+                    className={`group relative p-3 border-b border-border hover:bg-secondary cursor-pointer ${!n.read ? 'bg-primary/5' : ''}`}
                   >
                     <div className="flex gap-3">
                       <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">{notifIcon(n.type)}</div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground">{n.title}</p>
+                        <p className="text-sm font-medium text-foreground pr-6">{n.title}</p>
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
                         <p className="text-[11px] text-muted-foreground mt-1">{n.time}</p>
                       </div>
-                      {!n.read && <span className="w-2 h-2 rounded-full bg-primary mt-1 shrink-0" />}
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
+                          className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-opacity"
+                          title={t("header.delete_notification")}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                        </button>
+                        {!n.read && <span className="w-2 h-2 rounded-full bg-primary" />}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="p-2 border-t border-border">
+              <div className="p-2 border-t border-border flex items-center">
                 <button
                   onClick={() => meId && markAllRead(meId)}
-                  className="w-full text-center text-xs text-primary hover:underline py-1"
+                  className="flex-1 text-center text-xs text-primary hover:underline py-1"
                 >{t("header.mark_all_read")}</button>
+                <button
+                  onClick={() => { if (meId && notifications.length) { if (confirm(t("header.delete_all_confirm"))) deleteAllNotifications(meId); } }}
+                  className="flex-1 text-center text-xs text-destructive hover:underline py-1"
+                >{t("header.delete_all")}</button>
               </div>
 
             </div>
