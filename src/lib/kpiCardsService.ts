@@ -435,9 +435,16 @@ const seedCloudFromLocal = async (orgId: string) => {
 let suppressFlush = false;
 let flushTimer: number | null = null;
 let currentOrgId: string | null = null;
+let flushInFlight: Promise<void> | null = null;
+let pendingFlush = false;
+let lastFlushedSignature: string | null = null;
+let skipRehydrateUntil = 0;
+
+const markLocalDbWrite = () => { skipRehydrateUntil = Date.now() + 2500; };
 
 const scheduleFlush = () => {
   if (suppressFlush || !currentOrgId) return;
+  pendingFlush = true;
   if (flushTimer) window.clearTimeout(flushTimer);
   flushTimer = window.setTimeout(() => { flushTimer = null; void flushLocalKpiCardsToCloud(); }, 500);
 };
@@ -447,11 +454,25 @@ const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 export const flushLocalKpiCardsToCloud = async () => {
   const orgId = currentOrgId;
   if (!orgId) return;
+  if (flushInFlight) {
+    await flushInFlight;
+    if (!pendingFlush) return;
+  }
+
+  let resolveFlush!: () => void;
+  flushInFlight = new Promise<void>((resolve) => { resolveFlush = resolve; });
+  pendingFlush = false;
+
+  try {
   captureTerminalStatuses();
   const flushLedger = readTerminalLedger();
   const shared = getSharedKpiCards();
   const status = rawRead<Record<number, any>>(STATUS_KEY, {});
   const drafts = rawRead<Record<string, any>>(DRAFTS_KEY, {});
+  const signature = JSON.stringify({ orgId, shared, status, drafts, flushLedger });
+  if (signature === lastFlushedSignature) return;
+
+  markLocalDbWrite();
   const existingModesRes = await supabase
     .from("kpi_cards")
     .select("id, legacy_numeric_id, assignment_mode, status")
@@ -483,7 +504,9 @@ export const flushLocalKpiCardsToCloud = async () => {
     ].find(isDeletedStatus) as SharedKpiStatus | undefined;
     const effectiveStatus = terminalStatus ?? c.status;
     if (terminalStatus && c.status !== terminalStatus) {
+      suppressFlush = true;
       upsertSharedKpiCard({ ...c, status: terminalStatus });
+      suppressFlush = false;
     }
     const payload: any = {
       organization_id: orgId,
@@ -520,7 +543,11 @@ export const flushLocalKpiCardsToCloud = async () => {
         .single();
       if (upsert.data) {
         cardUuid = upsert.data.id as string;
-        if (c.id !== cardUuid) upsertSharedKpiCard({ ...c, id: cardUuid });
+        if (c.id !== cardUuid) {
+          suppressFlush = true;
+          upsertSharedKpiCard({ ...c, id: cardUuid });
+          suppressFlush = false;
+        }
       }
     } else if (isUuid(c.id)) {
       const upd = await supabase.from("kpi_cards").update(payload).eq("id", c.id).select("id").maybeSingle();
@@ -533,7 +560,9 @@ export const flushLocalKpiCardsToCloud = async () => {
       const ins = await supabase.from("kpi_cards").insert(payload).select("id").single();
       if (ins.data) {
         cardUuid = ins.data.id as string;
+        suppressFlush = true;
         upsertSharedKpiCard({ ...c, id: cardUuid });
+        suppressFlush = false;
       }
     }
     if (!cardUuid) continue;
@@ -565,6 +594,12 @@ export const flushLocalKpiCardsToCloud = async () => {
     module: "kpi_cards",
     metadata: { cards: shared.length },
   });
+  lastFlushedSignature = signature;
+  } finally {
+    suppressFlush = false;
+    resolveFlush();
+    flushInFlight = null;
+  }
 };
 
 // ── Realtime / cross-browser sync ─────────────────────────────────────────────
@@ -574,6 +609,7 @@ let onFocusHandler: (() => void) | null = null;
 
 const scheduleRehydrate = () => {
   if (!currentOrgId) return;
+  if (Date.now() < skipRehydrateUntil) return;
   if (rehydrateTimer) window.clearTimeout(rehydrateTimer);
   rehydrateTimer = window.setTimeout(() => {
     rehydrateTimer = null;
@@ -585,6 +621,7 @@ const scheduleRehydrate = () => {
 export const activateKpiCardsSync = async (orgId: string) => {
   if (currentOrgId === orgId) return;
   currentOrgId = orgId;
+  lastFlushedSignature = null;
   replaceLocalKpiCache();
   await hydrateKpiCardsFromCloud(orgId);
   window.addEventListener(EVT_SHARED, scheduleFlush);
@@ -604,6 +641,8 @@ export const activateKpiCardsSync = async (orgId: string) => {
 
 export const deactivateKpiCardsSync = () => {
   currentOrgId = null;
+  pendingFlush = false;
+  lastFlushedSignature = null;
   window.removeEventListener(EVT_SHARED, scheduleFlush);
   window.removeEventListener(EVT_ALL, scheduleFlush);
   if (flushTimer) { window.clearTimeout(flushTimer); flushTimer = null; }
