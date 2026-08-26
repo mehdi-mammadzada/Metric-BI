@@ -59,6 +59,9 @@ export const STATUS_STYLES: Record<KpiCardStatus, string> = {
 const isDeletedStatus = (status: KpiCardStatus | undefined | null) =>
   status === "silindi" || status === "legv_olundu";
 
+const sameAssignees = (a: AssigneeState[] = [], b: AssigneeState[] = []) =>
+  JSON.stringify(a) === JSON.stringify(b);
+
 export async function fetchAllStatuses(): Promise<Record<number, KpiCardStatusRow>> {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -74,7 +77,7 @@ export async function upsertStatus(row: Partial<KpiCardStatusRow> & { card_id: n
   const nextStatus = isDeletedStatus(existing?.status) && row.status && !isDeletedStatus(row.status)
     ? existing.status
     : row.status;
-  current[row.card_id] = {
+  const next = {
     ...(existing ?? {
       card_id: row.card_id,
       status: "natamam",
@@ -89,6 +92,20 @@ export async function upsertStatus(row: Partial<KpiCardStatusRow> & { card_id: n
     ...(nextStatus ? { status: nextStatus } : {}),
     updated_at: new Date().toISOString(),
   } as KpiCardStatusRow;
+
+  if (existing) {
+    const unchanged =
+      existing.status === next.status &&
+      existing.use_matrix === next.use_matrix &&
+      existing.submitted_for_approval === next.submitted_for_approval &&
+      existing.rejected_by === next.rejected_by &&
+      existing.rejected_at === next.rejected_at &&
+      (existing.rejection_reason ?? null) === (next.rejection_reason ?? null) &&
+      sameAssignees(existing.assignees, next.assignees);
+    if (unchanged) return;
+  }
+
+  current[row.card_id] = next;
   localStorage.setItem(LS_KEY, JSON.stringify(current));
   window.dispatchEvent(new Event("kpi-cards-updated"));
 }
