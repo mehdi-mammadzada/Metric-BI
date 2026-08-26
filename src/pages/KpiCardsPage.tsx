@@ -2041,6 +2041,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               <div className="max-h-[60vh] overflow-y-auto divide-y divide-border">
                 {cards.map(card => {
                   const st = getStatusFor(card.id);
+                  const assignKind = getAssignKindFor(card.id);
                   return (
                     <div key={card.id} className="py-3 flex items-center justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -2048,8 +2049,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                           <span className="font-medium text-foreground truncate">{withKartSuffix(card.name)}</span>
                           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${STATUS_STYLES[st.status]}`}>{STATUS_LABELS[st.status]}</span>
                         </div>
-                        <div className="text-[11px] text-muted-foreground">{card.period} · Hədəf {card.target} {card.unit} · Cari {card.current} {card.unit}</div>
-                        <div className="w-full bg-secondary rounded-full h-1.5 mt-1.5"><div className="bg-emerald-500 rounded-full h-1.5" style={{ width: `${card.progress}%` }} /></div>
+                        <div className="text-[11px] text-muted-foreground">{card.period} · {assignKind}</div>
                       </div>
                       <button
                         onClick={() => {
