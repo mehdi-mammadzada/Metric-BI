@@ -515,10 +515,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     syncTimersRef.current = [];
   };
 
-  const startBusinessSyncs = (
-    u: AuthUser,
-    session?: { access_token: string; refresh_token: string },
-  ) => {
+  const startBusinessSyncs = (u: AuthUser) => {
     if (!u.currentOrgId || !u.supabaseUserId) return;
     const key = `${u.currentOrgId}:${u.supabaseUserId}`;
     if (syncKeyRef.current === key) return;
@@ -527,12 +524,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const orgId = u.currentOrgId;
     const uid = u.supabaseUserId;
-    if (session) {
-      window.setTimeout(() => {
-        void supabase.auth.setSession(session).catch(() => undefined);
-      }, 0);
-    }
-
     const schedule = (fn: () => void, delay: number) => {
       const timer = window.setTimeout(() => {
         syncTimersRef.current = syncTimersRef.current.filter((item) => item !== timer);
@@ -681,6 +672,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await signInWithPasswordFast(lower, password, LOGIN_TIMEOUT_MS);
 
     if (!error && data?.user) {
+      // Establish the SDK session before any RLS-protected profile queries.
+      // Writing tokens to localStorage alone is insufficient in the framed
+      // preview, where the generated client uses a brokered storage adapter.
+      const sessionResult = await withPromiseTimeout(
+        supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token }),
+        5000,
+        "Sessiya aktivləşdirilmədi",
+      ).catch((sessionError) => ({ data: { session: null, user: null }, error: sessionError }));
+
+      if (sessionResult.error || !sessionResult.data.session) {
+        return {
+          success: false,
+          error: "Sessiya aktivləşdirilmədi. Zəhmət olmasa yenidən cəhd edin",
+        };
+      }
+
       const directUser = await withPromiseTimeout(
         fetchAuthUserDirect(data.user.id, data.user.email ?? lower, data.access_token, 3500),
         4000,
@@ -689,11 +696,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       let u = directUser ?? buildImmediateAuthUser(data, lower);
       if (!u) {
-        await withPromiseTimeout(
-          supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token }),
-          2500,
-          "Sessiya aktivləşdirilmədi",
-        ).catch(() => null);
         u = await withPromiseTimeout(
           buildAuthUserFromSupabase(data.user.id, data.user.email ?? lower),
           7000,
@@ -702,7 +704,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       if (u) {
           setUser(u);
-          startBusinessSyncs(u, { access_token: data.access_token, refresh_token: data.refresh_token });
+          startBusinessSyncs(u);
           void logAudit({ organizationId: u.currentOrgId ?? null, action: "login", module: "auth", entityType: "user", entityId: u.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
           return { success: true };
         }
