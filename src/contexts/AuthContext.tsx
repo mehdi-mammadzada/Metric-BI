@@ -347,6 +347,15 @@ type AuthContextRpc = {
   permissionCodes?: string[];
 };
 
+type AuthProfileRow = {
+  id: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  is_platform_super_admin: boolean | null;
+  must_change_password: boolean | null;
+};
+
 const buildAuthUserFromContext = (
   ctx: AuthContextRpc,
   supabaseUserId: string,
@@ -403,11 +412,12 @@ const buildAuthUserFromSupabase = async (
   supabaseUserId: string,
   email: string,
 ): Promise<AuthUser | null> => {
-  const { data: authContext, error: authContextError } = await withPromiseTimeout(
-    (supabase as any).rpc("get_user_auth_context", { _user_id: supabaseUserId }),
+  const authContextResult = await withPromiseTimeout<{ data: AuthContextRpc | null; error: any }>(
+    Promise.resolve((supabase as any).rpc("get_user_auth_context", { _user_id: supabaseUserId })),
     2500,
     "Auth konteksti gecikdi",
-  ).catch(() => ({ data: null, error: { message: "Auth konteksti gecikdi" } }));
+  ).catch((): { data: AuthContextRpc | null; error: any } => ({ data: null, error: { message: "Auth konteksti gecikdi" } }));
+  const { data: authContext, error: authContextError } = authContextResult;
 
   if (!authContextError && authContext) {
     const user = buildAuthUserFromContext(authContext as AuthContextRpc, supabaseUserId, email);
@@ -416,15 +426,16 @@ const buildAuthUserFromSupabase = async (
 
   // Fallback for older environments where the optimized auth-context function
   // is not available yet.
-  const { data: profile } = await withPromiseTimeout(
-    supabase
+  const profileResult = await withPromiseTimeout<{ data: AuthProfileRow | null; error?: any }>(
+    Promise.resolve(supabase
       .from("profiles")
       .select("id, email, first_name, last_name, is_platform_super_admin, must_change_password")
       .eq("id", supabaseUserId)
-      .maybeSingle(),
+      .maybeSingle()),
     3500,
     "Profil məlumatları gecikdi",
-  ).catch(() => ({ data: null }));
+  ).catch((): { data: AuthProfileRow | null; error?: any } => ({ data: null }));
+  const { data: profile } = profileResult;
 
   if (!profile) return null;
 
@@ -588,7 +599,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             session.user.email ?? "",
             session.access_token,
             2500,
-          )) ?? await withTimeout(
+          )) ?? await withPromiseTimeout(
             buildAuthUserFromSupabase(session.user.id, session.user.email ?? ""),
             3000,
             "Sessiya məlumatları gecikdi",
