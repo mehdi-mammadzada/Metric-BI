@@ -19,7 +19,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { path: "/hr", labelKey: "nav.home", icon: Home, perm: "home" },
   { path: "/teskilati-struktur", labelKey: "nav.organization", icon: Building2, perm: "organization" },
   { path: "/kpi-kartlari", labelKey: "nav.kpis", icon: LayoutGrid, perm: "kpi" },
-  { path: "/hedef-tayin-izleme", labelKey: "nav.goal_tracking", icon: Target, perm: "goal_tracking" },
+  
   { path: "/kpi-lifecycle", labelKey: "nav.kpi_lifecycle", icon: Workflow, perm: "kpi_lifecycle" },
   { path: "/kpi-qiymetleri", labelKey: "nav.kpi_results", icon: Gauge, perm: "kpi_scores" },
   { path: "/qiymetlendirme", labelKey: "nav.evaluation", icon: ClipboardCheck, perm: "evaluation" },
