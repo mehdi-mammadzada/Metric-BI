@@ -19,6 +19,8 @@ import {
 import SearchableSelect from "@/components/common/SearchableSelect";
 import DropdownMultiSelect from "@/components/kpi/DropdownMultiSelect";
 import { WeightInput } from "@/components/kpi/WeightInput";
+import { INTEGRATION_CATALOG } from "@/lib/integrationsCatalog";
+
 
 import { toast } from "sonner";
 
