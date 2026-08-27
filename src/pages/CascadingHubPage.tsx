@@ -24,7 +24,7 @@ const CascadingHubPage = () => {
           subtitle="KPI hədəflərinin təşkilati struktur boyu avtomatik yönləndirilməsi və izlənməsi"
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
           <HubCard
             title="Kaskadlama Xəritəsi"
             desc="Hər struktur vahidinin rəhbərini və tabeliyindəki əməkdaşları interaktiv ağac üzərində izləyin."
