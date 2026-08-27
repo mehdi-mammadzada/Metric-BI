@@ -37,24 +37,6 @@ const KEY = "kpi_lifecycle_templates_v2";
 const LEGACY_KEY = "kpi_lifecycle_templates_v1";
 const EVT = "kpi-lifecycle-templates-updated";
 
-const STANDARD_ID = "tpl-standard-monthly";
-
-const buildStandardSeed = (): LifecycleTemplate => ({
-  id: STANDARD_ID,
-  name: "Standart Aylıq KPI Lifecycle",
-  description:
-    "Aylıq KPI-lar üçün default şablon. Tarixlər KPI-ın yaradıldığı tarixə əsasən avtomatik hesablanır.",
-  isSystem: true,
-  active: true,
-  createdAt: new Date().toISOString(),
-  data: {
-    assignment: { period: "Aylıq", start: "", end: "" },
-    evaluation: { period: "Aylıq", start: "", end: "" },
-    bonus: { period: "Aylıq", start: "", end: "" },
-    reviews: [{ id: "r-standard", period: "Aylıq", start: "", end: "" }],
-    dynamic: "monthly-standard",
-  },
-});
 
 const load = (): LifecycleTemplate[] => {
   try {
