@@ -112,14 +112,6 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
     });
   };
 
-  const remove = (id: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  };
-
   const endInvalid = start && end && new Date(end) < new Date(start);
   const canCreate = !!start && !!end && !endInvalid && selected.size > 0;
 
