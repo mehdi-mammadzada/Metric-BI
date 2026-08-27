@@ -2902,7 +2902,13 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
 
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
           <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs rounded border border-border bg-card">Ləğv et</button>
-          <button type="button" onClick={save} className="px-3 py-1.5 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700">Yadda saxla</button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={tab === "integration" && (integrationSel.length === 0 || !integrationWeightValid || integrationFieldsMissing)}
+            className="px-3 py-1.5 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >Yadda saxla</button>
+
         </div>
       </DialogContent>
     </Dialog>
