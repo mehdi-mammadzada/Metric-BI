@@ -116,7 +116,7 @@ const KpiLifecyclePage = () => {
               <DataTable<CardLifecycle>
                 rows={rows}
                 rowKey={(l) => l.cardId}
-                storageKey="kpi-lifecycle-table"
+                storageKey="kpi-lifecycle-table-v2"
                 emptyMessage="Hələ heç bir KPI üçün lifecycle təyin olunmayıb. KPI kartı yaradarkən 2-ci addımda lifecycle əlavə edin."
                 columns={[
                   {
