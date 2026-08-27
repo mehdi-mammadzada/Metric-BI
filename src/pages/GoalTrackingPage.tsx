@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
-import { Target, Bell, Search, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { Target, Bell, Search, CheckCircle2, Clock, AlertTriangle, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
