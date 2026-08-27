@@ -24,7 +24,7 @@ const CascadingHubPage = () => {
           subtitle="KPI hədəflərinin təşkilati struktur boyu avtomatik yönləndirilməsi və izlənməsi"
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
           <HubCard
             title="Kaskadlama Xəritəsi"
             desc="Hər struktur vahidinin rəhbərini və tabeliyindəki əməkdaşları interaktiv ağac üzərində izləyin."
@@ -60,7 +60,7 @@ const HubCard = ({
 }: { title: string; desc: string; icon: any; gradient: string; iconBg: string; onClick: () => void }) => (
   <button
     onClick={onClick}
-    className={`group relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br ${gradient} bg-card p-8 text-left hover:shadow-xl transition-all hover:-translate-y-1 min-h-[240px] flex flex-col`}
+    className={`group relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br ${gradient} bg-card p-8 text-left hover:shadow-xl transition-all hover:-translate-y-1 min-h-[260px] flex flex-col`}
   >
     <div className="flex items-start justify-between mb-6">
       <div className={`w-20 h-20 rounded-2xl ${iconBg} flex items-center justify-center shrink-0`}>
