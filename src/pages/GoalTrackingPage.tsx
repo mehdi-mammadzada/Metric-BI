@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
-import { Target, Bell, Search, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { Target, Bell, Search, CheckCircle2, Clock, AlertTriangle, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -25,7 +25,7 @@ const STATUS_META: Record<ExecStatus, { labelKey: string; cls: string; icon: typ
   not_achieved: { labelKey: "goal_tracking.status_not_achieved", cls: TARGET_STATUS_BADGE.not_achieved, icon: AlertTriangle },
 };
 
-const GoalTrackingPage = () => {
+const GoalTrackingPage = ({ onBack }: { onBack?: () => void }) => {
   const { t } = useTranslation();
   const baseAssignments = useCascadeAssignments();
   const cascadeNodes = useCascadeTree();
@@ -94,6 +94,11 @@ const GoalTrackingPage = () => {
     <div className="min-h-screen">
       <Header title={t("goal_tracking.page_title")} />
       <main className="p-6 pb-24">
+        {onBack && (
+          <button onClick={onBack} className="inline-flex items-center gap-1.5 px-3 py-1.5 mb-4 text-sm rounded-lg border border-border bg-card hover:bg-secondary/40 text-foreground transition-colors">
+            <ChevronLeft className="w-4 h-4" /> Geri
+          </button>
+        )}
         <PageHero
           badge={t("goal_tracking.hero_badge")}
           icon={Target}
