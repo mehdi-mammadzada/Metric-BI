@@ -2384,13 +2384,6 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                       <div className="divide-y divide-border">
                         {(() => {
                           const assignKind = getAssignKindFor(selectedKpi.id);
-                          const d = cardDrafts[selectedKpi.id];
-                          const bs = d?.mode === "bulk" ? d.bulkSelections : null;
-                          const parts: string[] = [];
-                          if (bs?.teams?.length) parts.push(`Komandalar: ${bs.teams.join(", ")}`);
-                          if (bs?.positions?.length) parts.push(`Vəzifələr: ${bs.positions.join(", ")}`);
-                          if (bs?.structures?.length) parts.push(`Strukturlar: ${bs.structures.length}`);
-                          if (bs?.persons?.length) parts.push(`Şəxslər: ${bs.persons.join(", ")}`);
                           const st = getStatusFor(selectedKpi.id);
                           const upd = st.updated_at ? new Date(st.updated_at) : null;
                           const pad = (n: number) => String(n).padStart(2, "0");
