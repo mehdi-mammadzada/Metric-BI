@@ -1607,7 +1607,6 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                       { key: "kind", label: "Təyinat növü", filterType: "select", selectOptions: ["Fərdi", "Toplu"], accessor: (c) => getAssignKindFor(c.id), render: (c) => <span className="text-muted-foreground text-xs">{getAssignKindFor(c.id)}</span> },
                       { key: "created", label: "Yaranma tarixi", filterType: "date", accessor: (c) => getCreatedAtFor(c.id), render: (c) => <span className="text-muted-foreground text-xs">{getCreatedAtFor(c.id)}</span> },
                       { key: "period", label: "Dövr", filterType: "text", accessor: (c) => c.period, render: (c) => <span className="text-muted-foreground text-xs">{c.period}</span> },
-                      { key: "progress", label: "Progress", filterType: "number", accessor: (c) => c.progress, render: (c) => `${c.progress}%` },
                       {
                         key: "status", label: "Status", filterType: "select",
                         selectOptions: Object.values(STATUS_LABELS),
@@ -2399,7 +2398,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                           const updTime = upd && !isNaN(upd.getTime()) ? `${pad(upd.getHours())}:${pad(upd.getMinutes())}` : "";
                           const rows = [
                             { icon: User, label: "Məsul Şəxs", value: selectedKpi.responsible || "—" },
-                            { icon: Crosshair, label: "Təyinat", value: <span className="text-right">{assignKind}{parts.length > 0 && <span className="block text-[11px] font-normal text-muted-foreground mt-0.5">{parts.join(" · ")}</span>}</span> },
+                            { icon: Crosshair, label: "Təyinat", value: <span className="text-right">{assignKind}</span> },
                             { icon: Activity, label: "Status", value: <span className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${STATUS_STYLES[st.status]}`}>{STATUS_LABELS[st.status]}</span> },
                             { icon: Calendar, label: "Başlama", value: selectedKpi.startDate || "—" },
                             { icon: Calendar, label: "Bitmə", value: selectedKpi.endDate || "—" },
