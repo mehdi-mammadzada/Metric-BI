@@ -773,12 +773,15 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
         const lifecycleOk = !!lc.assignmentStart && !!lc.assignmentEnd
           && !!lc.evaluationStart && !!lc.evaluationEnd
           && !!lc.bonusStart && !!lc.bonusEnd;
+        // Review varsa, hər review üçün ən azı 1 reviewer məcburidir
+        const reviewersOk = lc.reviews.every(r =>
+          (r.reviewerNames && r.reviewerNames.length > 0) || !!(r.reviewerName || "").trim());
         // Toplu + 2+ şəxs → avtomatik komanda yaranır, lider məcburidir
         const bulkPersons = bulkTeamMembers;
         const leaderOk = bulkPersons.length < 2
           || (!!draft.bulkTeamLeader && bulkPersons.includes(draft.bulkTeamLeader));
         return !!draft.name.trim() && !!draft.frequency && !!draft.startDate && !!draft.endDate
-          && draft.endDate >= draft.startDate && !!draft.scoringSystem && lifecycleOk && leaderOk;
+          && draft.endDate >= draft.startDate && !!draft.scoringSystem && lifecycleOk && reviewersOk && leaderOk;
       }
       case 2: {
         const hasOther = draft.targets.some(t => t.createdBy === "other");
@@ -800,8 +803,12 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     if (!canNext) {
       if (step === 1) {
         const bp = bulkTeamMembers;
+        const missingReviewer = draft.lifecycle.reviews.findIndex(r =>
+          !((r.reviewerNames && r.reviewerNames.length > 0) || (r.reviewerName || "").trim()));
         if (bp.length >= 2 && !(draft.bulkTeamLeader && bp.includes(draft.bulkTeamLeader))) {
           toast.error("Komanda Lideri seçilməlidir — avtomatik yaradılacaq komanda üçün 1 nəfər lider təyin edin");
+        } else if (missingReviewer >= 0) {
+          toast.error(`Review #${missingReviewer + 1} üçün reviewu keçirəcək şəxs(lər) seçilməlidir`);
         } else {
           toast.error("Bütün tələb olunan sahələri (lifecycle tarixləri daxil) doldurun");
         }
@@ -1347,7 +1354,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                           </div>
                           <div>
                             <label className="text-[11px] text-muted-foreground flex items-center gap-1">
-                              <User className="w-3 h-3" /> Reviewu keçirəcək şəxs(lər)
+                              <User className="w-3 h-3" /> Reviewu keçirəcək şəxs(lər) <span className="text-destructive">*</span>
                             </label>
                             <div className="flex items-start gap-2 mt-0.5">
                               <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0 mt-1">
