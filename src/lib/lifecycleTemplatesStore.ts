@@ -42,7 +42,13 @@ const load = (): LifecycleTemplate[] => {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      return JSON.parse(raw) as LifecycleTemplate[];
+      const parsed = JSON.parse(raw) as LifecycleTemplate[];
+      // Sistem tərəfindən yaradılmış şablonlar göstərilmir/silinir.
+      const filtered = parsed.filter(t => !t.isSystem);
+      if (filtered.length !== parsed.length) {
+        persist(filtered);
+      }
+      return filtered;
     }
     // Migrate legacy
     let legacy: LifecycleTemplate[] = [];
@@ -51,11 +57,13 @@ const load = (): LifecycleTemplate[] => {
       if (lraw) {
         const parsed = JSON.parse(lraw);
         if (Array.isArray(parsed)) {
-          legacy = parsed.map((t: any) => ({
-            ...t,
-            active: t.active ?? true,
-            isSystem: false,
-          }));
+          legacy = parsed
+            .map((t: any) => ({
+              ...t,
+              active: t.active ?? true,
+              isSystem: false,
+            }))
+            .filter((t: any) => !t.isSystem);
         }
       }
     } catch {}
@@ -65,6 +73,7 @@ const load = (): LifecycleTemplate[] => {
     return [];
   }
 };
+
 
 const persist = (list: LifecycleTemplate[]) => {
   localStorage.setItem(KEY, JSON.stringify(list));
