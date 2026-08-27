@@ -2491,15 +2491,46 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
     toast.success(`Təsadüfi seçildi: ${picked.join(", ")}`);
   };
 
-  const initialIntegrationName = initialTab === "integration"
-    ? (initialEvaluators[0]?.name.replace("[İnteqrasiya] ", "").split(" · ")[0] || "")
-    : "";
-  const [integration, setIntegration] = useState<string>(initialIntegrationName);
+  type IntegrationSel = { name: string; weight: number; fields: string[] };
+  const initialIntegrationSel: IntegrationSel[] = initialTab === "integration"
+    ? initialEvaluators
+        .filter(e => e.name.startsWith("[İnteqrasiya]"))
+        .map(e => {
+          const raw = e.name.replace("[İnteqrasiya] ", "");
+          const [sysName, fieldsPart] = raw.split(" · ");
+          return {
+            name: (sysName || "").trim(),
+            weight: Number(e.weight) || 0,
+            fields: fieldsPart ? fieldsPart.split(", ").map(f => f.trim()).filter(Boolean) : [],
+          };
+        })
+        .filter(s => INTEGRATION_SYSTEMS.some(x => x.name === s.name))
+    : [];
+  const [integrationSel, setIntegrationSel] = useState<IntegrationSel[]>(initialIntegrationSel);
   const [integrationSearch, setIntegrationSearch] = useState("");
-  const [integrationFields, setIntegrationFields] = useState<string[]>([]);
-  const [integrationWeight, setIntegrationWeight] = useState<number>(100);
-  const currentIntegrationSystem = INTEGRATION_SYSTEMS.find(s => s.name === integration);
   const filteredIntegrationSystems = INTEGRATION_SYSTEMS.filter(s => s.name.toLowerCase().includes(integrationSearch.toLowerCase()));
+  const integrationTotal = integrationSel.reduce((s, x) => s + (Number(x.weight) || 0), 0);
+  const integrationWeightValid = integrationSel.length > 0 && integrationTotal === 100;
+  const integrationFieldsMissing = integrationSel.some(s => s.fields.length === 0);
+
+  const toggleIntegrationSystem = (name: string) => {
+    setIntegrationSel(prev => {
+      const exists = prev.some(s => s.name === name);
+      const next = exists ? prev.filter(s => s.name !== name) : [...prev, { name, weight: 0, fields: [] }];
+      if (next.length === 0) return next;
+      // avtomatik bərabər paylaşım
+      const base = Math.floor(100 / next.length);
+      const rest = 100 - base * next.length;
+      return next.map((s, i) => ({ ...s, weight: i === 0 ? base + rest : base }));
+    });
+  };
+  const setIntegrationWeightFor = (name: string, weight: number) =>
+    setIntegrationSel(prev => prev.map(s => s.name === name ? { ...s, weight } : s));
+  const toggleIntegrationField = (name: string, field: string) =>
+    setIntegrationSel(prev => prev.map(s => s.name === name
+      ? { ...s, fields: s.fields.includes(field) ? s.fields.filter(f => f !== field) : [...s.fields, field] }
+      : s));
+
 
   const save = () => {
     if (tab === "person") {
