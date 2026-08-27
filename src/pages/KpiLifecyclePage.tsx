@@ -276,8 +276,8 @@ const KpiLifecyclePage = () => {
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-primary" />
                 {detailTpl?.name}
-                {detailTpl?.isSystem && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">Sistem</span>}
               </DialogTitle>
+
             </DialogHeader>
             {detailTpl && (() => {
               const isDynamic = detailTpl.data.dynamic === "monthly-standard";
