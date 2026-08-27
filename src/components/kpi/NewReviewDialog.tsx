@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,14 +108,6 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
     setSelected(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
-  const remove = (id: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      next.delete(id);
       return next;
     });
   };
@@ -248,16 +240,6 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
                             {e.positionName || "—"}
                           </p>
                         </div>
-                        {checked && (
-                          <button
-                            type="button"
-                            onClick={() => remove(id)}
-                            className="text-muted-foreground hover:text-destructive p-1 rounded-md"
-                            aria-label="Sil"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
                       </li>
                     );
                   })}
