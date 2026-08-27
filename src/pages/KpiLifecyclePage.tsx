@@ -22,6 +22,17 @@ import {
 import { Pencil, CalendarClock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
+/** Lifecycle-ın son bitmə tarixi — bonus/qiymətləndirmə/təyinat və review-lərin ən böyük bitmə tarixi. */
+const lifecycleEndDate = (l: CardLifecycle): string => {
+  const dates = [
+    l.bonus?.end, l.evaluation?.end, l.assignment?.end,
+    ...(l.reviews || []).map(r => r.end),
+  ].filter((d): d is string => !!d);
+  if (!dates.length) return "";
+  return dates.sort((a, b) => a.localeCompare(b))[dates.length - 1].slice(0, 10);
+};
+
+
 const KpiLifecyclePage = () => {
   const lifecycles = useKpiLifecycles();
   const templates = useLifecycleTemplates();
