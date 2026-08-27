@@ -1,18 +1,17 @@
-import { useState } from "react";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
-import { GitBranch, Map, Activity, ArrowUpRight } from "lucide-react";
+import { GitBranch, Map, Activity, ArrowUpRight, Target } from "lucide-react";
 import CascadingPage from "./CascadingPage";
 import CascadeTrackingPage from "./CascadeTrackingPage";
+import GoalTrackingPage from "./GoalTrackingPage";
 import { useUrlView } from "@/lib/useUrlView";
 
-type View = null | "map" | "track";
-
 const CascadingHubPage = () => {
-  const [view, setView] = useUrlView<"map" | "track">("view", ["map", "track"]);
+  const [view, setView] = useUrlView<"map" | "track" | "goals">("view", ["map", "track", "goals"]);
 
   if (view === "map") return <CascadingPage onBack={() => setView(null)} />;
   if (view === "track") return <CascadeTrackingPage onBack={() => setView(null)} />;
+  if (view === "goals") return <GoalTrackingPage onBack={() => setView(null)} />;
 
   return (
     <div className="min-h-screen">
@@ -41,6 +40,14 @@ const CascadingHubPage = () => {
             gradient="from-emerald-500/15 via-teal-500/10 to-transparent"
             iconBg="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
             onClick={() => setView("track")}
+          />
+          <HubCard
+            title="Kaskadlanmış hədəflərin izlənməsi"
+            desc="Kaskadlanmış hədəflərin icraçılar üzrə bölgüsünü və irəliləyişini izləyin."
+            icon={Target}
+            gradient="from-amber-500/15 via-orange-500/10 to-transparent"
+            iconBg="bg-amber-500/15 text-amber-600 dark:text-amber-400"
+            onClick={() => setView("goals")}
           />
         </div>
       </main>
