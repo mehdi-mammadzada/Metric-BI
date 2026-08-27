@@ -2570,12 +2570,19 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
     } else if (tab === "self") {
       onSave([{ id: crypto.randomUUID(), name: "[Özü]", weight: 100 }]);
     } else {
-      if (!integration) { toast.error("İnteqrasiya sistemi seçin"); return; }
-      const label = integrationFields.length > 0
-        ? `[İnteqrasiya] ${integration} · ${integrationFields.join(", ")}`
-        : `[İnteqrasiya] ${integration}`;
-      onSave([{ id: crypto.randomUUID(), name: label, weight: integrationWeight || 100 }]);
+      if (integrationSel.length === 0) { toast.error("Ən azı bir inteqrasiya sistemi seçin"); return; }
+      if (integrationFieldsMissing) { toast.error("Hər bir seçilmiş sistem üzrə ən azı bir məlumat seçin"); return; }
+      if (integrationTotal !== 100) {
+        toast.error(`İnteqrasiya sistemlərinin çəkilərinin cəmi 100% olmalıdır (hazırda ${integrationTotal}%)`);
+        return;
+      }
+      onSave(integrationSel.map(s => ({
+        id: crypto.randomUUID(),
+        name: `[İnteqrasiya] ${s.name} · ${s.fields.join(", ")}`,
+        weight: Number(s.weight) || 0,
+      })));
     }
+
   };
 
   const tabs: { key: typeof tab; label: string }[] = [
