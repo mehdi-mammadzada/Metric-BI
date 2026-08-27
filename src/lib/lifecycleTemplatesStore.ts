@@ -112,10 +112,9 @@ export const toggleLifecycleTemplateActive = (id: string) => {
 
 export const deleteLifecycleTemplate = (id: string) => {
   const list = load();
-  const target = list.find(t => t.id === id);
-  if (target?.isSystem) return; // system şablonu silinmir
   persist(list.filter(t => t.id !== id));
 };
+
 
 export const useLifecycleTemplates = (): LifecycleTemplate[] => {
   const [list, setList] = useState<LifecycleTemplate[]>(() => load());
