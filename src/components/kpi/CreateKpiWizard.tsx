@@ -19,6 +19,8 @@ import {
 import SearchableSelect from "@/components/common/SearchableSelect";
 import DropdownMultiSelect from "@/components/kpi/DropdownMultiSelect";
 import { WeightInput } from "@/components/kpi/WeightInput";
+import { INTEGRATION_CATALOG } from "@/lib/integrationsCatalog";
+
 
 import { toast } from "sonner";
 
@@ -2376,12 +2378,11 @@ function SummarySection({ title, children }: { title: string; children: React.Re
 // =========================================================
 // Qiymətləndirici seçim dialoqu — 4 tab (Şəxs / Komanda / Özü / İnteqrasiya)
 // =========================================================
-const INTEGRATION_SYSTEMS: { name: string; fields: string[] }[] = [
-  { name: "CRM Sistemi", fields: ["Satış həcmi", "Yeni müştəri sayı", "Konversiya faizi", "Aktiv lead sayı"] },
-  { name: "CHR", fields: ["İşçi sayı", "Davamiyyət faizi", "Məzuniyyət günləri", "Maaş fondu"] },
-  { name: "Microsoft 365", fields: ["E-poçt sayı", "Toplantı sayı", "Fayl paylaşımı", "Teams aktivliyi"] },
-  { name: "SIEM Platform", fields: ["İnsident sayı", "Təhlükə səviyyəsi", "Uyğunluq xalı"] },
-];
+const INTEGRATION_SYSTEMS: { name: string; fields: string[] }[] = INTEGRATION_CATALOG.map(s => ({
+  name: s.name,
+  fields: s.dataFields.map(f => `${f.name} — ${f.description}`),
+}));
+
 
 function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, onSave, title }: {
   initialEvaluators: WizardEvaluatorRef[];
@@ -2490,15 +2491,46 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
     toast.success(`Təsadüfi seçildi: ${picked.join(", ")}`);
   };
 
-  const initialIntegrationName = initialTab === "integration"
-    ? (initialEvaluators[0]?.name.replace("[İnteqrasiya] ", "").split(" · ")[0] || "")
-    : "";
-  const [integration, setIntegration] = useState<string>(initialIntegrationName);
+  type IntegrationSel = { name: string; weight: number; fields: string[] };
+  const initialIntegrationSel: IntegrationSel[] = initialTab === "integration"
+    ? initialEvaluators
+        .filter(e => e.name.startsWith("[İnteqrasiya]"))
+        .map(e => {
+          const raw = e.name.replace("[İnteqrasiya] ", "");
+          const [sysName, fieldsPart] = raw.split(" · ");
+          return {
+            name: (sysName || "").trim(),
+            weight: Number(e.weight) || 0,
+            fields: fieldsPart ? fieldsPart.split(", ").map(f => f.trim()).filter(Boolean) : [],
+          };
+        })
+        .filter(s => INTEGRATION_SYSTEMS.some(x => x.name === s.name))
+    : [];
+  const [integrationSel, setIntegrationSel] = useState<IntegrationSel[]>(initialIntegrationSel);
   const [integrationSearch, setIntegrationSearch] = useState("");
-  const [integrationFields, setIntegrationFields] = useState<string[]>([]);
-  const [integrationWeight, setIntegrationWeight] = useState<number>(100);
-  const currentIntegrationSystem = INTEGRATION_SYSTEMS.find(s => s.name === integration);
   const filteredIntegrationSystems = INTEGRATION_SYSTEMS.filter(s => s.name.toLowerCase().includes(integrationSearch.toLowerCase()));
+  const integrationTotal = integrationSel.reduce((s, x) => s + (Number(x.weight) || 0), 0);
+  const integrationWeightValid = integrationSel.length > 0 && integrationTotal === 100;
+  const integrationFieldsMissing = integrationSel.some(s => s.fields.length === 0);
+
+  const toggleIntegrationSystem = (name: string) => {
+    setIntegrationSel(prev => {
+      const exists = prev.some(s => s.name === name);
+      const next = exists ? prev.filter(s => s.name !== name) : [...prev, { name, weight: 0, fields: [] }];
+      if (next.length === 0) return next;
+      // avtomatik bərabər paylaşım
+      const base = Math.floor(100 / next.length);
+      const rest = 100 - base * next.length;
+      return next.map((s, i) => ({ ...s, weight: i === 0 ? base + rest : base }));
+    });
+  };
+  const setIntegrationWeightFor = (name: string, weight: number) =>
+    setIntegrationSel(prev => prev.map(s => s.name === name ? { ...s, weight } : s));
+  const toggleIntegrationField = (name: string, field: string) =>
+    setIntegrationSel(prev => prev.map(s => s.name === name
+      ? { ...s, fields: s.fields.includes(field) ? s.fields.filter(f => f !== field) : [...s.fields, field] }
+      : s));
+
 
   const save = () => {
     if (tab === "person") {
@@ -2538,12 +2570,19 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
     } else if (tab === "self") {
       onSave([{ id: crypto.randomUUID(), name: "[Özü]", weight: 100 }]);
     } else {
-      if (!integration) { toast.error("İnteqrasiya sistemi seçin"); return; }
-      const label = integrationFields.length > 0
-        ? `[İnteqrasiya] ${integration} · ${integrationFields.join(", ")}`
-        : `[İnteqrasiya] ${integration}`;
-      onSave([{ id: crypto.randomUUID(), name: label, weight: integrationWeight || 100 }]);
+      if (integrationSel.length === 0) { toast.error("Ən azı bir inteqrasiya sistemi seçin"); return; }
+      if (integrationFieldsMissing) { toast.error("Hər bir seçilmiş sistem üzrə ən azı bir məlumat seçin"); return; }
+      if (integrationTotal !== 100) {
+        toast.error(`İnteqrasiya sistemlərinin çəkilərinin cəmi 100% olmalıdır (hazırda ${integrationTotal}%)`);
+        return;
+      }
+      onSave(integrationSel.map(s => ({
+        id: crypto.randomUUID(),
+        name: `[İnteqrasiya] ${s.name} · ${s.fields.join(", ")}`,
+        weight: Number(s.weight) || 0,
+      })));
     }
+
   };
 
   const tabs: { key: typeof tab; label: string }[] = [
@@ -2778,7 +2817,7 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
                 </div>
               </div>
               <div>
-                <label className="text-[11px] uppercase tracking-wide text-muted-foreground">İnteqrasiya sistemi</label>
+                <label className="text-[11px] uppercase tracking-wide text-muted-foreground">İnteqrasiya sistemləri (bir və ya bir neçə)</label>
                 <div className="relative mt-1 mb-2">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <input
@@ -2789,54 +2828,87 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
                   />
                 </div>
                 <div className="border border-border rounded-lg max-h-40 overflow-y-auto divide-y">
-                  {filteredIntegrationSystems.map(s => (
-                    <button
-                      key={s.name}
-                      type="button"
-                      onClick={() => { setIntegration(s.name); setIntegrationFields([]); }}
-                      className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-secondary ${integration === s.name ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-medium" : ""}`}
-                    >
-                      <span>{s.name}</span>
-                      {integration === s.name && <Check className="w-4 h-4" />}
-                    </button>
-                  ))}
+                  {filteredIntegrationSystems.map(s => {
+                    const sel = integrationSel.find(x => x.name === s.name);
+                    return (
+                      <div key={s.name} className={`flex items-center gap-2 px-3 py-2 text-sm ${sel ? "bg-indigo-50/60 dark:bg-indigo-500/10" : ""}`}>
+                        <input type="checkbox" checked={!!sel} onChange={() => toggleIntegrationSystem(s.name)} />
+                        <button type="button" onClick={() => toggleIntegrationSystem(s.name)} className="flex-1 text-left">
+                          {s.name}
+                        </button>
+                        {sel && (
+                          <div className="flex items-center gap-1">
+                            <WeightInput value={sel.weight} onChange={n => setIntegrationWeightFor(s.name, n)} className="w-16 !px-2 !py-1 text-xs" />
+                            <span className="text-xs text-muted-foreground">%</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                   {filteredIntegrationSystems.length === 0 && (
                     <div className="px-3 py-2 text-xs text-muted-foreground">Nəticə yoxdur</div>
                   )}
                 </div>
               </div>
-              {currentIntegrationSystem && (
-                <div>
-                  <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Mübadilə olunacaq məlumatlar</label>
-                  <div className="mt-1 border border-border rounded-lg divide-y">
-                    {currentIntegrationSystem.fields.map(f => {
-                      const checked = integrationFields.includes(f);
-                      return (
-                        <label key={f} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-secondary/50">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => setIntegrationFields(prev => checked ? prev.filter(x => x !== f) : [...prev, f])}
-                          />
-                          <span>{f}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+
+              {integrationSel.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Mübadilə edilə bilən məlumatlar</label>
+                  {integrationSel.map(sel => {
+                    const sys = INTEGRATION_SYSTEMS.find(s => s.name === sel.name);
+                    if (!sys) return null;
+                    return (
+                      <div key={sel.name} className="border border-border rounded-lg overflow-hidden">
+                        <div className="px-3 py-1.5 bg-muted/40 text-xs font-medium flex items-center justify-between">
+                          <span>{sel.name}</span>
+                          <span className="text-muted-foreground">{sel.weight || 0}%</span>
+                        </div>
+                        <div className="divide-y">
+                          {sys.fields.map(f => {
+                            const checked = sel.fields.includes(f);
+                            return (
+                              <label key={f} className="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer hover:bg-secondary/50">
+                                <input type="checkbox" checked={checked} onChange={() => toggleIntegrationField(sel.name, f)} />
+                                <span>{f}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        {sel.fields.length === 0 && (
+                          <div className="px-3 py-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                            Bu sistem üzrə ən azı bir məlumat seçin
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground">Ağırlıq:</label>
-                <WeightInput value={integrationWeight} onChange={setIntegrationWeight} className="w-20 !px-2 !py-1 text-xs" />
-                <span className="text-xs text-muted-foreground">%</span>
-              </div>
+
+              {integrationSel.length > 0 && (
+                <div className={`rounded-lg border px-3 py-2 text-xs ${integrationWeightValid
+                  ? "border-emerald-200 bg-emerald-50/60 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300"
+                  : "border-destructive/40 bg-destructive/5 text-destructive"}`}>
+                  Çəkilərin cəmi: <strong>{integrationTotal}%</strong>
+                  {!integrationWeightValid && (
+                    <span> — cəm mütləq 100% olmalıdır ({integrationTotal > 100 ? "azaldın" : "artırın"}).</span>
+                  )}
+                </div>
+              )}
             </div>
           )}
+
         </div>
 
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
           <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs rounded border border-border bg-card">Ləğv et</button>
-          <button type="button" onClick={save} className="px-3 py-1.5 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700">Yadda saxla</button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={tab === "integration" && (integrationSel.length === 0 || !integrationWeightValid || integrationFieldsMissing)}
+            className="px-3 py-1.5 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >Yadda saxla</button>
+
         </div>
       </DialogContent>
     </Dialog>
