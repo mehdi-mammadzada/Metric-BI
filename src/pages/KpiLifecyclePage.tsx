@@ -117,6 +117,7 @@ const KpiLifecyclePage = () => {
                 rows={rows}
                 rowKey={(l) => l.cardId}
                 storageKey="kpi-lifecycle-table-v2"
+                lockColumnOrder
                 emptyMessage="Hələ heç bir KPI üçün lifecycle təyin olunmayıb. KPI kartı yaradarkən 2-ci addımda lifecycle əlavə edin."
                 columns={[
                   {

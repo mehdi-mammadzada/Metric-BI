@@ -41,6 +41,8 @@ interface DataTableProps<T> {
   rowNumberLabel?: string;
   /** if provided, each row is expandable via a chevron and this returns the details cell content */
   renderExpandedRow?: (row: T) => React.ReactNode | null;
+  /** keep the supplied column sequence and disable drag reordering */
+  lockColumnOrder?: boolean;
 }
 
 interface NumberFilter { op: "eq" | "lt" | "gt" | "between"; a: string; b: string; }
@@ -100,6 +102,7 @@ export function DataTable<T>({
   showRowNumbers = true,
   rowNumberLabel = "№",
   renderExpandedRow,
+  lockColumnOrder = false,
 }: DataTableProps<T>) {
   const [expandedKey, setExpandedKey] = useState<string | number | null>(null);
   // ----- persisted settings -----
@@ -149,7 +152,7 @@ export function DataTable<T>({
   useEffect(() => { setPage(1); }, [filters, advFilter, rowsPerPage, rows.length]);
 
   const colByKey = useMemo(() => Object.fromEntries(columns.map(c => [c.key, c])), [columns]);
-  const orderedVisible = colOrder
+  const orderedVisible = (lockColumnOrder ? columns.map(c => c.key) : colOrder)
     .map(k => colByKey[k])
     .filter((c): c is DataTableColumn<T> => !!c && visibleCols[c.key] !== false);
 
@@ -382,11 +385,11 @@ export function DataTable<T>({
               {orderedVisible.map(c => (
                 <th
                   key={c.key}
-                  draggable
-                  onDragStart={() => onDragStartCol(c.key)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => onDropCol(c.key)}
-                  className={`relative px-3 py-3 font-medium align-top select-none cursor-grab active:cursor-grabbing ${c.align === "right" ? "text-right" : c.align === "center" ? "text-center" : ""}`}
+                   draggable={!lockColumnOrder}
+                   onDragStart={() => !lockColumnOrder && onDragStartCol(c.key)}
+                   onDragOver={(e) => { if (!lockColumnOrder) e.preventDefault(); }}
+                   onDrop={() => !lockColumnOrder && onDropCol(c.key)}
+                   className={`relative px-3 py-3 font-medium align-top select-none ${lockColumnOrder ? "" : "cursor-grab active:cursor-grabbing"} ${c.align === "right" ? "text-right" : c.align === "center" ? "text-center" : ""}`}
                   style={{ width: `${getColWidth(c.key)}px`, minWidth: `${getColWidth(c.key)}px` }}
                 >
                   <div className={`flex items-center gap-1 ${c.align === "right" ? "justify-end" : c.align === "center" ? "justify-center" : ""}`}>
