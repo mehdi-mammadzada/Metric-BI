@@ -803,8 +803,12 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     if (!canNext) {
       if (step === 1) {
         const bp = bulkTeamMembers;
+        const missingReviewer = draft.lifecycle.reviews.findIndex(r =>
+          !((r.reviewerNames && r.reviewerNames.length > 0) || (r.reviewerName || "").trim()));
         if (bp.length >= 2 && !(draft.bulkTeamLeader && bp.includes(draft.bulkTeamLeader))) {
           toast.error("Komanda Lideri seçilməlidir — avtomatik yaradılacaq komanda üçün 1 nəfər lider təyin edin");
+        } else if (missingReviewer >= 0) {
+          toast.error(`Review #${missingReviewer + 1} üçün reviewu keçirəcək şəxs(lər) seçilməlidir`);
         } else {
           toast.error("Bütün tələb olunan sahələri (lifecycle tarixləri daxil) doldurun");
         }
