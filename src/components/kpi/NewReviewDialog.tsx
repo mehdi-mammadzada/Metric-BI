@@ -240,16 +240,6 @@ const NewReviewDialog = ({ open, onOpenChange, previousParticipantIds, previousP
                             {e.positionName || "—"}
                           </p>
                         </div>
-                        {checked && (
-                          <button
-                            type="button"
-                            onClick={() => remove(id)}
-                            className="text-muted-foreground hover:text-destructive p-1 rounded-md"
-                            aria-label="Sil"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
                       </li>
                     );
                   })}
