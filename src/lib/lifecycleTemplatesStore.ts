@@ -239,4 +239,3 @@ export const resolveTemplateLifecycle = (
   return rest;
 };
 
-export const STANDARD_MONTHLY_TEMPLATE_ID = STANDARD_ID;
