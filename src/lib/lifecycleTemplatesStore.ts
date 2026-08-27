@@ -54,18 +54,19 @@ const load = (): LifecycleTemplate[] => {
     let legacy: LifecycleTemplate[] = [];
     try {
       const lraw = localStorage.getItem(LEGACY_KEY);
-      if (lraw) {
-        const parsed = JSON.parse(lraw);
-        if (Array.isArray(parsed)) {
-          legacy = parsed
-            .map((t: any) => ({
-              ...t,
-              active: t.active ?? true,
-              isSystem: false,
-            }))
-            .filter((t: any) => !t.isSystem);
+        if (lraw) {
+          const parsed = JSON.parse(lraw);
+          if (Array.isArray(parsed)) {
+            legacy = parsed
+              .filter((t: any) => !t.isSystem)
+              .map((t: any) => ({
+                ...t,
+                active: t.active ?? true,
+                isSystem: false,
+              }));
+          }
         }
-      }
+
     } catch {}
     localStorage.setItem(KEY, JSON.stringify(legacy));
     return legacy;
