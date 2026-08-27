@@ -94,6 +94,11 @@ const GoalTrackingPage = ({ onBack }: { onBack?: () => void }) => {
     <div className="min-h-screen">
       <Header title={t("goal_tracking.page_title")} />
       <main className="p-6 pb-24">
+        {onBack && (
+          <button onClick={onBack} className="inline-flex items-center gap-1.5 px-3 py-1.5 mb-4 text-sm rounded-lg border border-border bg-card hover:bg-secondary/40 text-foreground transition-colors">
+            <ChevronLeft className="w-4 h-4" /> Geri
+          </button>
+        )}
         <PageHero
           badge={t("goal_tracking.hero_badge")}
           icon={Target}
