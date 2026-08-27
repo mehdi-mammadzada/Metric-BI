@@ -2817,7 +2817,7 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
                 </div>
               </div>
               <div>
-                <label className="text-[11px] uppercase tracking-wide text-muted-foreground">İnteqrasiya sistemi</label>
+                <label className="text-[11px] uppercase tracking-wide text-muted-foreground">İnteqrasiya sistemləri (bir və ya bir neçə)</label>
                 <div className="relative mt-1 mb-2">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <input
@@ -2828,49 +2828,76 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
                   />
                 </div>
                 <div className="border border-border rounded-lg max-h-40 overflow-y-auto divide-y">
-                  {filteredIntegrationSystems.map(s => (
-                    <button
-                      key={s.name}
-                      type="button"
-                      onClick={() => { setIntegration(s.name); setIntegrationFields([]); }}
-                      className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between hover:bg-secondary ${integration === s.name ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 font-medium" : ""}`}
-                    >
-                      <span>{s.name}</span>
-                      {integration === s.name && <Check className="w-4 h-4" />}
-                    </button>
-                  ))}
+                  {filteredIntegrationSystems.map(s => {
+                    const sel = integrationSel.find(x => x.name === s.name);
+                    return (
+                      <div key={s.name} className={`flex items-center gap-2 px-3 py-2 text-sm ${sel ? "bg-indigo-50/60 dark:bg-indigo-500/10" : ""}`}>
+                        <input type="checkbox" checked={!!sel} onChange={() => toggleIntegrationSystem(s.name)} />
+                        <button type="button" onClick={() => toggleIntegrationSystem(s.name)} className="flex-1 text-left">
+                          {s.name}
+                        </button>
+                        {sel && (
+                          <div className="flex items-center gap-1">
+                            <WeightInput value={sel.weight} onChange={n => setIntegrationWeightFor(s.name, n)} className="w-16 !px-2 !py-1 text-xs" />
+                            <span className="text-xs text-muted-foreground">%</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                   {filteredIntegrationSystems.length === 0 && (
                     <div className="px-3 py-2 text-xs text-muted-foreground">Nəticə yoxdur</div>
                   )}
                 </div>
               </div>
-              {currentIntegrationSystem && (
-                <div>
-                  <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Mübadilə olunacaq məlumatlar</label>
-                  <div className="mt-1 border border-border rounded-lg divide-y">
-                    {currentIntegrationSystem.fields.map(f => {
-                      const checked = integrationFields.includes(f);
-                      return (
-                        <label key={f} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-secondary/50">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => setIntegrationFields(prev => checked ? prev.filter(x => x !== f) : [...prev, f])}
-                          />
-                          <span>{f}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
+
+              {integrationSel.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Mübadilə edilə bilən məlumatlar</label>
+                  {integrationSel.map(sel => {
+                    const sys = INTEGRATION_SYSTEMS.find(s => s.name === sel.name);
+                    if (!sys) return null;
+                    return (
+                      <div key={sel.name} className="border border-border rounded-lg overflow-hidden">
+                        <div className="px-3 py-1.5 bg-muted/40 text-xs font-medium flex items-center justify-between">
+                          <span>{sel.name}</span>
+                          <span className="text-muted-foreground">{sel.weight || 0}%</span>
+                        </div>
+                        <div className="divide-y">
+                          {sys.fields.map(f => {
+                            const checked = sel.fields.includes(f);
+                            return (
+                              <label key={f} className="flex items-center gap-2 px-3 py-2 text-xs cursor-pointer hover:bg-secondary/50">
+                                <input type="checkbox" checked={checked} onChange={() => toggleIntegrationField(sel.name, f)} />
+                                <span>{f}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        {sel.fields.length === 0 && (
+                          <div className="px-3 py-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                            Bu sistem üzrə ən azı bir məlumat seçin
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground">Ağırlıq:</label>
-                <WeightInput value={integrationWeight} onChange={setIntegrationWeight} className="w-20 !px-2 !py-1 text-xs" />
-                <span className="text-xs text-muted-foreground">%</span>
-              </div>
+
+              {integrationSel.length > 0 && (
+                <div className={`rounded-lg border px-3 py-2 text-xs ${integrationWeightValid
+                  ? "border-emerald-200 bg-emerald-50/60 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300"
+                  : "border-destructive/40 bg-destructive/5 text-destructive"}`}>
+                  Çəkilərin cəmi: <strong>{integrationTotal}%</strong>
+                  {!integrationWeightValid && (
+                    <span> — cəm mütləq 100% olmalıdır ({integrationTotal > 100 ? "azaldın" : "artırın"}).</span>
+                  )}
+                </div>
+              )}
             </div>
           )}
+
         </div>
 
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
