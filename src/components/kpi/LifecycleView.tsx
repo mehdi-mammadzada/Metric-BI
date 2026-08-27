@@ -46,7 +46,7 @@ const STATUS_STYLES: Record<StageStatus, {
     meta: "text-amber-700/80 dark:text-amber-300/70",
     value: "text-amber-900 dark:text-amber-100",
     badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300",
-    badgeIcon: Clock, badgeLabel: "Davam edir",
+    badgeIcon: Clock, badgeLabel: "İcradadır",
   },
   pending: {
     card: "bg-slate-100/70 border-slate-200 dark:bg-slate-900/40 dark:border-slate-800",
@@ -95,7 +95,7 @@ export const REVIEW_STATUS_STYLES: Record<ReviewComputedStatus, {
     meta: "text-amber-700/80 dark:text-amber-300/70",
     value: "text-amber-900 dark:text-amber-100",
     badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300",
-    badgeIcon: Clock, badgeLabel: "İcrada",
+    badgeIcon: Clock, badgeLabel: "İcradadır",
   },
   pending: {
     card: "bg-slate-100/70 border-slate-200 dark:bg-slate-900/40 dark:border-slate-800",
@@ -267,7 +267,7 @@ const LifecycleView = ({ lifecycle, editable, cardId, cardName, cardMeta }: Life
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-2 text-[11px] text-muted-foreground border-t border-border mt-2">
         <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /><span><strong className="text-foreground">Keçirildi</strong></span></div>
-        <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /><span><strong className="text-foreground">İcrada</strong></span></div>
+        <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /><span><strong className="text-foreground">İcradadır</strong></span></div>
         <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" /><span><strong className="text-foreground">Keçirilmədi</strong></span></div>
         <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-violet-500" /><span><strong className="text-foreground">Təxirə salındı</strong></span></div>
         <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-slate-400" /><span><strong className="text-foreground">Planlaşdırılıb</strong></span></div>
