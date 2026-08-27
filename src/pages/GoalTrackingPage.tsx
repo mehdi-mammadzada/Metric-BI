@@ -25,7 +25,7 @@ const STATUS_META: Record<ExecStatus, { labelKey: string; cls: string; icon: typ
   not_achieved: { labelKey: "goal_tracking.status_not_achieved", cls: TARGET_STATUS_BADGE.not_achieved, icon: AlertTriangle },
 };
 
-const GoalTrackingPage = () => {
+const GoalTrackingPage = ({ onBack }: { onBack?: () => void }) => {
   const { t } = useTranslation();
   const baseAssignments = useCascadeAssignments();
   const cascadeNodes = useCascadeTree();
