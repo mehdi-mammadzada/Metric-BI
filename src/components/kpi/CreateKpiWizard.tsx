@@ -2376,12 +2376,11 @@ function SummarySection({ title, children }: { title: string; children: React.Re
 // =========================================================
 // Qiymətləndirici seçim dialoqu — 4 tab (Şəxs / Komanda / Özü / İnteqrasiya)
 // =========================================================
-const INTEGRATION_SYSTEMS: { name: string; fields: string[] }[] = [
-  { name: "CRM Sistemi", fields: ["Satış həcmi", "Yeni müştəri sayı", "Konversiya faizi", "Aktiv lead sayı"] },
-  { name: "CHR", fields: ["İşçi sayı", "Davamiyyət faizi", "Məzuniyyət günləri", "Maaş fondu"] },
-  { name: "Microsoft 365", fields: ["E-poçt sayı", "Toplantı sayı", "Fayl paylaşımı", "Teams aktivliyi"] },
-  { name: "SIEM Platform", fields: ["İnsident sayı", "Təhlükə səviyyəsi", "Uyğunluq xalı"] },
-];
+const INTEGRATION_SYSTEMS: { name: string; fields: string[] }[] = INTEGRATION_CATALOG.map(s => ({
+  name: s.name,
+  fields: s.dataFields.map(f => `${f.name} — ${f.description}`),
+}));
+
 
 function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, onSave, title }: {
   initialEvaluators: WizardEvaluatorRef[];
