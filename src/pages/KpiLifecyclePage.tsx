@@ -123,9 +123,9 @@ const KpiLifecyclePage = () => {
                     ),
                   },
                   {
-                    key: "updated", label: "Son yenilənmə", filterType: "date",
-                    accessor: (l) => l.updatedAt.slice(0, 10),
-                    render: (l) => <span className="text-xs text-muted-foreground">{l.updatedAt.slice(0, 10)}</span>,
+                    key: "end", label: "Bitmə tarixi", filterType: "date",
+                    accessor: (l) => lifecycleEndDate(l),
+                    render: (l) => <span className="text-xs text-muted-foreground">{lifecycleEndDate(l) || "—"}</span>,
                   },
                   {
                     key: "op", label: "Əməliyyat", width: 160, align: "center", filterType: "none",
