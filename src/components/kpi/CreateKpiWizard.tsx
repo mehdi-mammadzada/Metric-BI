@@ -1354,7 +1354,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                           </div>
                           <div>
                             <label className="text-[11px] text-muted-foreground flex items-center gap-1">
-                              <User className="w-3 h-3" /> Reviewu keçirəcək şəxs(lər)
+                              <User className="w-3 h-3" /> Reviewu keçirəcək şəxs(lər) <span className="text-destructive">*</span>
                             </label>
                             <div className="flex items-start gap-2 mt-0.5">
                               <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0 mt-1">
