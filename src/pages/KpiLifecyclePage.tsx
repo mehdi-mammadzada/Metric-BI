@@ -367,12 +367,8 @@ const KpiLifecyclePage = () => {
                   <label className="text-xs text-muted-foreground">Təsvir</label>
                   <Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} />
                 </div>
-                {editTpl.isSystem && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Sistem şablonunda tarixlər avtomatik hesablanır, ona görə mərhələ tarixləri redaktə edilə bilməz. Yalnız ad və təsviri dəyişə bilərsiniz.
-                  </p>
-                )}
               </div>
+
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditTpl(null)}>Ləğv et</Button>
