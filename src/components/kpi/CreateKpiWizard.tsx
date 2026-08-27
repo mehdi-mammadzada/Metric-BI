@@ -1277,8 +1277,9 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                   >
                     <option value="">— Şablon seçin (opsional) —</option>
                     {lifecycleTemplates.filter(t => t.active).map(t => (
-                      <option key={t.id} value={t.id}>{t.name}{t.isSystem ? " (Sistem)" : ""}</option>
+                      <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
+
                   </select>
                   {lifecycleFromTemplate && (
                     <p className="text-[11px] text-primary mt-1">

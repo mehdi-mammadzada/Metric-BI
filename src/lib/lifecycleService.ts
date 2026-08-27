@@ -41,18 +41,21 @@ export const hydrateLifecycleFromCloud = async (orgId: string): Promise<void> =>
     );
   }
   if (!tplRes.error && tplRes.data) {
-    const cloudTemplates = tplRes.data.map(r => ({
-      id: r.local_id,
-      name: r.name,
-      description: r.description ?? undefined,
-      data: r.data ?? {},
-      isSystem: r.is_system,
-      active: r.active,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
-    }));
+    const cloudTemplates = tplRes.data
+      .filter(r => !r.is_system)
+      .map(r => ({
+        id: r.local_id,
+        name: r.name,
+        description: r.description ?? undefined,
+        data: r.data ?? {},
+        isSystem: r.is_system,
+        active: r.active,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      }));
     writeLocal(TEMPLATES_KEY, cloudTemplates);
   }
+
 
   window.dispatchEvent(new Event(LIFECYCLE_EVT));
   window.dispatchEvent(new Event(TEMPLATES_EVT));

@@ -37,45 +37,36 @@ const KEY = "kpi_lifecycle_templates_v2";
 const LEGACY_KEY = "kpi_lifecycle_templates_v1";
 const EVT = "kpi-lifecycle-templates-updated";
 
-const STANDARD_ID = "tpl-standard-monthly";
-
-const buildStandardSeed = (): LifecycleTemplate => ({
-  id: STANDARD_ID,
-  name: "Standart Aylıq KPI Lifecycle",
-  description:
-    "Aylıq KPI-lar üçün default şablon. Tarixlər KPI-ın yaradıldığı tarixə əsasən avtomatik hesablanır.",
-  isSystem: true,
-  active: true,
-  createdAt: new Date().toISOString(),
-  data: {
-    assignment: { period: "Aylıq", start: "", end: "" },
-    evaluation: { period: "Aylıq", start: "", end: "" },
-    bonus: { period: "Aylıq", start: "", end: "" },
-    reviews: [{ id: "r-standard", period: "Aylıq", start: "", end: "" }],
-    dynamic: "monthly-standard",
-  },
-});
 
 const load = (): LifecycleTemplate[] => {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      return JSON.parse(raw) as LifecycleTemplate[];
+      const parsed = JSON.parse(raw) as LifecycleTemplate[];
+      // Sistem tərəfindən yaradılmış şablonlar göstərilmir/silinir.
+      const filtered = parsed.filter(t => !t.isSystem);
+      if (filtered.length !== parsed.length) {
+        persist(filtered);
+      }
+      return filtered;
     }
     // Migrate legacy
     let legacy: LifecycleTemplate[] = [];
     try {
       const lraw = localStorage.getItem(LEGACY_KEY);
-      if (lraw) {
-        const parsed = JSON.parse(lraw);
-        if (Array.isArray(parsed)) {
-          legacy = parsed.map((t: any) => ({
-            ...t,
-            active: t.active ?? true,
-            isSystem: false,
-          }));
+        if (lraw) {
+          const parsed = JSON.parse(lraw);
+          if (Array.isArray(parsed)) {
+            legacy = parsed
+              .filter((t: any) => !t.isSystem)
+              .map((t: any) => ({
+                ...t,
+                active: t.active ?? true,
+                isSystem: false,
+              }));
+          }
         }
-      }
+
     } catch {}
     localStorage.setItem(KEY, JSON.stringify(legacy));
     return legacy;
@@ -83,6 +74,7 @@ const load = (): LifecycleTemplate[] => {
     return [];
   }
 };
+
 
 const persist = (list: LifecycleTemplate[]) => {
   localStorage.setItem(KEY, JSON.stringify(list));
@@ -120,10 +112,9 @@ export const toggleLifecycleTemplateActive = (id: string) => {
 
 export const deleteLifecycleTemplate = (id: string) => {
   const list = load();
-  const target = list.find(t => t.id === id);
-  if (target?.isSystem) return; // system şablonu silinmir
   persist(list.filter(t => t.id !== id));
 };
+
 
 export const useLifecycleTemplates = (): LifecycleTemplate[] => {
   const [list, setList] = useState<LifecycleTemplate[]>(() => load());
@@ -248,4 +239,3 @@ export const resolveTemplateLifecycle = (
   return rest;
 };
 
-export const STANDARD_MONTHLY_TEMPLATE_ID = STANDARD_ID;

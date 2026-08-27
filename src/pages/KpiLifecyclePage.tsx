@@ -187,9 +187,6 @@ const KpiLifecyclePage = () => {
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <FileText className="w-4 h-4 text-primary shrink-0" />
                           <span className="font-medium text-sm text-foreground truncate">{t.name}</span>
-                          {t.isSystem && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">Sistem</span>
-                          )}
                         </div>
                         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                           <button
@@ -199,16 +196,15 @@ const KpiLifecyclePage = () => {
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
-                          {!t.isSystem && (
-                            <button
-                              onClick={() => { deleteLifecycleTemplate(t.id); toast.success("Şablon silindi"); }}
-                              className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                              title="Sil"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
+                          <button
+                            onClick={() => { deleteLifecycleTemplate(t.id); toast.success("Şablon silindi"); }}
+                            className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                            title="Sil"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
+
                       </div>
                       <p className="text-xs text-muted-foreground mt-2 line-clamp-2 min-h-[32px]">
                         {t.description || "—"}
@@ -280,8 +276,8 @@ const KpiLifecyclePage = () => {
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-primary" />
                 {detailTpl?.name}
-                {detailTpl?.isSystem && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">Sistem</span>}
               </DialogTitle>
+
             </DialogHeader>
             {detailTpl && (() => {
               const isDynamic = detailTpl.data.dynamic === "monthly-standard";
@@ -371,12 +367,8 @@ const KpiLifecyclePage = () => {
                   <label className="text-xs text-muted-foreground">Təsvir</label>
                   <Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} />
                 </div>
-                {editTpl.isSystem && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Sistem şablonunda tarixlər avtomatik hesablanır, ona görə mərhələ tarixləri redaktə edilə bilməz. Yalnız ad və təsviri dəyişə bilərsiniz.
-                  </p>
-                )}
               </div>
+
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditTpl(null)}>Ləğv et</Button>
