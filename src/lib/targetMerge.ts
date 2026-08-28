@@ -31,12 +31,23 @@ const nrm = (v: unknown) =>
 
 const hasVal = (v: unknown) => String(v ?? "").trim() !== "" && String(v ?? "").trim() !== "—";
 
+const UNIT_BY_TYPE: Record<string, string> = {
+  Say: "ədəd", Faiz: "%", Nisbət: "əmsal", İcra: "bal",
+  Səriştə: "bal", "Fərdi İnkişaf": "bal", Boolean: "bəli/xeyr", Zaman: "gün",
+};
+
+const resolvedUnit = (type: unknown, unit: unknown) =>
+  UNIT_BY_TYPE[String(type || "")] ?? String(unit || "");
+
 /** Placeholder hədəf: başqasına təyin edilib, hələ dəyəri yoxdur. */
 const isPlaceholder = (s: any) =>
   (s?.assignerMode === "other" || !!s?.assigner) && !hasVal(s?.target);
 
 export const mergeCardTargets = (cardId: number | undefined, own: any[] = []): MergedTarget[] => {
-  const entries: KpiSetEntry[] = cardId ? (getEntriesForCard(cardId) as KpiSetEntry[]) : [];
+  const entries: KpiSetEntry[] = cardId ? [...getEntriesForCard(cardId)].sort((a, b) => {
+    if (a.status !== b.status) return a.status === "completed" ? -1 : 1;
+    return Number(b.updatedAt || 0) - Number(a.updatedAt || 0);
+  }) : [];
   const remaining = [...entries];
 
   const take = (pred: (e: KpiSetEntry) => boolean): KpiSetEntry | undefined => {
@@ -65,8 +76,13 @@ export const mergeCardTargets = (cardId: number | undefined, own: any[] = []): M
     const target = entryAssigned ? String(e!.target) : (hasVal(s.target) ? String(s.target) : "");
     // Vahid dəyərin mənbəyi ilə birlikdə gəlir — dəyər KPI Set-dəndirsə,
     // vahid də KPI Set-dən götürülür (əks halda "ədəd" → "AZN" olur).
-    const unit = entryAssigned ? (e?.unit || s.unit || "") : (s.unit || e?.unit || "");
-    const weight = Number(s.weight) > 0 ? Number(s.weight) : Number(e?.weight || 0);
+    const type = (e?.type as string) || s.type;
+    const unit = entryAssigned
+      ? resolvedUnit(type, e?.unit)
+      : resolvedUnit(type, s.unit || e?.unit);
+    const weight = entryAssigned && Number(e?.weight) > 0
+      ? Number(e?.weight)
+      : (Number(s.weight) > 0 ? Number(s.weight) : Number(e?.weight || 0));
     return {
       ...s,
       id: s.id,
@@ -74,7 +90,7 @@ export const mergeCardTargets = (cardId: number | undefined, own: any[] = []): M
       target,
       unit,
       weight,
-      type: (e?.type as string) || s.type,
+      type,
       limits: (e?.limits as LimitSet | undefined) ?? s.limits,
       scoreDescriptions: (e?.scoreDescriptions as ScoreDescRow[] | undefined) ?? s.scoreDescriptions,
       delegated: isPlaceholder(s) || (!!e && !hasVal(s.target)),
@@ -92,7 +108,7 @@ export const mergeCardTargets = (cardId: number | undefined, own: any[] = []): M
       id: e.subKpiId,
       name: e.subKpiName,
       target: hasVal(e.target) ? String(e.target) : "",
-      unit: e.unit || "",
+      unit: resolvedUnit(e.type, e.unit),
       weight: Number(e.weight || 0),
       type: e.type as string,
       limits: e.limits as LimitSet | undefined,

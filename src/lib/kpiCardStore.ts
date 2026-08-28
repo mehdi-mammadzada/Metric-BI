@@ -175,6 +175,50 @@ export const upsertSharedKpiCard = (card: SharedKpiCard) => {
   save(list);
 };
 
+/**
+ * Rəhbərin təyin etdiyi hədəf məlumatını kartın əsas hədəf snapshot-ına yazır.
+ * Beləliklə ad, növ, vahid, çəki və BSC məlumatları yalnız müvəqqəti KPI Set
+ * keşində qalmır; refresh və başqa cihazlarda da kartla birlikdə hidrat olunur.
+ */
+export const applyAssignedTargetToSharedCard = (
+  numericCardId: number,
+  subKpiId: number,
+  patch: {
+    name?: string;
+    type?: string;
+    targetValue?: string;
+    unit?: string;
+    weight?: number;
+    limits?: LimitSet;
+    scoreDescriptions?: ScoreDescRow[];
+    cascading?: boolean;
+  },
+) => {
+  const list = load();
+  const cardIndex = list.findIndex(card => card.numericId === numericCardId);
+  if (cardIndex < 0) return;
+  const card = list[cardIndex];
+  const targetIndex = card.targets.findIndex((target, index) =>
+    String(target.id) === String(subKpiId) || index + 1 === Number(subKpiId)
+  );
+  if (targetIndex < 0) return;
+
+  const targets = card.targets.map((target, index) => index === targetIndex ? {
+    ...target,
+    ...(patch.name !== undefined ? { name: patch.name } : {}),
+    ...(patch.type !== undefined ? { type: patch.type } : {}),
+    ...(patch.targetValue !== undefined ? { targetValue: patch.targetValue } : {}),
+    ...(patch.unit !== undefined ? { unit: patch.unit } : {}),
+    ...(patch.weight !== undefined ? { weight: patch.weight } : {}),
+    ...(patch.limits !== undefined ? { limits: patch.limits } : {}),
+    ...(patch.scoreDescriptions !== undefined ? { scoreDescriptions: patch.scoreDescriptions } : {}),
+    ...(patch.cascading !== undefined ? { cascading: patch.cascading } : {}),
+  } : target);
+
+  list[cardIndex] = { ...card, targets, updatedAt: new Date().toISOString() };
+  save(list);
+};
+
 /** Kopyalanmış kart: istifadəçi özü təsdiqə göndərməyincə avtomatik "aktiv" ola bilməz. */
 export const isCopyLockedCard = (card: Pick<SharedKpiCard, "history">): boolean => {
   const h = card.history ?? [];

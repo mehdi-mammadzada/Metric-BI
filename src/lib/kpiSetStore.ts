@@ -195,13 +195,30 @@ export const setEntryDetails = (
   }
 ) => {
   let touchedCardId: number | null = null;
+  let updatedEntry: KpiSetEntry | null = null;
   persist(load().map(e => {
     if (e.id !== id) return e;
     const next = { ...e, ...patch, updatedAt: Date.now() };
     if (next.subKpiName && next.target) next.status = "completed";
     if (next.status === "completed") touchedCardId = next.cardId;
+    updatedEntry = next;
     return next;
   }));
+  if (updatedEntry) {
+    const saved = updatedEntry as KpiSetEntry;
+    void import("@/lib/kpiCardStore").then(({ applyAssignedTargetToSharedCard }) => {
+      applyAssignedTargetToSharedCard(saved.cardId, saved.subKpiId, {
+        name: saved.subKpiName,
+        type: saved.type,
+        targetValue: saved.target,
+        unit: saved.unit,
+        weight: saved.weight,
+        limits: saved.limits,
+        scoreDescriptions: saved.scoreDescriptions,
+        cascading: saved.cascadable,
+      });
+    }).catch(() => undefined);
+  }
   if (touchedCardId != null) maybeTriggerApproval(touchedCardId);
 };
 
