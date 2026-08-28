@@ -61,10 +61,13 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
 
   useEffect(() => {
     if (!open || !entry) return;
+    const entryType = (entry.type as HedefType) || "Məbləğ";
     setName(entry.subKpiName || "");
-    setType((entry.type as HedefType) || "Məbləğ");
+    setType(entryType);
     setTarget(entry.target || "");
-    setUnit(entry.unit || "AZN");
+    // Vahid növə uyğun götürülür: Məbləğ üçün seçilmiş valyuta, digərləri auto-unit.
+    // Boş saxlanmış vahid heç vaxt "AZN" ilə əvəz olunmur.
+    setUnit(entryType === "Məbləğ" ? (AMOUNT_UNITS.includes(entry.unit) ? entry.unit : "AZN") : (AUTO_UNIT[entryType] || entry.unit || ""));
     setWeight(entry.weight != null ? String(entry.weight) : "");
     setCascadable(!!entry.cascadable);
     setScales(getScoreScales());

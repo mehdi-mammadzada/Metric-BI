@@ -181,8 +181,8 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
         </DialogHeader>
 
         <div className="grid grid-cols-3 gap-3">
-          <BigStat label="Mövcud Cascade Load" value={fmt(cascadeLoad)} unit={node?.unit || "AZN"} tone="neutral" />
-          <BigStat label="Qalıq (paylanmamış)" value={fmt(Math.max(0, cascadeLoad - totalDist))} unit={node?.unit || "AZN"} tone="primary" />
+          <BigStat label="Mövcud Cascade Load" value={fmt(cascadeLoad)} unit={node?.unit || ""} tone="neutral" />
+          <BigStat label="Qalıq (paylanmamış)" value={fmt(Math.max(0, cascadeLoad - totalDist))} unit={node?.unit || ""} tone="primary" />
           <BigStat label="Paylanan cəm" value={fmt(totalDist)} unit={`(${selectedCount} şəxs)`} tone={overLimit ? "danger" : "success"} />
         </div>
 
