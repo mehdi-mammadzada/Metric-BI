@@ -249,6 +249,12 @@ const rangesToLimitSet = (ranges?: { min: string; max: string; score: string }[]
 };
 
 /** Convert a wizard draft into a shared KPI card snapshot. */
+const AUTO_UNIT_BY_TYPE: Record<string, string> = {
+  "Say": "ədəd", "Faiz": "%", "Nisbət": "əmsal",
+  "İcra": "bal", "Səriştə": "bal", "Fərdi İnkişaf": "bal",
+  "Boolean": "bəli/xeyr", "Zaman": "gün",
+};
+
 export const buildSharedCardFromDraft = (
   d: CreateKpiWizardDraft,
   meta: {
@@ -288,7 +294,7 @@ export const buildSharedCardFromDraft = (
   targets: d.targets.map((t: any) => ({
     id: t.id, name: t.name, type: t.type, weight: t.weight, scoreLimit: t.scoreLimit,
     targetValue: t.targetValue ?? "",
-    unit: t.type === "Məbləğ" ? (t.currency || "AZN") : t.type === "Faiz" ? "%" : (t.unit || ""),
+    unit: t.type === "Məbləğ" ? (t.currency || "AZN") : (AUTO_UNIT_BY_TYPE[t.type] ?? (t.unit || "")),
     cascading: !!t.cascading,
     createdBy: t.createdBy,
     assigner: t.assigner,

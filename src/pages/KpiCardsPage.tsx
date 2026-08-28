@@ -476,11 +476,18 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       });
       return Array.from(ids);
     };
+    const AUTO_UNIT_MAP: Record<string, string> = {
+      "Say": "ədəd", "Faiz": "%", "Nisbət": "əmsal",
+      "İcra": "bal", "Səriştə": "bal", "Fərdi İnkişaf": "bal",
+      "Boolean": "bəli/xeyr", "Zaman": "gün",
+    };
+    const unitForType = (t: any): string =>
+      t.type === "Məbləğ" ? (t.currency || "AZN") : (AUTO_UNIT_MAP[t.type] ?? (t.unit || ""));
     const wizardSubKpis: SubKpi[] = (d.targets || []).map((t: any, i: number) => ({
       id: i + 1,
       name: t.name || `Hədəf ${i + 1}`,
       target: String(t.targetValue ?? ""),
-      unit: t.type === "Məbləğ" ? (t.currency || "AZN") : t.type === "Faiz" ? "%" : "",
+      unit: unitForType(t),
       weight: Number(t.weight) || 0,
       current: "",
       progress: 0,
@@ -706,7 +713,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
           subKpiName: targetName,
           type: target?.type,
           target: String(target?.targetValue ?? ""),
-          unit: target?.type === "Məbləğ" ? (target?.currency || "AZN") : target?.type === "Faiz" ? "%" : (target?.unit || ""),
+          unit: unitForType(target),
           assigneeName: name,
           assigneeId: emp?.id,
           ownerType: "manager",
@@ -781,7 +788,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       cascadableTargets.forEach((t: any) => {
         const limit = parseNumLoose(t.targetValue);
         if (limit <= 0) return;
-        const unit = t.type === "Məbləğ" ? (t.currency || "AZN") : t.type === "Faiz" ? "%" : (t.unit || "");
+        const unit = unitForType(t);
         pendingRoots.push({ goalName: t.name || d.name || "Ana hədəf", unit, limit });
       });
 
