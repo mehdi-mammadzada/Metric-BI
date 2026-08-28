@@ -713,7 +713,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
           subKpiName: targetName,
           type: target?.type,
           target: String(target?.targetValue ?? ""),
-          unit: target?.type === "Məbləğ" ? (target?.currency || "AZN") : target?.type === "Faiz" ? "%" : (target?.unit || ""),
+          unit: unitForType(target),
           assigneeName: name,
           assigneeId: emp?.id,
           ownerType: "manager",
@@ -788,7 +788,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
       cascadableTargets.forEach((t: any) => {
         const limit = parseNumLoose(t.targetValue);
         if (limit <= 0) return;
-        const unit = t.type === "Məbləğ" ? (t.currency || "AZN") : t.type === "Faiz" ? "%" : (t.unit || "");
+        const unit = unitForType(t);
         pendingRoots.push({ goalName: t.name || d.name || "Ana hədəf", unit, limit });
       });
 
