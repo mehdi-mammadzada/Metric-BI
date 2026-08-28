@@ -2581,18 +2581,16 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
               })()}
 
               {detailTab === "setStatus" && (() => {
-                const own = selectedKpi.subKpis || [];
-                const entries = selectedKpi.id ? getEntriesForCard(selectedKpi.id) : [];
-                const ownIds = new Set(own.map(s => s.id));
-                const extras = entries
-                  .filter(e => e.subKpiName && !ownIds.has(e.subKpiId))
-                  .map(e => ({ id: e.subKpiId, name: e.subKpiName, assignee: e.assigneeName, isSet: true as const }));
-                let merged = [
-                  ...own.map(s => ({ id: s.id, name: s.name, assignee: (s as any)?.evaluator?.persons?.[0]?.name || selectedKpi.responsible || "—", isSet: false as const })),
-                  ...extras,
-                ];
+                // Hər hədəfin ÖZ təyinedicisi (qiymətləndirici/məsul şəxs yox).
+                let merged: any[] = mergeCardTargets(selectedKpi.id, (selectedKpi.subKpis || []) as any[])
+                  .map(t => ({
+                    id: t.id,
+                    name: t.name,
+                    assignee: t.assignerName || "—",
+                    isSet: t.assigned,
+                  }));
                 if (merged.length === 0) {
-                  merged = [{ id: 1, name: selectedKpi.name, assignee: selectedKpi.responsible || "—", isSet: false as const }];
+                  merged = [{ id: 1, name: selectedKpi.name, assignee: "—", isSet: false as const }];
                 }
                 const cardStatus = getStatusFor(selectedKpi.id).status;
                 const isActive = cardStatus === "aktiv";
