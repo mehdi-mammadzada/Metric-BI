@@ -1,4 +1,4 @@
-import { Search, Bell, Moon, Sun, LogOut, Mail, Building2, Users as UsersIcon, CheckCircle2, AlertCircle, Clock, Globe, Shield, Trash2 } from "lucide-react";
+import { Bell, Moon, Sun, LogOut, Mail, Building2, Users as UsersIcon, CheckCircle2, AlertCircle, Clock, Globe, Shield, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { applyTheme, getStoredTheme } from "@/lib/theme";
