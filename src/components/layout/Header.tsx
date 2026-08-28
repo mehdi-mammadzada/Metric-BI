@@ -118,14 +118,7 @@ const Header = ({ title, showVersion = true }: HeaderProps) => {
       </div>
       <div className="flex items-center gap-3">
 
-        <div className="relative hidden sm:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-          <input
-            placeholder={t("common.search_kpi")}
-            className="pl-9 pr-4 py-2 text-sm bg-secondary/70 hover:bg-secondary rounded-lg border border-transparent focus:border-ring outline-none w-56 transition-all"
-          />
-        </div>
-        {(isManager || user?.role === "USER") && (
+{(isManager || user?.role === "USER") && (
           <button
             onClick={() => navigate(isManager ? "/manager/whistleblower" : "/user/whistleblower")}
             className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-[hsl(268_75%_55%/0.12)] hover:bg-[hsl(268_75%_55%/0.2)] text-[hsl(268_75%_55%)] transition-colors"
