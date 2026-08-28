@@ -379,20 +379,37 @@ const TargetRow = ({ item, cardId, frequency, targetIdx }: {
 // ── Main tab ────────────────────────────────────────────────────────────────
 const PerformanceDynamicsTab = ({ kpi }: { kpi: KpiCard }) => {
   const targets = useMemo(() => {
-    const own = kpi.subKpis || [];
-    if (own.length > 0) return own as any as TargetItem[];
-    const entries = kpi.id ? getEntriesForCard(kpi.id) : [];
-    if (entries.length > 0) {
-      return entries.map((e: any) => ({
-        id: e.subKpiId, name: e.subKpiName || "Hədəf", target: e.target, unit: e.unit,
-      })) as TargetItem[];
-    }
+    const own = (kpi.subKpis || []) as any[];
+    const entries: any[] = kpi.id ? (getEntriesForCard(kpi.id) as any[]) : [];
+    const nrm = (v: unknown) => String(v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+    const used = new Set<string>();
+    // Başqa əməkdaşın təyin etdiyi hədəflər KPI Set-də saxlanılır — ad/id üzrə
+    // birləşdirilir ki, adı və dəyəri boş görünməsin.
+    const ownRows = own.map((s: any) => {
+      const e =
+        entries.find(en => en.subKpiId === s.id) ||
+        entries.find(en => nrm(en.subKpiName) && nrm(en.subKpiName) === nrm(s.name));
+      if (e) used.add(String(e.id));
+      return {
+        ...s,
+        name: s.name || e?.subKpiName || "Hədəf",
+        target: (s.target && String(s.target).trim()) ? s.target : e?.target,
+        unit: s.unit || e?.unit,
+        weight: s.weight || e?.weight || 0,
+      };
+    });
+    const extras = entries
+      .filter(e => !used.has(String(e.id)) && nrm(e.subKpiName) && !ownRows.some(r => nrm(r.name) === nrm(e.subKpiName)))
+      .map((e: any) => ({ id: e.subKpiId, name: e.subKpiName, target: e.target, unit: e.unit, weight: e.weight || 0 }));
+    const merged = [...ownRows, ...extras];
+    if (merged.length > 0) return merged as any as TargetItem[];
     return [{
       id: 1, name: (kpi as any).name || "Ümumi hədəf",
       target: (kpi as any).generalTarget || (kpi as any).target || "100",
       unit: (kpi as any).unit || "", current: (kpi as any).current, progress: kpi.progress,
     }];
   }, [kpi]);
+
 
   const frequency = (kpi as any).frequency || (kpi as any).period || "Aylıq";
 
