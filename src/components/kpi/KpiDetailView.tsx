@@ -22,6 +22,7 @@ import LifecycleView, { REVIEW_STATUS_STYLES } from "./LifecycleView";
 import PerformanceDynamicsTab from "./PerformanceDynamicsDrilldownTab";
 import { getLifecycle, getLifecycleWithFallback, computeReviewStatus, setReviewOutcome } from "@/lib/kpiLifecycleStore";
 import { getEntriesForCard } from "@/lib/kpiSetStore";
+import { mergeCardTargets } from "@/lib/targetMerge";
 import { getApprovalMatrices, formatAssignee } from "@/lib/matrixStore";
 import { getEmployees } from "@/lib/orgStore";
 import { withKartSuffix } from "@/lib/utils";
@@ -436,8 +437,8 @@ const KpiDetailView = ({
                           const icons = [ShoppingCart, Store, Monitor, BarChart3, Target];
                           const Icon = icons[i % icons.length];
                           const hasCurrent = sk.current && String(sk.current).trim() !== "";
-                          const delegatedTo = (sk as any).assignerMode === "other"
-                            ? String((sk as any).assigner || "").split(" — ")[0].trim()
+                          const delegatedTo = (sk as any).delegated
+                            ? String((sk as any).assignerName || (sk as any).assigner || "").split(" — ")[0].trim()
                             : "";
                           const pending = !hasVal(sk.target);
                           const targetLabel = hasVal(sk.target)
