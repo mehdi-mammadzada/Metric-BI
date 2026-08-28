@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { User as UserIcon, Sliders } from "lucide-react";
-import { getEntriesForCard, type LimitSet, TIER_LABELS } from "@/lib/kpiSetStore";
+import { type LimitSet, TIER_LABELS } from "@/lib/kpiSetStore";
+import { mergeCardTargets } from "@/lib/targetMerge";
+
 
 interface SubKpiLike {
   id: number;
