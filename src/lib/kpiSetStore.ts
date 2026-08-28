@@ -79,15 +79,18 @@ const norm = (value?: string | number | null) => String(value ?? "").split(" —
 
 const entryKey = (entry: Pick<KpiSetEntry, "cardId" | "subKpiId" | "subKpiName" | "assigneeId" | "assigneeName">) => {
   const assignee = norm(entry.assigneeName) || (entry.assigneeId != null ? String(entry.assigneeId) : "");
-  // Bir kartda bir neçə hədəf ola bilər — hədəf də açara daxil edilir,
-  // əks halda sinxronizasiya zamanı kartın yalnız 1 hədəfi qalır (BSC itir).
-  const sub = norm(entry.subKpiName) || (entry.subKpiId != null ? String(entry.subKpiId) : "");
+  // Hədəfin adı rəhbər tərəfindən dəyişdirilə bilər; identifikasiya ada yox,
+  // kart yaradılarkən verilən sabit slot ID-sinə əsaslanmalıdır.
+  const sub = entry.subKpiId != null ? String(entry.subKpiId) : norm(entry.subKpiName);
   return `${entry.cardId}::${assignee}::${sub}`;
 };
 
 const betterEntry = (a: KpiSetEntry, b: KpiSetEntry) => {
+  const aUpdated = Number(a.updatedAt) || 0;
+  const bUpdated = Number(b.updatedAt) || 0;
+  if (aUpdated !== bUpdated) return aUpdated > bUpdated ? a : b;
   if (a.status !== b.status) return a.status === "completed" ? a : b;
-  return (Number(a.updatedAt) || 0) >= (Number(b.updatedAt) || 0) ? a : b;
+  return a;
 };
 
 export const dedupeKpiSetEntries = (rows: KpiSetEntry[]): KpiSetEntry[] => {

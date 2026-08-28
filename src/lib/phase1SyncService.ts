@@ -75,17 +75,25 @@ const normalizeKpiSetEntries = (value: unknown): unknown => {
   if (!Array.isArray(value)) return value;
   const norm = (v: unknown) => String(v ?? "").split(" — ")[0].trim().toLowerCase().replace(/\s+/g, " ");
   const keyOf = (row: any) =>
-    `${row?.cardId}::${norm(row?.assigneeName) || row?.assigneeId || ""}::${norm(row?.subKpiName) || row?.subKpiId || ""}`;
+    `${row?.cardId}::${norm(row?.assigneeName) || row?.assigneeId || ""}::${row?.subKpiId ?? norm(row?.subKpiName)}`;
 
   const map = new Map<string, any>();
   value.forEach((row: any) => {
     const key = keyOf(row);
     const prev = map.get(key);
-    if (!prev || (prev.status !== "completed" && row?.status === "completed") || Number(row?.updatedAt || 0) > Number(prev?.updatedAt || 0)) {
+    const prevUpdated = Number(prev?.updatedAt || 0);
+    const rowUpdated = Number(row?.updatedAt || 0);
+    if (!prev || rowUpdated > prevUpdated || (rowUpdated === prevUpdated && prev.status !== "completed" && row?.status === "completed")) {
       map.set(key, row);
     }
   });
   return Array.from(map.values()).sort((a, b) => Number(b?.updatedAt || 0) - Number(a?.updatedAt || 0));
+};
+
+const mergeKpiSetEntries = (cloudValue: unknown, localValue: unknown): unknown => {
+  const cloud = Array.isArray(cloudValue) ? cloudValue : [];
+  const local = Array.isArray(localValue) ? localValue : [];
+  return normalizeKpiSetEntries([...cloud, ...local]);
 };
 
 const normalizeCascadeTree = (value: unknown): unknown => {
@@ -119,6 +127,7 @@ const HEAVY_CLOUD_KEYS = new Set(["wb_reports", "operations_log", "kpi_card_draf
 const applyRows = (rows: { catalog_key: string; entries: unknown }[]) => {
   const byKey = new Map<string, unknown>(rows.map(r => [r.catalog_key, r.entries]));
   const touchedEvents = new Set<string>();
+  const locallyNewerKeys = new Set<string>();
   suppressFlush = true;
   try {
     for (const store of STORES) {
@@ -127,9 +136,13 @@ const applyRows = (rows: { catalog_key: string; entries: unknown }[]) => {
         // Standart kataloqlar (məs. dəyişənlər kitabı) buludda boş olduqda
         // lokal defaultları silmirik.
         if (store.localKey === "kpi_formula_variables_v4" && Array.isArray(val) && val.length === 0) continue;
-        const normalized = normalizeStoreValue(store.localKey, val);
+        const cloudNormalized = normalizeStoreValue(store.localKey, val);
+        const normalized = store.localKey === "kpi_set_entries_v6"
+          ? mergeKpiSetEntries(cloudNormalized, readLocal(store.localKey, []))
+          : cloudNormalized;
         writeLocal(store.localKey, normalized);
-        lastWrittenJson.set(store.localKey, JSON.stringify(normalized));
+        lastWrittenJson.set(store.localKey, JSON.stringify(cloudNormalized));
+        if (JSON.stringify(normalized) !== JSON.stringify(cloudNormalized)) locallyNewerKeys.add(store.localKey);
         touchedEvents.add(store.event);
       }
     }
@@ -142,6 +155,11 @@ const applyRows = (rows: { catalog_key: string; entries: unknown }[]) => {
   }
   // Notify UI hooks so they re-read their stores.
   touchedEvents.forEach(evt => window.dispatchEvent(new Event(evt)));
+  // Lokal tamamlanmış hədəf köhnə cloud snapshot-dan daha yenidirsə, onu
+  // qorumaqla yanaşı grace period-dan sonra backend-ə də geri yazırıq.
+  locallyNewerKeys.forEach(key => {
+    window.setTimeout(() => scheduleFlush(key), 2600);
+  });
 };
 
 const sleep = (ms: number) => new Promise(r => window.setTimeout(r, ms));
