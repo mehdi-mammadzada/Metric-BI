@@ -427,6 +427,7 @@ const KpiDetailView = ({
                             const n = parseFloat(s);
                             return isNaN(n) ? NaN : n;
                           };
+                          const hasVal = (v: any) => v !== null && v !== undefined && String(v).trim() !== "" && String(v).trim() !== "—";
                           const cur = parseNum(sk.current);
                           const tgt = parseNum(sk.target);
                           const pct = !isNaN(cur) && !isNaN(tgt) && tgt !== 0
@@ -435,6 +436,15 @@ const KpiDetailView = ({
                           const icons = [ShoppingCart, Store, Monitor, BarChart3, Target];
                           const Icon = icons[i % icons.length];
                           const hasCurrent = sk.current && String(sk.current).trim() !== "";
+                          const delegatedTo = (sk as any).assignerMode === "other"
+                            ? String((sk as any).assigner || "").split(" — ")[0].trim()
+                            : "";
+                          const pending = !hasVal(sk.target);
+                          const targetLabel = hasVal(sk.target)
+                            ? `${sk.target}${sk.unit ? ` ${sk.unit}` : ""}`
+                            : (delegatedTo ? "Təyin edilməyib" : "—");
+                          const weightLbl = sk.weight ? `${sk.weight}%` : (pending ? "Təyin edilməyib" : "—");
+
                           return (
                             <div key={sk.id} className="grid grid-cols-12 gap-3 px-4 py-4 items-center hover:bg-secondary/20 transition-colors">
                               <div className="col-span-5 flex items-center gap-3 min-w-0">
