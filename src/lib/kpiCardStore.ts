@@ -288,7 +288,7 @@ export const buildSharedCardFromDraft = (
   targets: d.targets.map((t: any) => ({
     id: t.id, name: t.name, type: t.type, weight: t.weight, scoreLimit: t.scoreLimit,
     targetValue: t.targetValue ?? "",
-    unit: t.type === "Məbləğ" ? (t.currency || "AZN") : t.type === "Faiz" ? "%" : (t.unit || ""),
+    unit: t.type === "Məbləğ" ? (t.currency || "AZN") : (AUTO_UNIT_BY_TYPE[t.type] ?? (t.unit || "")),
     cascading: !!t.cascading,
     createdBy: t.createdBy,
     assigner: t.assigner,
