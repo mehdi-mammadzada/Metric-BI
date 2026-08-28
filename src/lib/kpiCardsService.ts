@@ -101,10 +101,15 @@ const rangesToLimitSet = (ranges: unknown): Record<string, { min: number; max: n
   return touched ? out : undefined;
 };
 
+const AUTO_UNIT_BY_TYPE: Record<string, string> = {
+  "Say": "ədəd", "Faiz": "%", "Nisbət": "əmsal",
+  "İcra": "bal", "Səriştə": "bal", "Fərdi İnkişaf": "bal",
+  "Boolean": "bəli/xeyr", "Zaman": "gün",
+};
+
 const unitFromDraftTarget = (target: any): string => {
   if (target?.type === "Məbləğ") return target?.currency || "AZN";
-  if (target?.type === "Faiz") return "%";
-  return target?.unit || "";
+  return AUTO_UNIT_BY_TYPE[target?.type] ?? target?.unit ?? "";
 };
 
 const evaluatorFromDraftTarget = (target: any): SharedKpiCard["targets"][number]["evaluator"] => {
