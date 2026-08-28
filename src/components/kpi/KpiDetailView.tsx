@@ -427,6 +427,7 @@ const KpiDetailView = ({
                             const n = parseFloat(s);
                             return isNaN(n) ? NaN : n;
                           };
+                          const hasVal = (v: any) => v !== null && v !== undefined && String(v).trim() !== "" && String(v).trim() !== "—";
                           const cur = parseNum(sk.current);
                           const tgt = parseNum(sk.target);
                           const pct = !isNaN(cur) && !isNaN(tgt) && tgt !== 0
@@ -435,6 +436,15 @@ const KpiDetailView = ({
                           const icons = [ShoppingCart, Store, Monitor, BarChart3, Target];
                           const Icon = icons[i % icons.length];
                           const hasCurrent = sk.current && String(sk.current).trim() !== "";
+                          const delegatedTo = (sk as any).assignerMode === "other"
+                            ? String((sk as any).assigner || "").split(" — ")[0].trim()
+                            : "";
+                          const pending = !hasVal(sk.target);
+                          const targetLabel = hasVal(sk.target)
+                            ? `${sk.target}${sk.unit ? ` ${sk.unit}` : ""}`
+                            : (delegatedTo ? "Təyin edilməyib" : "—");
+                          const weightLbl = sk.weight ? `${sk.weight}%` : (pending ? "Təyin edilməyib" : "—");
+
                           return (
                             <div key={sk.id} className="grid grid-cols-12 gap-3 px-4 py-4 items-center hover:bg-secondary/20 transition-colors">
                               <div className="col-span-5 flex items-center gap-3 min-w-0">
@@ -445,6 +455,10 @@ const KpiDetailView = ({
                                   <p className="text-sm font-semibold text-foreground truncate flex items-center gap-1.5">
                                     <span className="truncate">{sk.name}</span>
                                     {sk._fromSet && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">KPI Set</span>}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    Dəyər: {targetLabel}
+                                    {delegatedTo ? ` · Təyin edici: ${delegatedTo}` : ""}
                                   </p>
                                 </div>
                               </div>
@@ -457,8 +471,9 @@ const KpiDetailView = ({
                                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
                                 </div>
                               </div>
-                              <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums truncate">{sk.target}{sk.unit ? ` ${sk.unit}` : ""}</div>
-                              <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{sk.weight ? `${sk.weight}%` : "—"}</div>
+                              <div className={`col-span-2 text-right text-sm font-medium tabular-nums truncate ${pending ? "text-amber-600" : "text-foreground"}`}>{targetLabel}</div>
+                              <div className={`col-span-2 text-right text-sm font-medium tabular-nums border-l border-border pl-2 ${weightLbl === "Təyin edilməyib" ? "text-amber-600" : "text-foreground"}`}>{weightLbl}</div>
+
                             </div>
                           );
                         })}

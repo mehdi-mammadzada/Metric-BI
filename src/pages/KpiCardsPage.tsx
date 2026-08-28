@@ -2483,13 +2483,26 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                 : hasVal((selectedKpi as any).target)
                                 ? (selectedKpi as any).target
                                 : "";
-                              const targetLabel = hasVal(rawTarget) ? `${rawTarget}${unitLbl ? ` ${unitLbl}` : ""}` : "—";
+                              // Təyin edici başqa şəxsdirsə və dəyər hələ verilməyibsə,
+                              // "—" yerinə aydın status və təyin edicinin adı göstərilir.
+                              const delegatedTo = (sk as any).assignerMode === "other"
+                                ? String((sk as any).assigner || "").split(" — ")[0].trim()
+                                : "";
+                              const pending = !hasVal(rawTarget);
+                              const targetLabel = hasVal(rawTarget)
+                                ? `${rawTarget}${unitLbl ? ` ${unitLbl}` : ""}`
+                                : (delegatedTo ? "Təyin edilməyib" : "—");
                               const cur = parseNum(sk.current);
                               const tgt = parseNum(rawTarget);
                               const pct = !isNaN(cur) && !isNaN(tgt) && tgt !== 0
                                 ? Math.min(100, Math.round((cur / tgt) * 100))
                                 : (typeof sk.progress === "number" ? sk.progress : 0);
-                              const weightLbl = sk.weight ? `${sk.weight}%` : (merged.length === 1 ? "100%" : "—");
+                              const weightLbl = sk.weight
+                                ? `${sk.weight}%`
+                                : (hasVal((sk as any).weightMin) && hasVal((sk as any).weightMax)
+                                    ? `${(sk as any).weightMin}–${(sk as any).weightMax}%`
+                                    : (merged.length === 1 ? "100%" : (pending ? "Təyin edilməyib" : "—")));
+
                               const icons = [ShoppingCart, Store, Monitor, BarChart3, Target];
                               const Icon = icons[i % icons.length];
                               return (
@@ -2503,7 +2516,13 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                         {sk.name}
                                         {sk._fromSet && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">KPI Set</span>}
                                       </p>
-                                      <p className="text-xs text-muted-foreground truncate">Dəyər: {targetLabel}</p>
+                                      <p className="text-xs text-muted-foreground truncate">
+                                        Dəyər: {targetLabel}
+                                        {delegatedTo ? ` · Təyin edici: ${delegatedTo}` : ""}
+                                      </p>
+                                      {!delegatedTo && !pending && (
+                                        <p className="text-xs text-muted-foreground truncate">Təyin edən: HR</p>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="col-span-4">
@@ -2515,8 +2534,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                       <span className="text-[11px] font-semibold text-primary tabular-nums">{pct}%</span>
                                     </div>
                                   </div>
-                                  <div className="col-span-2 text-sm font-medium text-foreground tabular-nums">{targetLabel}</div>
-                                  <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{weightLbl}</div>
+                                  <div className={`col-span-2 text-sm font-medium tabular-nums ${pending ? "text-amber-600" : "text-foreground"}`}>{targetLabel}</div>
+                                  <div className={`col-span-2 text-right text-sm font-medium tabular-nums border-l border-border pl-2 ${weightLbl === "Təyin edilməyib" ? "text-amber-600" : "text-foreground"}`}>{weightLbl}</div>
+
                                 </div>
                               );
                             })}
