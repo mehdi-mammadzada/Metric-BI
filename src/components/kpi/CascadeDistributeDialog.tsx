@@ -124,6 +124,24 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
   const cascadeLoad = node ? remainingOf(node.id) : (Number(bootstrap?.limit) || 0);
   const overLimit = totalDist - cascadeLoad > 0.0001;
 
+  // Default = hədəf təyin edilərkən yazılan dəyər (redaktə oluna bilər).
+  const defaultSlice = useMemo(() => {
+    const base = bootstrap?.defaultSliceValue != null && Number(bootstrap.defaultSliceValue) > 0
+      ? Number(bootstrap.defaultSliceValue)
+      : (Number(node?.limit) || cascadeLoad || 0);
+    return cascadeLoad > 0 ? Math.min(base, cascadeLoad) : base;
+  }, [bootstrap?.defaultSliceValue, node?.limit, cascadeLoad]);
+
+  // Qrup seçildikdə sətirlər default hədəf dəyəri ilə dolur.
+  const pickAudience = (mode: AudienceMode) => {
+    setAudience(mode);
+    const list = mode === "all" ? allowed : leaders;
+    const next: Record<number, string> = {};
+    if (defaultSlice > 0) list.forEach(e => { next[e.id] = String(defaultSlice); });
+    setSlices(next);
+  };
+
+
   const handleSave = () => {
     if (!node) return;
     if (overLimit) {
