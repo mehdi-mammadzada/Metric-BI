@@ -195,14 +195,14 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
               icon={Users}
               title="Tabeliyimdə olan bütün əməkdaşlar"
               subtitle={`${allowed.length} şəxs`}
-              onClick={() => { setAudience("all"); setSlices({}); }}
+              onClick={() => pickAudience("all")}
             />
             <AudienceRadio
               active={audience === "leaders"}
               icon={ShieldCheck}
               title="Struktur rəhbərləri"
               subtitle={`${leaders.length} rəhbər`}
-              onClick={() => { setAudience("leaders"); setSlices({}); }}
+              onClick={() => pickAudience("leaders")}
             />
           </div>
         </div>
@@ -213,9 +213,8 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
             unit={node?.unit || ""}
             slices={slices}
             setSlice={setSlice}
-            // Default = rəhbərin təyin etdiyi hədəf dəyəri (redaktə oluna bilər).
-            // Bu, kaskadlanan dəyər DEYİL — sadəcə rahatlıq üçün ilkin təklifdir.
-            defaultValue={Math.min(bootstrap?.defaultSliceValue != null ? bootstrap.defaultSliceValue : (cascadeLoad > 0 ? cascadeLoad : 0), cascadeLoad)}
+            // Default = hədəf təyin edilərkən yazılan dəyər (redaktə oluna bilər).
+            defaultValue={defaultSlice}
           />
         )}
 
