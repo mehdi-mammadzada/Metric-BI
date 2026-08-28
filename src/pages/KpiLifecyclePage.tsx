@@ -209,12 +209,8 @@ const KpiLifecyclePage = () => {
                       <p className="text-xs text-muted-foreground mt-2 line-clamp-2 min-h-[32px]">
                         {t.description || "—"}
                       </p>
-                      <div className="mt-3 text-[11px] text-muted-foreground space-y-0.5 flex-1">
-                        <div>Təyinat: {t.data.assignment?.period ?? "—"}</div>
-                        <div>Qiymətləndirmə: {t.data.evaluation?.period ?? "—"}</div>
-                        <div>Bonus: {t.data.bonus?.period ?? "—"}</div>
-                        <div>Review: {t.data.reviews.length} ədəd</div>
-                      </div>
+                      <div className="mt-3 flex-1" />
+
                       <div className="mt-2 flex items-center justify-between pt-2 border-t border-border/60">
                         <span className="text-[10px] text-muted-foreground">
                           {new Date(t.createdAt).toLocaleDateString()}
