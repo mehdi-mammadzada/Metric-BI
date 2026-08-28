@@ -2516,7 +2516,13 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                         {sk.name}
                                         {sk._fromSet && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">KPI Set</span>}
                                       </p>
-                                      <p className="text-xs text-muted-foreground truncate">Dəyər: {targetLabel}</p>
+                                      <p className="text-xs text-muted-foreground truncate">
+                                        Dəyər: {targetLabel}
+                                        {delegatedTo ? ` · Təyin edici: ${delegatedTo}` : ""}
+                                      </p>
+                                      {!delegatedTo && !pending && (
+                                        <p className="text-xs text-muted-foreground truncate">Təyin edən: HR</p>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="col-span-4">
@@ -2528,8 +2534,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                       <span className="text-[11px] font-semibold text-primary tabular-nums">{pct}%</span>
                                     </div>
                                   </div>
-                                  <div className="col-span-2 text-sm font-medium text-foreground tabular-nums">{targetLabel}</div>
-                                  <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{weightLbl}</div>
+                                  <div className={`col-span-2 text-sm font-medium tabular-nums ${pending ? "text-amber-600" : "text-foreground"}`}>{targetLabel}</div>
+                                  <div className={`col-span-2 text-right text-sm font-medium tabular-nums border-l border-border pl-2 ${weightLbl === "Təyin edilməyib" ? "text-amber-600" : "text-foreground"}`}>{weightLbl}</div>
+
                                 </div>
                               );
                             })}
