@@ -58,40 +58,54 @@ export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
   const mergedSubKpis = useMemo(() => {
     const own = kpi.subKpis || [];
     const entries = kpi.id ? getEntriesForCard(kpi.id) : [];
-    const nameKey = (v?: string) => String(v || "").trim().toLowerCase();
-    const ownById = new Map(own.map(s => [s.id, s]));
+    const nameKey = (v?: string) => String(v || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const usedEntries = new Set<string>();
     const list: any[] = own.map((s: any) => {
       const e =
         entries.find(en => en.subKpiId === s.id) ||
-        entries.find(en => nameKey(en.subKpiName) === nameKey(s.name));
-      return { ...s, _entryId: e?.id ?? null, limits: s.limits ?? e?.limits, scoreDescriptions: s.scoreDescriptions ?? e?.scoreDescriptions, assignerFromSet: e?.assigneeName, unit: s.unit || e?.unit };
+        entries.find(en => nameKey(en.subKpiName) && nameKey(en.subKpiName) === nameKey(s.name));
+      if (e) usedEntries.add(String(e.id));
+      return {
+        ...s,
+        // Başqa əməkdaşın təyin etdiyi hədəf üçün ad/dəyər/limit KPI Set-dən gətirilir.
+        name: s.name || e?.subKpiName || "Hədəf",
+        target: (s.target && String(s.target).trim()) ? s.target : e?.target,
+        weight: s.weight || e?.weight || 0,
+        _entryId: e?.id ?? null,
+        limits: s.limits ?? e?.limits,
+        scoreDescriptions: s.scoreDescriptions ?? e?.scoreDescriptions,
+        assignerFromSet: e?.assigneeName,
+        unit: s.unit || e?.unit,
+      };
     });
-    const ownNames = new Set(own.map((s: any) => nameKey(s.name)));
+    const shownNames = new Set(list.map(s => nameKey(s.name)));
     entries.forEach(e => {
-      // Yalnız kartda ümumiyyətlə mövcud olmayan hədəflər əlavə olunur — ad üzrə uyğunluq varsa təkrar yaradılmır.
-      if (!ownById.has(e.subKpiId) && e.subKpiName && !ownNames.has(nameKey(e.subKpiName))) {
-        ownNames.add(nameKey(e.subKpiName));
-        list.push({
-          id: e.subKpiId,
-          name: e.subKpiName,
-          target: e.target,
-          unit: e.unit,
-          weight: 0,
-          assignerFromSet: e.assigneeName,
-          limits: e.limits,
-          _entryId: e.id,
-        });
-      }
+      // Yalnız kartda ümumiyyətlə göstərilməyən hədəflər əlavə olunur.
+      if (usedEntries.has(String(e.id))) return;
+      if (!e.subKpiName || shownNames.has(nameKey(e.subKpiName))) return;
+      shownNames.add(nameKey(e.subKpiName));
+      list.push({
+        id: e.subKpiId,
+        name: e.subKpiName,
+        target: e.target,
+        unit: e.unit,
+        weight: e.weight || 0,
+        assignerFromSet: e.assigneeName,
+        limits: e.limits,
+        scoreDescriptions: (e as any).scoreDescriptions,
+        _entryId: e.id,
+      });
     });
     // Dublikatları sil: eyni ad yalnız bir dəfə göstərilir
     const seen = new Set<string>();
     return list.filter(s => {
       const key = nameKey(s.name);
-      if (!key || seen.has(key)) return false;
+      if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
   }, [kpi.id, kpi.subKpis, tick]);
+
 
   return (
     <div className="space-y-3">
