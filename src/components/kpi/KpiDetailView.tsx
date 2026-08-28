@@ -22,6 +22,7 @@ import LifecycleView, { REVIEW_STATUS_STYLES } from "./LifecycleView";
 import PerformanceDynamicsTab from "./PerformanceDynamicsDrilldownTab";
 import { getLifecycle, getLifecycleWithFallback, computeReviewStatus, setReviewOutcome } from "@/lib/kpiLifecycleStore";
 import { getEntriesForCard } from "@/lib/kpiSetStore";
+import { mergeCardTargets } from "@/lib/targetMerge";
 import { getApprovalMatrices, formatAssignee } from "@/lib/matrixStore";
 import { getEmployees } from "@/lib/orgStore";
 import { withKartSuffix } from "@/lib/utils";
@@ -384,12 +385,12 @@ const KpiDetailView = ({
               {!isPersonalCard && (() => {
 
                 const own = selectedKpi.subKpis || [];
-                const entries = selectedKpi.id ? getEntriesForCard(selectedKpi.id) : [];
-                const ownIds = new Set(own.map(s => s.id));
-                const extras = entries
-                  .filter((e: any) => e.subKpiName && !ownIds.has(e.subKpiId))
-                  .map((e: any) => ({ id: e.subKpiId, name: e.subKpiName, target: e.target, unit: e.unit, weight: 0, current: "", progress: undefined, evaluator: undefined as any, _fromSet: true, _assignee: e.assigneeName }));
-                let merged: any[] = [...own.map(s => ({ ...s, _fromSet: false as boolean, _assignee: "" })), ...extras];
+                let merged: any[] = mergeCardTargets(selectedKpi.id, own as any[]).map(r => ({
+                  ...r,
+                  _fromSet: !!r.entryId,
+                  _assignee: r.assignerName || "",
+                }));
+
                 if (merged.length === 0) {
                   merged = [{
                     id: 1,
@@ -436,8 +437,8 @@ const KpiDetailView = ({
                           const icons = [ShoppingCart, Store, Monitor, BarChart3, Target];
                           const Icon = icons[i % icons.length];
                           const hasCurrent = sk.current && String(sk.current).trim() !== "";
-                          const delegatedTo = (sk as any).assignerMode === "other"
-                            ? String((sk as any).assigner || "").split(" — ")[0].trim()
+                          const delegatedTo = (sk as any).delegated
+                            ? String((sk as any).assignerName || (sk as any).assigner || "").split(" — ")[0].trim()
                             : "";
                           const pending = !hasVal(sk.target);
                           const targetLabel = hasVal(sk.target)
