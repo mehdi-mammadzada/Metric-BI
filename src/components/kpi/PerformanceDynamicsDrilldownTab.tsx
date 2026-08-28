@@ -4,7 +4,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { KpiCard } from "@/lib/kpiCardTypes";
-import { getEntriesForCard } from "@/lib/kpiSetStore";
+import { useKpiSet } from "@/lib/kpiSetStore";
+import { mergeCardTargets } from "@/lib/targetMerge";
 import { cn } from "@/lib/utils";
 import { TARGET_STATUS_BADGE, TARGET_STATUS_BAR, TARGET_STATUS_LABEL, type TargetStatus } from "@/lib/targetStatus";
 
@@ -230,12 +231,12 @@ const TargetRow = ({ item, cardId, frequency, targetIdx }: { item: TargetItem; c
 };
 
 const PerformanceDynamicsDrilldownTab = ({ kpi }: { kpi: KpiCard }) => {
+  const kpiSetRows = useKpiSet();
   const targets = useMemo<TargetItem[]>(() => {
-    if (kpi.subKpis?.length) return kpi.subKpis.map((target) => ({ ...target, id: target.id }));
-    const entries = kpi.id ? getEntriesForCard(kpi.id) : [];
-    if (entries.length > 0) return entries.map((entry: any) => ({ id: entry.subKpiId, name: entry.subKpiName || "Hədəf", target: entry.target, unit: entry.unit, progress: entry.progress, weight: entry.weight }));
+    const merged = mergeCardTargets(kpi.id, kpi.subKpis || []);
+    if (merged.length > 0) return merged.map(target => ({ ...target, id: target.entryId || target.id }));
     return [{ id: "main", name: kpi.name || "KPI hədəfi", target: kpi.generalTarget || kpi.target || "100", unit: kpi.unit || "", current: kpi.current, progress: kpi.progress, weight: kpi.weight }];
-  }, [kpi]);
+  }, [kpi, kpiSetRows]);
 
   const frequency = kpi.frequency || kpi.period || "Aylıq";
 

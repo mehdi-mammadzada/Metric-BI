@@ -102,7 +102,8 @@ const getSetterEntriesFromSharedCards = (
 ): KpiSetEntry[] => {
   const me = stripPos(userName);
   if (!me) return [];
-  const entryKey = (r: Pick<KpiSetEntry, "cardId" | "subKpiId" | "subKpiName" | "assigneeName">) => `${r.cardId}::${stripPos(r.assigneeName)}`;
+  const entryKey = (r: Pick<KpiSetEntry, "cardId" | "subKpiId" | "subKpiName" | "assigneeName">) =>
+    `${r.cardId}::${stripPos(r.assigneeName)}::${r.subKpiId || String(r.subKpiName || "").trim().toLowerCase()}`;
   const existing = new Set(localRows.map(entryKey));
   const rows: KpiSetEntry[] = [];
   const employees = getEmployees();
@@ -253,10 +254,10 @@ const AssignView = () => {
     const aliases = myAliases(user);
     const meName = resolveMyName(user);
     const derived = getSetterEntriesFromSharedCards(sharedCards, meName, rows, aliases);
-    const derivedCardAssignees = new Set(derived.map(d => `${d.cardId}::${stripPos(d.assigneeName)}`));
+    const derivedKeys = new Set(derived.map(d => `${d.cardId}::${stripPos(d.assigneeName)}::${d.subKpiId || String(d.subKpiName || "").trim().toLowerCase()}`));
     const local = rows
       .filter(r => isEntryAssignedToSetter(r, meName, sharedCards, aliases))
-      .filter(r => String(r.subKpiName || "").trim() || !derivedCardAssignees.has(`${r.cardId}::${stripPos(r.assigneeName)}`));
+      .filter(r => String(r.subKpiName || "").trim() || !derivedKeys.has(`${r.cardId}::${stripPos(r.assigneeName)}::${r.subKpiId || ""}`));
     return dedupeKpiSetEntries([...local, ...derived]);
   }, [rows, sharedCards, user]);
 
