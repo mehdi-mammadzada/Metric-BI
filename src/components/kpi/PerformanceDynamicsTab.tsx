@@ -10,7 +10,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { KpiCard } from "@/lib/kpiCardTypes";
-import { getEntriesForCard } from "@/lib/kpiSetStore";
+import { mergeCardTargets } from "@/lib/targetMerge";
 import { TARGET_STATUS_LABEL, type TargetStatus } from "@/lib/targetStatus";
 
 // ── Status helpers ────────────────────────────────────────────────────────────
