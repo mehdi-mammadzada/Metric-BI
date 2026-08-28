@@ -2475,8 +2475,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                 : "";
                               // Təyin edici başqa şəxsdirsə və dəyər hələ verilməyibsə,
                               // "—" yerinə aydın status və təyin edicinin adı göstərilir.
-                              const delegatedTo = (sk as any).assignerMode === "other"
-                                ? String((sk as any).assigner || "").split(" — ")[0].trim()
+                              const delegatedTo = (sk as any).delegated
+                                ? String((sk as any).assignerName || (sk as any).assigner || "").split(" — ")[0].trim()
                                 : "";
                               const pending = !hasVal(rawTarget);
                               const targetLabel = hasVal(rawTarget)
