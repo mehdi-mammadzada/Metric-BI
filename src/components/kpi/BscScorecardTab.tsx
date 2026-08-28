@@ -84,9 +84,10 @@ export default function BscScorecardTab({ kpi }: { kpi: KpiLike }) {
           <div className="divide-y divide-border">
             {mergedSubKpis.map(sk => {
               const assigner =
+                sk.assignerName ||
                 sk.assigner ||
-                sk.assignerFromSet ||
                 (sk.evaluator?.persons?.length ? sk.evaluator.persons.map((p: any) => p.name).join(", ") : null);
+
               const limits: LimitSet | undefined = sk.limits;
               return (
                 <div key={sk.id} className="px-3 py-3">
