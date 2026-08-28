@@ -83,7 +83,7 @@ const normalizeKpiSetEntries = (value: unknown): unknown => {
     const prev = map.get(key);
     const prevUpdated = Number(prev?.updatedAt || 0);
     const rowUpdated = Number(row?.updatedAt || 0);
-    if (!prev || rowUpdated > prevUpdated || (rowUpdated === prevUpdated && prev.status !== "completed" && row?.status === "completed")) {
+    if (!prev || (prev.status !== "completed" && row?.status === "completed") || (prev.status === row?.status && rowUpdated > prevUpdated)) {
       map.set(key, row);
     }
   });

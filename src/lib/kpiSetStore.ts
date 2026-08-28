@@ -86,10 +86,10 @@ const entryKey = (entry: Pick<KpiSetEntry, "cardId" | "subKpiId" | "subKpiName" 
 };
 
 const betterEntry = (a: KpiSetEntry, b: KpiSetEntry) => {
+  if (a.status !== b.status) return a.status === "completed" ? a : b;
   const aUpdated = Number(a.updatedAt) || 0;
   const bUpdated = Number(b.updatedAt) || 0;
   if (aUpdated !== bUpdated) return aUpdated > bUpdated ? a : b;
-  if (a.status !== b.status) return a.status === "completed" ? a : b;
   return a;
 };
 
