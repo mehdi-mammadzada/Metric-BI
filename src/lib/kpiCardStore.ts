@@ -249,6 +249,12 @@ const rangesToLimitSet = (ranges?: { min: string; max: string; score: string }[]
 };
 
 /** Convert a wizard draft into a shared KPI card snapshot. */
+const AUTO_UNIT_BY_TYPE: Record<string, string> = {
+  "Say": "ədəd", "Faiz": "%", "Nisbət": "əmsal",
+  "İcra": "bal", "Səriştə": "bal", "Fərdi İnkişaf": "bal",
+  "Boolean": "bəli/xeyr", "Zaman": "gün",
+};
+
 export const buildSharedCardFromDraft = (
   d: CreateKpiWizardDraft,
   meta: {
