@@ -181,7 +181,7 @@ const KpiLifecyclePage = () => {
                     <div
                       key={t.id}
                       onClick={() => setDetailTpl(t)}
-                      className={`border rounded-xl p-4 bg-card transition-colors cursor-pointer flex flex-col h-[220px] ${t.active ? "border-border hover:border-primary/40" : "border-border/60 opacity-60"}`}
+                      className={`border rounded-xl p-4 bg-card transition-colors cursor-pointer flex flex-col ${t.active ? "border-border hover:border-primary/40" : "border-border/60 opacity-60"}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -206,12 +206,11 @@ const KpiLifecyclePage = () => {
                         </div>
 
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2 min-h-[32px]">
+<p className="text-xs text-muted-foreground mt-2 line-clamp-2">
                         {t.description || "—"}
                       </p>
-                      <div className="mt-3 flex-1" />
 
-                      <div className="mt-2 flex items-center justify-between pt-2 border-t border-border/60">
+                      <div className="mt-4 flex items-center justify-between pt-2 border-t border-border/60">
                         <span className="text-[10px] text-muted-foreground">
                           {new Date(t.createdAt).toLocaleDateString()}
                         </span>
