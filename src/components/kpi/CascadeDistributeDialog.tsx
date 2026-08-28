@@ -124,6 +124,24 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
   const cascadeLoad = node ? remainingOf(node.id) : (Number(bootstrap?.limit) || 0);
   const overLimit = totalDist - cascadeLoad > 0.0001;
 
+  // Default = hədəf təyin edilərkən yazılan dəyər (redaktə oluna bilər).
+  const defaultSlice = useMemo(() => {
+    const base = bootstrap?.defaultSliceValue != null && Number(bootstrap.defaultSliceValue) > 0
+      ? Number(bootstrap.defaultSliceValue)
+      : (Number(node?.limit) || cascadeLoad || 0);
+    return cascadeLoad > 0 ? Math.min(base, cascadeLoad) : base;
+  }, [bootstrap?.defaultSliceValue, node?.limit, cascadeLoad]);
+
+  // Qrup seçildikdə sətirlər default hədəf dəyəri ilə dolur.
+  const pickAudience = (mode: AudienceMode) => {
+    setAudience(mode);
+    const list = mode === "all" ? allowed : leaders;
+    const next: Record<number, string> = {};
+    if (defaultSlice > 0) list.forEach(e => { next[e.id] = String(defaultSlice); });
+    setSlices(next);
+  };
+
+
   const handleSave = () => {
     if (!node) return;
     if (overLimit) {
@@ -177,14 +195,14 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
               icon={Users}
               title="Tabeliyimdə olan bütün əməkdaşlar"
               subtitle={`${allowed.length} şəxs`}
-              onClick={() => { setAudience("all"); setSlices({}); }}
+              onClick={() => pickAudience("all")}
             />
             <AudienceRadio
               active={audience === "leaders"}
               icon={ShieldCheck}
               title="Struktur rəhbərləri"
               subtitle={`${leaders.length} rəhbər`}
-              onClick={() => { setAudience("leaders"); setSlices({}); }}
+              onClick={() => pickAudience("leaders")}
             />
           </div>
         </div>
@@ -195,9 +213,8 @@ const CascadeDistributeDialog = ({ open, onOpenChange, existingNode, bootstrap, 
             unit={node?.unit || ""}
             slices={slices}
             setSlice={setSlice}
-            // Default = rəhbərin təyin etdiyi hədəf dəyəri (redaktə oluna bilər).
-            // Bu, kaskadlanan dəyər DEYİL — sadəcə rahatlıq üçün ilkin təklifdir.
-            defaultValue={Math.min(bootstrap?.defaultSliceValue != null ? bootstrap.defaultSliceValue : (cascadeLoad > 0 ? cascadeLoad : 0), cascadeLoad)}
+            // Default = hədəf təyin edilərkən yazılan dəyər (redaktə oluna bilər).
+            defaultValue={defaultSlice}
           />
         )}
 
