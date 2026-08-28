@@ -456,6 +456,10 @@ const KpiDetailView = ({
                                     <span className="truncate">{sk.name}</span>
                                     {sk._fromSet && <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">KPI Set</span>}
                                   </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    Dəyər: {targetLabel}
+                                    {delegatedTo ? ` · Təyin edici: ${delegatedTo}` : ""}
+                                  </p>
                                 </div>
                               </div>
                               <div className="col-span-3 min-w-0">
@@ -467,8 +471,9 @@ const KpiDetailView = ({
                                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
                                 </div>
                               </div>
-                              <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums truncate">{sk.target}{sk.unit ? ` ${sk.unit}` : ""}</div>
-                              <div className="col-span-2 text-right text-sm font-medium text-foreground tabular-nums border-l border-border pl-2">{sk.weight ? `${sk.weight}%` : "—"}</div>
+                              <div className={`col-span-2 text-right text-sm font-medium tabular-nums truncate ${pending ? "text-amber-600" : "text-foreground"}`}>{targetLabel}</div>
+                              <div className={`col-span-2 text-right text-sm font-medium tabular-nums border-l border-border pl-2 ${weightLbl === "Təyin edilməyib" ? "text-amber-600" : "text-foreground"}`}>{weightLbl}</div>
+
                             </div>
                           );
                         })}
