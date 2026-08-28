@@ -2483,13 +2483,26 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                 : hasVal((selectedKpi as any).target)
                                 ? (selectedKpi as any).target
                                 : "";
-                              const targetLabel = hasVal(rawTarget) ? `${rawTarget}${unitLbl ? ` ${unitLbl}` : ""}` : "—";
+                              // Təyin edici başqa şəxsdirsə və dəyər hələ verilməyibsə,
+                              // "—" yerinə aydın status və təyin edicinin adı göstərilir.
+                              const delegatedTo = (sk as any).assignerMode === "other"
+                                ? String((sk as any).assigner || "").split(" — ")[0].trim()
+                                : "";
+                              const pending = !hasVal(rawTarget);
+                              const targetLabel = hasVal(rawTarget)
+                                ? `${rawTarget}${unitLbl ? ` ${unitLbl}` : ""}`
+                                : (delegatedTo ? "Təyin edilməyib" : "—");
                               const cur = parseNum(sk.current);
                               const tgt = parseNum(rawTarget);
                               const pct = !isNaN(cur) && !isNaN(tgt) && tgt !== 0
                                 ? Math.min(100, Math.round((cur / tgt) * 100))
                                 : (typeof sk.progress === "number" ? sk.progress : 0);
-                              const weightLbl = sk.weight ? `${sk.weight}%` : (merged.length === 1 ? "100%" : "—");
+                              const weightLbl = sk.weight
+                                ? `${sk.weight}%`
+                                : (hasVal((sk as any).weightMin) && hasVal((sk as any).weightMax)
+                                    ? `${(sk as any).weightMin}–${(sk as any).weightMax}%`
+                                    : (merged.length === 1 ? "100%" : (pending ? "Təyin edilməyib" : "—")));
+
                               const icons = [ShoppingCart, Store, Monitor, BarChart3, Target];
                               const Icon = icons[i % icons.length];
                               return (
