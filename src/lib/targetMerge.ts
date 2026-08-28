@@ -94,7 +94,10 @@ export const mergeCardTargets = (cardId: number | undefined, own: any[] = []): M
       limits: (e?.limits as LimitSet | undefined) ?? s.limits,
       scoreDescriptions: (e?.scoreDescriptions as ScoreDescRow[] | undefined) ?? s.scoreDescriptions,
       delegated: isPlaceholder(s) || (!!e && !hasVal(s.target)),
-      assignerName: e?.assigneeName || s.assigner || undefined,
+      // Kart yaradılarkən hədəf üçün seçilən `assigner` əsas mənbədir.
+      // KPI Set-dəki assigneeName köhnə/stale entry-dən gələ bilər və başqa
+      // əməkdaşın adını göstərməməlidir; yalnız kartda ad yoxdursa fallback et.
+      assignerName: s.assigner || e?.assigneeName || undefined,
       entryId: e?.id,
       assigned: hasVal(target),
       source: s,
