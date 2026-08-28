@@ -384,12 +384,12 @@ const KpiDetailView = ({
               {!isPersonalCard && (() => {
 
                 const own = selectedKpi.subKpis || [];
-                const entries = selectedKpi.id ? getEntriesForCard(selectedKpi.id) : [];
-                const ownIds = new Set(own.map(s => s.id));
-                const extras = entries
-                  .filter((e: any) => e.subKpiName && !ownIds.has(e.subKpiId))
-                  .map((e: any) => ({ id: e.subKpiId, name: e.subKpiName, target: e.target, unit: e.unit, weight: 0, current: "", progress: undefined, evaluator: undefined as any, _fromSet: true, _assignee: e.assigneeName }));
-                let merged: any[] = [...own.map(s => ({ ...s, _fromSet: false as boolean, _assignee: "" })), ...extras];
+                let merged: any[] = mergeCardTargets(selectedKpi.id, own as any[]).map(r => ({
+                  ...r,
+                  _fromSet: !!r.entryId,
+                  _assignee: r.assignerName || "",
+                }));
+
                 if (merged.length === 0) {
                   merged = [{
                     id: 1,
