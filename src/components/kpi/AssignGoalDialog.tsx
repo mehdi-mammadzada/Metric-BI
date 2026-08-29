@@ -317,7 +317,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
             </div>
             <div className={type === "Məbləğ" ? "col-span-6 md:col-span-4" : "col-span-6 md:col-span-5"}>
               <label className="text-[11px] text-muted-foreground">
-                {type === "Zaman" ? "Zaman aralığı *" : "Hədəf dəyəri *"}
+                {type === "Zaman" ? "Zaman aralığı *" : type === "Səriştə" ? "Səriştə matrisi *" : "Hədəf dəyəri *"}
               </label>
               {type === "Zaman" ? (
                 <div className="mt-0.5 flex gap-1">
@@ -335,7 +335,23 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
                   <option value="Bəli">Bəli</option>
                   <option value="Xeyr">Xeyr</option>
                 </select>
-              ) : (type === "İcra" || type === "Fərdi İnkişaf" || type === "Səriştə") ? (
+              ) : type === "Səriştə" ? (
+                <div className="mt-0.5 flex gap-1 items-center">
+                  <select value={competencyMatrix} onChange={e => setCompetencyMatrix(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background">
+                    <option value="">— Matris seçin —</option>
+                    {competencyMatrices.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                  <button type="button"
+                    onClick={() => setQuestionsDlgMatrix(competencyMatrices.find(m => m.id === competencyMatrix) || null)}
+                    disabled={!competencyMatrix}
+                    className="shrink-0 px-2 py-1.5 text-xs font-medium rounded border border-primary/60 text-primary hover:bg-primary/10 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <ClipboardList className="w-3.5 h-3.5" /> Suallara bax
+                  </button>
+                </div>
+              ) : (type === "İcra" || type === "Fərdi İnkişaf") ? (
                 <input value={target} onChange={e => setTarget(e.target.value)}
                   placeholder="Hədəf təsviri"
                   className="w-full mt-0.5 px-2.5 py-1.5 text-sm border border-border rounded bg-background" />
@@ -346,7 +362,6 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
                     className="w-full px-2.5 py-1.5 text-sm border border-border rounded bg-background" />
                   {type === "Faiz" && <span className="px-1.5 text-xs text-muted-foreground">%</span>}
                   {type === "Say" && <span className="px-1.5 text-xs text-muted-foreground whitespace-nowrap">ədəd</span>}
-                  {type === "Nisbət" && <span className="px-1.5 text-xs text-muted-foreground whitespace-nowrap">əmsal</span>}
                 </div>
               )}
             </div>
