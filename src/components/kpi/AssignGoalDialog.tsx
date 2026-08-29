@@ -101,6 +101,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
       setUnit(AUTO_UNIT[type] || "");
     }
     if (!CASCADE_TYPES.includes(type)) setCascadable(false);
+    if (type !== "Səriştə") setCompetencyMatrix("");
   }, [type]);
 
   const scale = useMemo(() => scales.find(s => s.id === scaleId), [scales, scaleId]);
