@@ -521,6 +521,30 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Səriştə matrisi sualları */}
+    <Dialog open={!!questionsDlgMatrix} onOpenChange={() => setQuestionsDlgMatrix(null)}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-base">{questionsDlgMatrix?.name || "Səriştə sualları"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+          {(questionsDlgMatrix?.questions || []).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Bu matrisdə sual yoxdur.</p>
+          ) : (
+            questionsDlgMatrix!.questions.map((q, idx) => (
+              <div key={q.id || idx} className="p-3 rounded-lg border border-border bg-background/50">
+                <p className="text-sm font-medium text-foreground">{idx + 1}. {q.text}</p>
+                {q.weight ? <p className="text-[11px] text-muted-foreground mt-1">Çəki: {q.weight}%</p> : null}
+              </div>
+            ))
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setQuestionsDlgMatrix(null)}>Bağla</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
