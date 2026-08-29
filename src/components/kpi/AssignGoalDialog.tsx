@@ -59,6 +59,9 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
   const [rows, setRows] = useState<ScoreDescRow[]>([]);
   const [scales, setScales] = useState<ScoreScale[]>([]);
   const [scaleId, setScaleId] = useState<string>("");
+  const [competencyMatrix, setCompetencyMatrix] = useState<string>("");
+  const [competencyMatrices, setCompetencyMatrices] = useState<CompetencyMatrix[]>([]);
+  const [questionsDlgMatrix, setQuestionsDlgMatrix] = useState<CompetencyMatrix | null>(null);
 
   useEffect(() => {
     if (!open || !entry) return;
