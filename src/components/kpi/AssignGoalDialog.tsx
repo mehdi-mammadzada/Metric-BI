@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Target as TargetIcon, GitBranch, Star, Info, Sparkles, Save } from "lucide-react";
+import { Target as TargetIcon, GitBranch, Star, Info, Sparkles, Save, ClipboardList, X } from "lucide-react";
 import { toast } from "sonner";
 import { HEDEF_TYPES, CASCADE_TYPES, type HedefType } from "@/components/kpi/CreateKpiWizard";
 import {
@@ -10,6 +10,7 @@ import {
   type KpiSetEntry, type LimitSet, type LimitTier, type DynamicTier, type ScoreDescRow,
 } from "@/lib/kpiSetStore";
 import { getScoreScales, getDefaultScale, type ScoreScale } from "@/lib/evaluationConfigStore";
+import { getCompetencyMatrices, type CompetencyMatrix } from "@/lib/competencyMatrixStore";
 import { WeightInput } from "@/components/kpi/WeightInput";
 import { withKartSuffix } from "@/lib/utils";
 
