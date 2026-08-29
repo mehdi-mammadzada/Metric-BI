@@ -41,7 +41,7 @@ interface Props {
   entry: KpiSetEntry | null;
   /** Təyin edilmiş hədəf yalnız baxış rejimində açılır. */
   readOnly?: boolean;
-  onSaved?: (saved: { entryId: string; name: string; value: number; unit: string; cascadable: boolean; type: HedefType }) => void;
+  onSaved?: (saved: { entryId: string; name: string; value: number; unit: string; cascadable: boolean; type: HedefType; competencyMatrix?: string }) => void;
 }
 
 const partsOf = (r: ScoreDescRow) => {
