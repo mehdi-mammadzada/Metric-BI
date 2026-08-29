@@ -276,6 +276,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
   const inputCls = "w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30";
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl w-[95vw] max-h-[88vh] overflow-y-auto">
         <DialogHeader>
