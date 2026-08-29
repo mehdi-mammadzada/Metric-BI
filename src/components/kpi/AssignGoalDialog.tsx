@@ -103,6 +103,12 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
 
   const needsMinMax = RANGE_TYPES.includes(type);
   const isTime = type === TIME_TYPE;
+  // "Zaman" növü üçün hədəf dəyəri "başlama – bitmə" formatında saxlanılır.
+  const [timeStart, timeEnd] = useMemo(() => {
+    const parts = String(target || "").split("–").map(s => s.trim());
+    return [parts[0] || "", parts[1] || ""];
+  }, [target]);
+
 
   // Skala/növ dəyişdikdə sətirləri qur (mövcud dəyərləri saxlayaraq)
   useEffect(() => {
@@ -190,7 +196,9 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
 
   const validate = (): string | null => {
     if (!name.trim()) return "Hədəfin adı tələb olunur";
-    if (!target.trim()) return "Hədəf dəyəri tələb olunur";
+    if (isTime) {
+      if (!timeStart || !timeEnd) return "Zaman aralığı (başlama və bitmə tarixi) tələb olunur";
+    } else if (!target.trim()) return "Hədəf dəyəri tələb olunur";
     if (needsMinMax) {
       const firstErr = ordered.find(r => errors[r.score]);
       if (firstErr) return `Bal ${firstErr.score}: ${errors[firstErr.score]}`;
@@ -298,10 +306,39 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
               </select>
             </div>
             <div className={type === "Məbləğ" ? "col-span-6 md:col-span-4" : "col-span-6 md:col-span-5"}>
-              <label className="text-[11px] text-muted-foreground">Hədəf dəyəri *</label>
-              <input value={target} onChange={e => setTarget(e.target.value)}
-                placeholder={type === "Faiz" ? "0-100" : "0"}
-                className="w-full mt-0.5 px-2.5 py-1.5 text-sm border border-border rounded bg-background" />
+              <label className="text-[11px] text-muted-foreground">
+                {type === "Zaman" ? "Zaman aralığı *" : "Hədəf dəyəri *"}
+              </label>
+              {type === "Zaman" ? (
+                <div className="mt-0.5 flex gap-1">
+                  <input type="date" value={timeStart} title="Başlama tarixi"
+                    onChange={e => setTarget(`${e.target.value} – ${timeEnd}`)}
+                    className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background" />
+                  <input type="date" value={timeEnd} title="Bitmə tarixi"
+                    onChange={e => setTarget(`${timeStart} – ${e.target.value}`)}
+                    className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background" />
+                </div>
+              ) : type === "Boolean" ? (
+                <select value={target} onChange={e => setTarget(e.target.value)}
+                  className="w-full mt-0.5 px-2 py-1.5 text-sm border border-border rounded bg-background">
+                  <option value="">— Seçin —</option>
+                  <option value="Bəli">Bəli</option>
+                  <option value="Xeyr">Xeyr</option>
+                </select>
+              ) : (type === "İcra" || type === "Fərdi İnkişaf" || type === "Səriştə") ? (
+                <input value={target} onChange={e => setTarget(e.target.value)}
+                  placeholder="Hədəf təsviri"
+                  className="w-full mt-0.5 px-2.5 py-1.5 text-sm border border-border rounded bg-background" />
+              ) : (
+                <div className="mt-0.5 flex gap-1 items-center">
+                  <input type="number" value={target} onChange={e => setTarget(e.target.value)}
+                    placeholder={type === "Faiz" ? "0-100" : "0"}
+                    className="w-full px-2.5 py-1.5 text-sm border border-border rounded bg-background" />
+                  {type === "Faiz" && <span className="px-1.5 text-xs text-muted-foreground">%</span>}
+                  {type === "Say" && <span className="px-1.5 text-xs text-muted-foreground whitespace-nowrap">ədəd</span>}
+                  {type === "Nisbət" && <span className="px-1.5 text-xs text-muted-foreground whitespace-nowrap">əmsal</span>}
+                </div>
+              )}
             </div>
             {type === "Məbləğ" && (
               <div className="col-span-6 md:col-span-2">
@@ -312,6 +349,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
                 </select>
               </div>
             )}
+
             <div className="col-span-6 md:col-span-2">
               <label className="text-[11px] text-muted-foreground">Çəki (%)</label>
               <WeightInput value={weight === "" ? 0 : Number(weight)} onChange={n => setWeight(String(n))}
