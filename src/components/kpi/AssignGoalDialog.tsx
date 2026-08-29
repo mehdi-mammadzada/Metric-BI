@@ -203,9 +203,10 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
 
   const validate = (): string | null => {
     if (!name.trim()) return "Hədəfin adı tələb olunur";
+    if (type === "Səriştə" && !competencyMatrix) return "Səriştə matrisi seçilməlidir";
     if (isTime) {
       if (!timeStart || !timeEnd) return "Zaman aralığı (başlama və bitmə tarixi) tələb olunur";
-    } else if (!target.trim()) return "Hədəf dəyəri tələb olunur";
+    } else if (type !== "Səriştə" && !target.trim()) return "Hədəf dəyəri tələb olunur";
     if (needsMinMax) {
       const firstErr = ordered.find(r => errors[r.score]);
       if (firstErr) return `Bal ${firstErr.score}: ${errors[firstErr.score]}`;
