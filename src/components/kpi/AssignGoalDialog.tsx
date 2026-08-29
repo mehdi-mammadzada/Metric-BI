@@ -103,6 +103,12 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
 
   const needsMinMax = RANGE_TYPES.includes(type);
   const isTime = type === TIME_TYPE;
+  // "Zaman" növü üçün hədəf dəyəri "başlama – bitmə" formatında saxlanılır.
+  const [timeStart, timeEnd] = useMemo(() => {
+    const parts = String(target || "").split("–").map(s => s.trim());
+    return [parts[0] || "", parts[1] || ""];
+  }, [target]);
+
 
   // Skala/növ dəyişdikdə sətirləri qur (mövcud dəyərləri saxlayaraq)
   useEffect(() => {
