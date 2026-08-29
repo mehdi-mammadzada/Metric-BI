@@ -207,6 +207,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
     if (isTime) {
       if (!timeStart || !timeEnd) return "Zaman aralığı (başlama və bitmə tarixi) tələb olunur";
     } else if (type !== "Səriştə" && !target.trim()) return "Hədəf dəyəri tələb olunur";
+    if (type === "Səriştə") return null; // bal/izah səriştə üçün matrisdədir
     if (needsMinMax) {
       const firstErr = ordered.find(r => errors[r.score]);
       if (firstErr) return `Bal ${firstErr.score}: ${errors[firstErr.score]}`;
