@@ -44,6 +44,8 @@ export interface SharedKpiCard {
     assigner?: string;
     limits?: LimitSet;
     scoreDescriptions?: ScoreDescRow[];
+    /** Səriştə növü üçün seçilmiş səriştə matrisi id-si */
+    competencyMatrix?: string;
     evaluator?: {
       type?: string | null;
       persons?: { name: string; weight: number }[];
@@ -192,6 +194,7 @@ export const applyAssignedTargetToSharedCard = (
     limits?: LimitSet;
     scoreDescriptions?: ScoreDescRow[];
     cascading?: boolean;
+    competencyMatrix?: string;
   },
 ) => {
   const list = load();
@@ -213,6 +216,7 @@ export const applyAssignedTargetToSharedCard = (
     ...(patch.limits !== undefined ? { limits: patch.limits } : {}),
     ...(patch.scoreDescriptions !== undefined ? { scoreDescriptions: patch.scoreDescriptions } : {}),
     ...(patch.cascading !== undefined ? { cascading: patch.cascading } : {}),
+    ...(patch.competencyMatrix !== undefined ? { competencyMatrix: patch.competencyMatrix } : {}),
   } : target);
 
   list[cardIndex] = { ...card, targets, updatedAt: new Date().toISOString() };
@@ -352,6 +356,7 @@ export const buildSharedCardFromDraft = (
         isMinBonus: !!s.isMinBonus,
       }))
       : [],
+    competencyMatrix: t.competencyMatrix || undefined,
     evaluator: Array.isArray(t.evaluators) && t.evaluators.length
       ? { type: "person", persons: t.evaluators.map((e: any) => ({ name: e.name, weight: Number(e.weight) || 0 })) }
       : undefined,
