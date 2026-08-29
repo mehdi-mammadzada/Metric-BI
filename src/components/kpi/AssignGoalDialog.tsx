@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Target as TargetIcon, GitBranch, Star, Info, Sparkles, Save } from "lucide-react";
+import { Target as TargetIcon, GitBranch, Star, Info, Sparkles, Save, ClipboardList, X } from "lucide-react";
 import { toast } from "sonner";
 import { HEDEF_TYPES, CASCADE_TYPES, type HedefType } from "@/components/kpi/CreateKpiWizard";
 import {
@@ -10,6 +10,7 @@ import {
   type KpiSetEntry, type LimitSet, type LimitTier, type DynamicTier, type ScoreDescRow,
 } from "@/lib/kpiSetStore";
 import { getScoreScales, getDefaultScale, type ScoreScale } from "@/lib/evaluationConfigStore";
+import { getCompetencyMatrices, type CompetencyMatrix } from "@/lib/competencyMatrixStore";
 import { WeightInput } from "@/components/kpi/WeightInput";
 import { withKartSuffix } from "@/lib/utils";
 
@@ -40,7 +41,7 @@ interface Props {
   entry: KpiSetEntry | null;
   /** Təyin edilmiş hədəf yalnız baxış rejimində açılır. */
   readOnly?: boolean;
-  onSaved?: (saved: { entryId: string; name: string; value: number; unit: string; cascadable: boolean; type: HedefType }) => void;
+  onSaved?: (saved: { entryId: string; name: string; value: number; unit: string; cascadable: boolean; type: HedefType; competencyMatrix?: string }) => void;
 }
 
 const partsOf = (r: ScoreDescRow) => {
@@ -58,6 +59,9 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
   const [rows, setRows] = useState<ScoreDescRow[]>([]);
   const [scales, setScales] = useState<ScoreScale[]>([]);
   const [scaleId, setScaleId] = useState<string>("");
+  const [competencyMatrix, setCompetencyMatrix] = useState<string>("");
+  const [competencyMatrices, setCompetencyMatrices] = useState<CompetencyMatrix[]>([]);
+  const [questionsDlgMatrix, setQuestionsDlgMatrix] = useState<CompetencyMatrix | null>(null);
 
   useEffect(() => {
     if (!open || !entry) return;
@@ -72,6 +76,8 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
     setCascadable(!!entry.cascadable);
     setScales(getScoreScales());
     setScaleId(getDefaultScale().id);
+    setCompetencyMatrix(entry.competencyMatrix || "");
+    setCompetencyMatrices(getCompetencyMatrices());
     // mövcud məlumatı sətirlərə çevir
     if (entry.scoreDescriptions?.length) {
       setRows(entry.scoreDescriptions.map(r => ({ ...r })));
@@ -95,6 +101,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
       setUnit(AUTO_UNIT[type] || "");
     }
     if (!CASCADE_TYPES.includes(type)) setCascadable(false);
+    if (type !== "Səriştə") setCompetencyMatrix("");
   }, [type]);
 
   const scale = useMemo(() => scales.find(s => s.id === scaleId), [scales, scaleId]);
@@ -196,9 +203,10 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
 
   const validate = (): string | null => {
     if (!name.trim()) return "Hədəfin adı tələb olunur";
+    if (type === "Səriştə" && !competencyMatrix) return "Səriştə matrisi seçilməlidir";
     if (isTime) {
       if (!timeStart || !timeEnd) return "Zaman aralığı (başlama və bitmə tarixi) tələb olunur";
-    } else if (!target.trim()) return "Hədəf dəyəri tələb olunur";
+    } else if (type !== "Səriştə" && !target.trim()) return "Hədəf dəyəri tələb olunur";
     if (needsMinMax) {
       const firstErr = ordered.find(r => errors[r.score]);
       if (firstErr) return `Bal ${firstErr.score}: ${errors[firstErr.score]}`;
@@ -244,13 +252,14 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
     setEntryDetails(entry.id, {
       subKpiName: name.trim(),
       type: type as any,
-      target: target.trim(),
+      target: type === "Səriştə" ? competencyMatrices.find(m => m.id === competencyMatrix)?.name || target.trim() : target.trim(),
       unit,
       cascadable: cascadable && CASCADE_TYPES.includes(type),
       weight: weight ? Number(weight) : undefined,
       limits,
       dynamicLimits,
       scoreDescriptions: ordered,
+      competencyMatrix: type === "Səriştə" ? competencyMatrix : undefined,
     });
     onSaved?.({
       entryId: entry.id,
@@ -259,6 +268,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
       unit,
       cascadable: cascadable && CASCADE_TYPES.includes(type),
       type,
+      competencyMatrix: type === "Səriştə" ? competencyMatrix : undefined,
     });
     onOpenChange(false);
   };
@@ -266,6 +276,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
   const inputCls = "w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30";
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl w-[95vw] max-h-[88vh] overflow-y-auto">
         <DialogHeader>
@@ -307,7 +318,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
             </div>
             <div className={type === "Məbləğ" ? "col-span-6 md:col-span-4" : "col-span-6 md:col-span-5"}>
               <label className="text-[11px] text-muted-foreground">
-                {type === "Zaman" ? "Zaman aralığı *" : "Hədəf dəyəri *"}
+                {type === "Zaman" ? "Zaman aralığı *" : type === "Səriştə" ? "Səriştə matrisi *" : "Hədəf dəyəri *"}
               </label>
               {type === "Zaman" ? (
                 <div className="mt-0.5 flex gap-1">
@@ -325,7 +336,23 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
                   <option value="Bəli">Bəli</option>
                   <option value="Xeyr">Xeyr</option>
                 </select>
-              ) : (type === "İcra" || type === "Fərdi İnkişaf" || type === "Səriştə") ? (
+              ) : type === "Səriştə" ? (
+                <div className="mt-0.5 flex gap-1 items-center">
+                  <select value={competencyMatrix} onChange={e => setCompetencyMatrix(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background">
+                    <option value="">— Matris seçin —</option>
+                    {competencyMatrices.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                  <button type="button"
+                    onClick={() => setQuestionsDlgMatrix(competencyMatrices.find(m => m.id === competencyMatrix) || null)}
+                    disabled={!competencyMatrix}
+                    className="shrink-0 px-2 py-1.5 text-xs font-medium rounded border border-primary/60 text-primary hover:bg-primary/10 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <ClipboardList className="w-3.5 h-3.5" /> Suallara bax
+                  </button>
+                </div>
+              ) : (type === "İcra" || type === "Fərdi İnkişaf") ? (
                 <input value={target} onChange={e => setTarget(e.target.value)}
                   placeholder="Hədəf təsviri"
                   className="w-full mt-0.5 px-2.5 py-1.5 text-sm border border-border rounded bg-background" />
@@ -336,7 +363,6 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
                     className="w-full px-2.5 py-1.5 text-sm border border-border rounded bg-background" />
                   {type === "Faiz" && <span className="px-1.5 text-xs text-muted-foreground">%</span>}
                   {type === "Say" && <span className="px-1.5 text-xs text-muted-foreground whitespace-nowrap">ədəd</span>}
-                  {type === "Nisbət" && <span className="px-1.5 text-xs text-muted-foreground whitespace-nowrap">əmsal</span>}
                 </div>
               )}
             </div>
@@ -496,6 +522,31 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Səriştə matrisi sualları */}
+    <Dialog open={!!questionsDlgMatrix} onOpenChange={() => setQuestionsDlgMatrix(null)}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-base">{questionsDlgMatrix?.name || "Səriştə sualları"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+          {(questionsDlgMatrix?.questions || []).length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Bu matrisdə sual yoxdur.</p>
+          ) : (
+            questionsDlgMatrix!.questions.map((q, idx) => (
+              <div key={q.id || idx} className="p-3 rounded-lg border border-border bg-background/50">
+                <p className="text-sm font-medium text-foreground">{idx + 1}. {q.text}</p>
+                {q.weight ? <p className="text-[11px] text-muted-foreground mt-1">Çəki: {q.weight}%</p> : null}
+              </div>
+            ))
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setQuestionsDlgMatrix(null)}>Bağla</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 
