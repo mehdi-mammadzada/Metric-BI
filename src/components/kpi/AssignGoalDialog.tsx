@@ -252,13 +252,14 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
     setEntryDetails(entry.id, {
       subKpiName: name.trim(),
       type: type as any,
-      target: target.trim(),
+      target: type === "Səriştə" ? competencyMatrices.find(m => m.id === competencyMatrix)?.name || target.trim() : target.trim(),
       unit,
       cascadable: cascadable && CASCADE_TYPES.includes(type),
       weight: weight ? Number(weight) : undefined,
       limits,
       dynamicLimits,
       scoreDescriptions: ordered,
+      competencyMatrix: type === "Səriştə" ? competencyMatrix : undefined,
     });
     onSaved?.({
       entryId: entry.id,
@@ -267,6 +268,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
       unit,
       cascadable: cascadable && CASCADE_TYPES.includes(type),
       type,
+      competencyMatrix: type === "Səriştə" ? competencyMatrix : undefined,
     });
     onOpenChange(false);
   };
