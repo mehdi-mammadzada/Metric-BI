@@ -546,6 +546,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
