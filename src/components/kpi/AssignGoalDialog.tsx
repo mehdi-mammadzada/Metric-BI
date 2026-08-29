@@ -76,6 +76,8 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
     setCascadable(!!entry.cascadable);
     setScales(getScoreScales());
     setScaleId(getDefaultScale().id);
+    setCompetencyMatrix(entry.competencyMatrix || "");
+    setCompetencyMatrices(getCompetencyMatrices());
     // mövcud məlumatı sətirlərə çevir
     if (entry.scoreDescriptions?.length) {
       setRows(entry.scoreDescriptions.map(r => ({ ...r })));
