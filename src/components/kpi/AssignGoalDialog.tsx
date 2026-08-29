@@ -301,7 +301,6 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
         </DialogHeader>
 
         <fieldset disabled={readOnly} className="contents">
-          <>
           <div className="grid grid-cols-12 gap-2">
             <div className="col-span-12">
               <label className="text-[11px] text-muted-foreground">Hədəfin adı *</label>
