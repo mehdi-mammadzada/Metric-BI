@@ -56,6 +56,8 @@ export interface KpiSetEntry {
   limits?: LimitSet;
   dynamicLimits?: DynamicTier[];
   scoreDescriptions?: ScoreDescRow[];
+  /** Səriştə növü üçün seçilmiş səriştə matrisi id-si */
+  competencyMatrix?: string;
   weight?: number;
   weightMin?: number;
   weightMax?: number;
@@ -195,6 +197,7 @@ export const setEntryDetails = (
     limits?: LimitSet; cascadable?: boolean;
     weight?: number; dynamicLimits?: DynamicTier[];
     scoreDescriptions?: ScoreDescRow[];
+    competencyMatrix?: string;
   }
 ) => {
   let touchedCardId: number | null = null;
@@ -219,6 +222,7 @@ export const setEntryDetails = (
         limits: saved.limits,
         scoreDescriptions: saved.scoreDescriptions,
         cascading: saved.cascadable,
+        competencyMatrix: saved.competencyMatrix,
       });
     }).catch(() => undefined);
   }
