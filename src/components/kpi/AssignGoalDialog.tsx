@@ -418,10 +418,18 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
             {scales.length > 0 && (
               <div className="col-span-12 md:col-span-5">
                 <label className="text-[11px] text-muted-foreground">Bal aralığı şablonu</label>
-                <select value={scaleId} onChange={e => setScaleId(e.target.value)}
-                  className="w-full mt-0.5 px-2 py-1.5 text-sm border border-border rounded bg-background">
-                  {scales.map(s => <option key={s.id} value={s.id}>{s.label} ({s.min}–{s.max})</option>)}
-                </select>
+                {lockedScale ? (
+                  <div className="mt-0.5 flex items-center gap-2 px-2.5 py-1.5 text-sm rounded border border-border bg-secondary/40 text-foreground">
+                    <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="font-medium">{lockedScale.label}</span>
+                    <span className="text-xs text-muted-foreground">({lockedScale.min}–{lockedScale.max})</span>
+                  </div>
+                ) : (
+                  <select value={scaleId} onChange={e => setScaleId(e.target.value)}
+                    className="w-full mt-0.5 px-2 py-1.5 text-sm border border-border rounded bg-background">
+                    {scales.map(s => <option key={s.id} value={s.id}>{s.label} ({s.min}–{s.max})</option>)}
+                  </select>
+                )}
               </div>
             )}
           </div>
