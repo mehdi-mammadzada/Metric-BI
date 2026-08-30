@@ -11,6 +11,8 @@ import {
 } from "@/lib/kpiSetStore";
 import { getScoreScales, getDefaultScale, type ScoreScale } from "@/lib/evaluationConfigStore";
 import { getCompetencyMatrices, type CompetencyMatrix } from "@/lib/competencyMatrixStore";
+import { getVisibleSharedKpiCards } from "@/lib/kpiCardStore";
+import { Lock } from "lucide-react";
 import { WeightInput } from "@/components/kpi/WeightInput";
 import { withKartSuffix } from "@/lib/utils";
 
@@ -33,6 +35,22 @@ const dynLabel = (score: number, max: number) => {
   if (r >= 0.45) return "Orta";
   if (r >= 0.25) return "Zəif";
   return "Çox zəif";
+};
+
+// KPI kartı yaradılarkən seçilmiş bal sistemini ScoreScale-ə çevirir.
+const parseCardScoringSystem = (scoringSystem?: string | null): ScoreScale | null => {
+  if (!scoringSystem) return null;
+  const s = String(scoringSystem).toLowerCase();
+  const m = s.match(/(\d+)\s*-\s*(\d+)/);
+  if (m) {
+    const min = Number(m[1]);
+    const max = Number(m[2]);
+    return { id: `scale_${min}_${max}`, label: `${min} – ${max}`, min, max };
+  }
+  if (s.includes("faiz")) {
+    return { id: "scale_0_100", label: "Faiz (0 – 100)", min: 0, max: 100 };
+  }
+  return null;
 };
 
 interface Props {
@@ -59,6 +77,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
   const [rows, setRows] = useState<ScoreDescRow[]>([]);
   const [scales, setScales] = useState<ScoreScale[]>([]);
   const [scaleId, setScaleId] = useState<string>("");
+  const [lockedScale, setLockedScale] = useState<ScoreScale | null>(null);
   const [competencyMatrix, setCompetencyMatrix] = useState<string>("");
   const [competencyMatrices, setCompetencyMatrices] = useState<CompetencyMatrix[]>([]);
   const [questionsDlgMatrix, setQuestionsDlgMatrix] = useState<CompetencyMatrix | null>(null);
@@ -74,8 +93,22 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
     setUnit(entryType === "Məbləğ" ? (AMOUNT_UNITS.includes(entry.unit) ? entry.unit : "AZN") : (AUTO_UNIT[entryType] || entry.unit || ""));
     setWeight(entry.weight != null ? String(entry.weight) : "");
     setCascadable(!!entry.cascadable);
-    setScales(getScoreScales());
-    setScaleId(getDefaultScale().id);
+    const allScales = getScoreScales();
+    setScales(allScales);
+    // Müvafiq KPI kartının yaradılarkən seçilmiş bal sistemini tap və kilidlə.
+    const card = getVisibleSharedKpiCards().find(
+      c => c.numericId === entry.cardId || c.name === entry.cardName
+    );
+    const cardScale = parseCardScoringSystem(card?.scoringSystem);
+    if (cardScale) {
+      const existing = allScales.find(s => s.min === cardScale.min && s.max === cardScale.max);
+      const chosen = existing || cardScale;
+      setLockedScale(chosen);
+      setScaleId(chosen.id);
+    } else {
+      setLockedScale(null);
+      setScaleId(getDefaultScale().id);
+    }
     setCompetencyMatrix(entry.competencyMatrix || "");
     setCompetencyMatrices(getCompetencyMatrices());
     // mövcud məlumatı sətirlərə çevir
@@ -385,10 +418,18 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
             {scales.length > 0 && (
               <div className="col-span-12 md:col-span-5">
                 <label className="text-[11px] text-muted-foreground">Bal aralığı şablonu</label>
-                <select value={scaleId} onChange={e => setScaleId(e.target.value)}
-                  className="w-full mt-0.5 px-2 py-1.5 text-sm border border-border rounded bg-background">
-                  {scales.map(s => <option key={s.id} value={s.id}>{s.label} ({s.min}–{s.max})</option>)}
-                </select>
+                {lockedScale ? (
+                  <div className="mt-0.5 flex items-center gap-2 px-2.5 py-1.5 text-sm rounded border border-border bg-secondary/40 text-foreground">
+                    <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="font-medium">{lockedScale.label}</span>
+                    <span className="text-xs text-muted-foreground">({lockedScale.min}–{lockedScale.max})</span>
+                  </div>
+                ) : (
+                  <select value={scaleId} onChange={e => setScaleId(e.target.value)}
+                    className="w-full mt-0.5 px-2 py-1.5 text-sm border border-border rounded bg-background">
+                    {scales.map(s => <option key={s.id} value={s.id}>{s.label} ({s.min}–{s.max})</option>)}
+                  </select>
+                )}
               </div>
             )}
           </div>
