@@ -37,6 +37,22 @@ const dynLabel = (score: number, max: number) => {
   return "Çox zəif";
 };
 
+// KPI kartı yaradılarkən seçilmiş bal sistemini ScoreScale-ə çevirir.
+const parseCardScoringSystem = (scoringSystem?: string | null): ScoreScale | null => {
+  if (!scoringSystem) return null;
+  const s = String(scoringSystem).toLowerCase();
+  const m = s.match(/(\d+)\s*-\s*(\d+)/);
+  if (m) {
+    const min = Number(m[1]);
+    const max = Number(m[2]);
+    return { id: `scale_${min}_${max}`, label: `${min} – ${max}`, min, max };
+  }
+  if (s.includes("faiz")) {
+    return { id: "scale_0_100", label: "Faiz (0 – 100)", min: 0, max: 100 };
+  }
+  return null;
+};
+
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
