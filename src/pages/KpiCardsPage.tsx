@@ -329,6 +329,18 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   const [kartView, setKartView] = useState<"kart1" | "kart2">(forcedKartView ?? "kart1");
   useEffect(() => { if (forcedKartView) setKartView(forcedKartView); }, [forcedKartView]);
   const [kart2SubView, setKart2SubView] = useState<"structure" | "employees">("employees");
+  useEffect(() => {
+    if (kartView !== "kart2") return;
+    if (kart2SubView === "structure") {
+      resetFilters();
+      setFilterAssignKind("Hamısı");
+      setFilterBulkKind("Hamısı");
+    } else {
+      setFilterStatus("Hamısı");
+    }
+  }, [kartView, kart2SubView]);
+
+
 
 
   // === Yeni KPI Sehrbazı (4 addımlı) ===
@@ -1542,8 +1554,8 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         </div>
         )}
 
-        {/* Inline filter bar — applies to both Kart1 (table) and Kart2 (grouped) */}
-        {(kartView === "kart1" || kartView === "kart2") && (
+        {/* Inline filter bar — Kart1 (table) və Kart2 → Əməkdaşlar üzrə üçün. Struktur üzrə filter yoxdur. */}
+        {(kartView === "kart1" || (kartView === "kart2" && kart2SubView === "employees")) && (
           <div className="mb-4 bg-card border border-border rounded-xl p-3 flex flex-wrap items-end gap-3">
             <div className="flex-1 min-w-[200px]">
               <label className="text-[11px] text-muted-foreground">Axtar</label>
@@ -1568,21 +1580,23 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 <option>Toplu</option>
               </select>
             </div>
-            <div className="min-w-[180px]">
-              <label className="text-[11px] text-muted-foreground">Status</label>
-              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full mt-1 px-3 py-2 text-sm border border-border rounded-lg bg-background">
-                <option>Hamısı</option>
-                <option>Qaralama</option>
-                <option>Natamam</option>
-                <option>Təsdiq gözlənilir</option>
-                <option>İmtina</option>
-                <option>Aktiv</option>
-                <option>Qiymətləndirmə</option>
-                <option>Tamamlanıb</option>
-                <option>Silindi</option>
-                <option>Ləğv olunmuş</option>
-              </select>
-            </div>
+            {kartView === "kart1" && (
+              <div className="min-w-[180px]">
+                <label className="text-[11px] text-muted-foreground">Status</label>
+                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full mt-1 px-3 py-2 text-sm border border-border rounded-lg bg-background">
+                  <option>Hamısı</option>
+                  <option>Qaralama</option>
+                  <option>Natamam</option>
+                  <option>Təsdiq gözlənilir</option>
+                  <option>İmtina</option>
+                  <option>Aktiv</option>
+                  <option>Qiymətləndirmə</option>
+                  <option>Tamamlanıb</option>
+                  <option>Silindi</option>
+                  <option>Ləğv olunmuş</option>
+                </select>
+              </div>
+            )}
             <button onClick={() => { resetFilters(); setFilterAssignKind("Hamısı"); setFilterBulkKind("Hamısı"); }} className="px-4 py-2 text-sm rounded-lg border border-border bg-card hover:bg-secondary">Sıfırla</button>
           </div>
         )}
