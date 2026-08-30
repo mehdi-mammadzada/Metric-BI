@@ -226,7 +226,6 @@ const CalendarPopover = ({ bucket }: { bucket: PeriodBucket }) => {
                         <span className={`w-1.5 h-1.5 rounded-full ${s!.dot}`} />{s!.label}
                       </span>
                     </div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Trend</span><span className={`font-medium tabular-nums ${pt.trend >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{pt.trend >= 0 ? "+" : ""}{pt.trend}%</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Updated</span><span className="tabular-nums">{pt.updated}</span></div>
                   </div>
                 </TooltipContent>
