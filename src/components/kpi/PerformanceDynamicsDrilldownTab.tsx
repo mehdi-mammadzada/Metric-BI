@@ -160,7 +160,6 @@ const CalendarPopover = ({ bucket }: { bucket: PeriodBucket }) => {
                     <MetricRow label="Hədəf" value={numericText(point.target)} />
                     <MetricRow label="Faiz" value={`${point.pct}%`} />
                     <MetricRow label="Status" value={STATUS_META[point.status].label} valueClassName="text-primary" />
-                    <MetricRow label="Trend" value={`${point.trend >= 0 ? "+" : ""}${point.trend}%`} valueClassName={point.trend >= 0 ? "text-success" : "text-destructive"} />
                     {point.note && <MetricRow label="Qeyd" value={point.note} />}
                     <MetricRow label="Son yenilənmə" value={point.updated} />
                   </div>
