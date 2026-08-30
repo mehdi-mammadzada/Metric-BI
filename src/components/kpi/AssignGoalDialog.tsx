@@ -93,8 +93,22 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
     setUnit(entryType === "Məbləğ" ? (AMOUNT_UNITS.includes(entry.unit) ? entry.unit : "AZN") : (AUTO_UNIT[entryType] || entry.unit || ""));
     setWeight(entry.weight != null ? String(entry.weight) : "");
     setCascadable(!!entry.cascadable);
-    setScales(getScoreScales());
-    setScaleId(getDefaultScale().id);
+    const allScales = getScoreScales();
+    setScales(allScales);
+    // Müvafiq KPI kartının yaradılarkən seçilmiş bal sistemini tap və kilidlə.
+    const card = getVisibleSharedKpiCards().find(
+      c => c.numericId === entry.cardId || c.name === entry.cardName
+    );
+    const cardScale = parseCardScoringSystem(card?.scoringSystem);
+    if (cardScale) {
+      const existing = allScales.find(s => s.min === cardScale.min && s.max === cardScale.max);
+      const chosen = existing || cardScale;
+      setLockedScale(chosen);
+      setScaleId(chosen.id);
+    } else {
+      setLockedScale(null);
+      setScaleId(getDefaultScale().id);
+    }
     setCompetencyMatrix(entry.competencyMatrix || "");
     setCompetencyMatrices(getCompetencyMatrices());
     // mövcud məlumatı sətirlərə çevir
