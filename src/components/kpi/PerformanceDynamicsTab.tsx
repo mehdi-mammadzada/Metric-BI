@@ -245,18 +245,15 @@ const PeriodCard = ({ bucket, onDrillQuarter, showCalendar = true }: {
   showCalendar?: boolean;
 }) => {
   const s = STATUS_META[bucket.status];
-  const trendIcon = bucket.trend > 0 ? <TrendingUp className="w-3 h-3 text-emerald-500" />
-                  : bucket.trend < 0 ? <TrendingDown className="w-3 h-3 text-rose-500" />
-                  : <Minus className="w-3 h-3 text-muted-foreground" />;
   const body = (
     <div className={`w-full text-left rounded-xl border border-border ${bucket.isCurrent ? "ring-2 ring-primary/40" : ""} bg-card p-3 hover:shadow-md transition-shadow cursor-pointer`}>
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">{bucket.label}</span>
-          {bucket.isCurrent && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">Cari</span>}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <CalendarIcon className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground truncate">{bucket.label}</span>
+          {bucket.isCurrent && <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">Cari</span>}
         </div>
-        <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${s.bg} ${s.text}`}>
+        <span className={`inline-flex shrink-0 items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${s.bg} ${s.text}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />{s.label}
         </span>
       </div>
@@ -264,13 +261,12 @@ const PeriodCard = ({ bucket, onDrillQuarter, showCalendar = true }: {
         <div className={`h-full rounded-full ${s.dot}`} style={{ width: `${Math.min(bucket.pct, 100)}%` }} />
       </div>
       <div className="grid grid-cols-3 gap-2 text-[11px]">
-        <div><div className="text-muted-foreground">Cari</div><div className="font-semibold tabular-nums">{bucket.current || "—"}</div></div>
-        <div><div className="text-muted-foreground">Hədəf</div><div className="font-semibold tabular-nums">{bucket.target}</div></div>
-        <div><div className="text-muted-foreground">Faiz</div><div className="font-semibold tabular-nums">{bucket.pct}%</div></div>
+        <div className="min-w-0"><div className="text-muted-foreground truncate">Cari</div><div className="font-semibold tabular-nums truncate">{bucket.current || "—"}</div></div>
+        <div className="min-w-0"><div className="text-muted-foreground truncate">Hədəf</div><div className="font-semibold tabular-nums truncate">{bucket.target}</div></div>
+        <div className="min-w-0"><div className="text-muted-foreground truncate">Faiz</div><div className="font-semibold tabular-nums truncate">{bucket.pct}%</div></div>
       </div>
-      <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1">{trendIcon} {bucket.trend >= 0 ? "+" : ""}{bucket.trend}%</span>
-        <span>Update: {bucket.lastUpdate}</span>
+      <div className="mt-2 text-right text-[10px] text-muted-foreground">
+        <span>Son yenilənmə: {bucket.lastUpdate}</span>
       </div>
     </div>
   );
