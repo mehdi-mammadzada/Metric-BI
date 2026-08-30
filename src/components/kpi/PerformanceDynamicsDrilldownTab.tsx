@@ -174,11 +174,6 @@ const CalendarPopover = ({ bucket }: { bucket: PeriodBucket }) => {
   );
 };
 
-const Trend = ({ value }: { value: number }) => {
-  const Icon = value > 0 ? TrendingUp : value < 0 ? TrendingDown : Minus;
-  return <span className={cn("inline-flex items-center gap-1 font-semibold", value > 0 && "text-success", value < 0 && "text-destructive", value === 0 && "text-muted-foreground")}><Icon className="h-3.5 w-3.5" />{value > 0 ? "+" : ""}{value}%</span>;
-};
-
 const MetricLite = ({ label, value }: { label: string; value: string }) => <div className="min-w-0"><p className="text-muted-foreground">{label}</p><p className="truncate font-semibold text-foreground">{value}</p></div>;
 
 const PeriodCard = ({ bucket, unit, onQuarterClick }: { bucket: PeriodBucket; unit?: string; onQuarterClick?: () => void }) => {
@@ -186,12 +181,29 @@ const PeriodCard = ({ bucket, unit, onQuarterClick }: { bucket: PeriodBucket; un
   const content = (
     <div className={cn("w-full rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md", bucket.isCurrent && "ring-2 ring-primary/30")}>
       <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="min-w-0"><div className="flex items-center gap-2"><CalendarIcon className="h-4 w-4 shrink-0 text-primary" /><p className="truncate text-sm font-semibold text-foreground">{bucket.label}</p>{bucket.isCurrent && <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Cari dövr</span>}</div><p className="mt-1 text-xs text-muted-foreground">Son yenilənmə: {bucket.lastUpdate}</p></div>
-        <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold", status.badge)}><span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />{status.label}</span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="h-4 w-4 shrink-0 text-primary" />
+            <p className="truncate text-sm font-semibold text-foreground">{bucket.label}</p>
+            {bucket.isCurrent && <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">Cari dövr</span>}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">Son yenilənmə: {bucket.lastUpdate}</p>
+        </div>
+        <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold", status.badge)}>
+          <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />{status.label}
+        </span>
       </div>
-      <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-        <div className="space-y-2"><div className="flex items-center justify-between text-xs"><span className="text-muted-foreground">İcra</span><span className="font-semibold text-foreground">{bucket.pct}%</span></div><Progress value={Math.min(bucket.pct, 100)} className={cn("h-2", status.bar)} /></div>
-        <div className="grid grid-cols-2 gap-x-5 gap-y-1 text-xs sm:grid-cols-4 md:min-w-[360px]"><MetricLite label="Cari" value={bucket.current ? numericText(bucket.current, unit) : "—"} /><MetricLite label="Hədəf" value={numericText(bucket.target, unit)} /><MetricLite label="Faiz" value={`${bucket.pct}%`} /><div><p className="text-muted-foreground">Trend</p><Trend value={bucket.trend} /></div></div>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">İcra</span>
+          <span className="font-semibold text-foreground">{bucket.pct}%</span>
+        </div>
+        <Progress value={Math.min(bucket.pct, 100)} className={cn("h-2", status.bar)} />
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <MetricLite label="Cari" value={bucket.current ? numericText(bucket.current, unit) : "—"} />
+          <MetricLite label="Hədəf" value={numericText(bucket.target, unit)} />
+          <MetricLite label="Faiz" value={`${bucket.pct}%`} />
+        </div>
       </div>
     </div>
   );
