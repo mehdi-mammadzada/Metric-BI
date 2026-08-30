@@ -11,6 +11,8 @@ import {
 } from "@/lib/kpiSetStore";
 import { getScoreScales, getDefaultScale, type ScoreScale } from "@/lib/evaluationConfigStore";
 import { getCompetencyMatrices, type CompetencyMatrix } from "@/lib/competencyMatrixStore";
+import { getVisibleSharedKpiCards } from "@/lib/kpiCardStore";
+import { Lock } from "lucide-react";
 import { WeightInput } from "@/components/kpi/WeightInput";
 import { withKartSuffix } from "@/lib/utils";
 
