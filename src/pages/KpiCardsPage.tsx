@@ -329,6 +329,18 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
   const [kartView, setKartView] = useState<"kart1" | "kart2">(forcedKartView ?? "kart1");
   useEffect(() => { if (forcedKartView) setKartView(forcedKartView); }, [forcedKartView]);
   const [kart2SubView, setKart2SubView] = useState<"structure" | "employees">("employees");
+  useEffect(() => {
+    if (kartView !== "kart2") return;
+    if (kart2SubView === "structure") {
+      resetFilters();
+      setFilterAssignKind("Hamısı");
+      setFilterBulkKind("Hamısı");
+    } else {
+      setFilterStatus("Hamısı");
+    }
+  }, [kartView, kart2SubView]);
+
+
 
 
   // === Yeni KPI Sehrbazı (4 addımlı) ===
