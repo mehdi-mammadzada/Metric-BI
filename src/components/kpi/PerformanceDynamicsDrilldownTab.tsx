@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Calendar as CalendarIcon, ChevronDown, ChevronRight, Minus, Target as TargetIcon, TrendingDown, TrendingUp } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronDown, ChevronRight, Target as TargetIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
