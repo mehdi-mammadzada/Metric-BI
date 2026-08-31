@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { usePositions } from "@/lib/usePositions";
-import { useCatalogValues } from "@/lib/dropdownCatalogStore";
+import { useCatalogValues, useWeightLimits } from "@/lib/dropdownCatalogStore";
 import { getEmployees } from "@/lib/orgStore";
 import { getStructures, type OrgStructure } from "@/lib/orgStore";
 import { getTeams, addTeam } from "@/lib/teamsStore";
@@ -706,6 +706,8 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     updLifecycle({ reviews: draft.lifecycle.reviews.map(r => r.id === id ? { ...r, ...patch } : r) });
   const removeReview = (id: string) =>
     updLifecycle({ reviews: draft.lifecycle.reviews.filter(r => r.id !== id) });
+
+  const weightLimits = useWeightLimits();
 
   // Scoring system upper bound
   const scoreMax = useMemo<number | undefined>(() => {
@@ -1655,6 +1657,7 @@ function Step2Targets({
   const [evalPickerFor, setEvalPickerFor] = useState<string | null>(null);
   const [questionsDlgFor, setQuestionsDlgFor] = useState<string | null>(null);
 
+  const weightLimits = useWeightLimits();
   const competencyMatrices = getCompetencyMatrices();
   const competencyMatrixOptions = competencyMatrices;
   const questionsDlgTarget = draft.targets.find(t => t.id === questionsDlgFor) || null;
