@@ -772,6 +772,9 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     if (isTime && t.createdBy === "self" && (!t.timeStart || !t.timeEnd)) {
       return `"${t.name}": başlama və bitmə tarixləri seçilməlidir`;
     }
+    if (isTime && t.createdBy === "self" && !(t.targetDescription || "").trim()) {
+      return `"${t.name}": Hədəf təsviri məcburidir`;
+    }
 
     if (t.type === "Səriştə") {
       if (!t.competencyMatrix) return `"${t.name}": Səriştə matrisi seçilməlidir`;
