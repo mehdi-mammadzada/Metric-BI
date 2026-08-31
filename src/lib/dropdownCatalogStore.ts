@@ -79,6 +79,15 @@ const RAW_SEED: DropdownCatalog[] = [
     values: [],
   },
 
+  // Hədəflərin Çəki Limiti — values: [min, max]
+  {
+    id: "target_weight_limits",
+    name: "Hədəflərin Çəki Limiti",
+    system: true,
+    schema: "weight_limits",
+    values: ["5", "40"],
+  },
+
   // KPI Dövrü — virtual (teamsStore.getPeriods)
   {
     id: "kpi_periods",
@@ -87,6 +96,7 @@ const RAW_SEED: DropdownCatalog[] = [
     schema: "kpi_periods",
     values: [],
   },
+
 
   // Sadə (string-list) sistem kataloqları
   { id: "kpi_categories", name: "KPI Kateqoriyaları", system: true, values: []},
