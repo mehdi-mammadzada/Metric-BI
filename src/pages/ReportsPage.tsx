@@ -225,11 +225,10 @@ const ReportsPage = () => {
     setFilterType("team");
     setFilterValues(matched);
     setTimeout(() => {
-      const all: string[] = [];
-      matched.forEach(t => (teamKpis[t] || []).forEach(k => {
-        if (text.includes(k.name.toLowerCase().split(" ")[0])) all.push(k.name);
-      }));
-      const finalTargets = all.length > 0 ? all : matched.flatMap(t => (teamKpis[t] || []).map(k => k.name));
+      const teamRows = rows.filter(r => r.teams.some(t => matched.includes(t)));
+      const named = uniq(teamRows.map(r => r.targetName).filter(n => text.includes(n.toLowerCase().split(" ")[0])));
+      const finalTargets = named.length > 0 ? named : uniq(teamRows.map(r => r.targetName));
+
       setSelectedTargets(finalTargets);
       setGenerated(true);
       toast.success("AI seçimləri tətbiq etdi");
