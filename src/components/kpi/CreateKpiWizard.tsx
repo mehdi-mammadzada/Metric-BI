@@ -573,6 +573,29 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     return [] as string[];
   }, [draft.mode, draft.bulkSelections, employeesRaw]);
 
+  /** Komanda lideri üçün namizədlər — Şəxs/Vəzifə seçimindən əlavə olaraq
+   *  seçilmiş komanda(lar) və struktur(lar)ın əməkdaşlarını da əhatə edir. */
+  const bulkLeaderCandidates = useMemo(() => {
+    if (draft.mode !== "bulk") return [] as string[];
+    const bs = draft.bulkSelections;
+    if (bulkTeamMembers.length) return bulkTeamMembers;
+    const names = new Set<string>();
+    if (bs.teams.length) {
+      teamsRaw.filter(t => bs.teams.includes(t.name)).forEach(t => {
+        names.add(t.leader);
+        t.members.forEach(m => names.add(m.name));
+      });
+    }
+    if (bs.structures.length) {
+      employeesRaw
+        .filter(e => bs.structures.some(sp => (e.structurePath || "") === sp || (e.structurePath || "").startsWith(sp + " › ")))
+        .forEach(e => names.add(e.fullName));
+    }
+    // Mümkün olduqda əməkdaş dəyəri (ad — struktur) formatına çevir
+    return Array.from(names).map(n => employeesRaw.find(e => e.fullName === n)?.value ?? n);
+  }, [draft.mode, draft.bulkSelections, bulkTeamMembers, teamsRaw, employeesRaw]);
+
+
   // ===== Individual-mode filters (Vəzifə / Komanda / Struktur) =====
   const [indFilterPositions, setIndFilterPositions] = useState<string[]>([]);
   const [indFilterTeams, setIndFilterTeams] = useState<string[]>([]);
