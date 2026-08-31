@@ -2966,7 +2966,8 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
 
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border shrink-0">
+
           <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs rounded border border-border bg-card">Ləğv et</button>
           <button
             type="button"
