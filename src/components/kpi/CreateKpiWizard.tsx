@@ -2669,7 +2669,7 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-1 border-b border-border">
+        <div className="flex gap-1 border-b border-border shrink-0">
           {tabs.map(t => (
             <button key={t.key} type="button" onClick={() => setTab(t.key)}
               className={`px-3 py-1.5 text-xs font-medium border-b-2 transition ${
