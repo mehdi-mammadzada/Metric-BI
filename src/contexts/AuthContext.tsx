@@ -697,20 +697,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (!error && data?.user) {
       // Establish the SDK session before any RLS-protected profile queries.
-      // Writing tokens to localStorage alone is insufficient in the framed
-      // preview, where the generated client uses a brokered storage adapter.
+      // In the framed preview the client uses a brokered (postMessage) storage
+      // adapter, so setSession can be slow or never settle. The tokens are
+      // already persisted by storeSessionDirectly(), and the profile fetch
+      // below uses the raw access token, so a slow/failed setSession must NOT
+      // fail the login — we retry it in the background instead.
       const sessionResult = await withPromiseTimeout(
         supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token }),
-        5000,
+        12000,
         "Sessiya aktivləşdirilmədi",
       ).catch((sessionError) => ({ data: { session: null, user: null }, error: sessionError }));
 
       if (sessionResult.error || !sessionResult.data.session) {
-        return {
-          success: false,
-          error: "Sessiya aktivləşdirilmədi. Zəhmət olmasa yenidən cəhd edin",
-        };
+        console.warn("[login] setSession did not settle, continuing with direct tokens", sessionResult.error);
+        // Re-persist tokens (in case anything cleared them) and retry the SDK
+        // session in the background so refresh/restore keeps working.
+        storeSessionDirectly(data);
+        void supabase.auth
+          .setSession({ access_token: data.access_token, refresh_token: data.refresh_token })
+          .catch(() => undefined);
       }
+      try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
+
 
       const directUser = await withPromiseTimeout(
         fetchAuthUserDirectWithRetry(data.user.id, data.user.email ?? lower, data.access_token, 12000),
