@@ -1952,7 +1952,7 @@ function Step2Targets({
                   </div>
 
                   {t.type === "Zaman" && (
-                    <div className="col-span-12 md:col-span-10 md:order-last">
+                    <div className="col-span-12 md:col-span-10">
                       <label className="text-[11px] text-muted-foreground">
                         Hədəf təsviri {isOther ? <span className="text-amber-600">(təyin edən dolduracaq)</span> : "*"}
                       </label>
