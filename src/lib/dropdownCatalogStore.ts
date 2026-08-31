@@ -147,6 +147,7 @@ export const VISIBLE_CATALOG_IDS: string[] = [
   "kpi_statuses",
   "whistleblower_statuses",
   "evaluation_statuses",
+  "review_statuses",
   "whistleblower_categories",
   "scoring_systems",
 ];
@@ -158,6 +159,7 @@ export const LOCKED_CATALOG_IDS = new Set<string>([
   "evaluator_types",
   "sub_kpi_units",
   "evaluation_statuses",
+  "review_statuses",
   "frequencies",
   "scoring_systems",
 ]);
