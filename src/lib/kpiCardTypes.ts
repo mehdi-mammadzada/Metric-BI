@@ -43,6 +43,8 @@ export interface KpiCard {
   progress: number;
   minTarget: number;
   responsible: string;
+  /** Kartı yaradan HR-in adı (Təyin Statusu tabında hədəflərin altında göstərilir) */
+  createdByName?: string;
   period: string;
   type: string;
   formula: string;

@@ -122,6 +122,8 @@ interface KpiCard {
   progress: number;
   minTarget: number;
   responsible: string;
+  /** Kartı yaradan HR-in adı (Təyin Statusu tabında hədəflərin altında göstərilir) */
+  createdByName?: string;
   period: string;
   type: string;
   formula: string;
@@ -1144,6 +1146,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         zone: s.status === "aktiv" ? "green" : s.status === "imtina" ? "red" : "yellow",
         target: "—", current: "0", unit: "", progress: 0, minTarget: 60,
         responsible,
+        createdByName: responsible,
         period: `${(s.startDate || "").slice(0, 4)} - ${s.frequency || ""}`,
         type: "Absolut Hədəf", formula: "—", generalTarget: "",
         department: "—", group: "—", subdivision: "—",
@@ -2647,6 +2650,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                               <p className="text-base font-bold text-foreground mt-1">
                                 {h.assignee || "—"}
                                 {position && <span className="text-xs font-normal text-muted-foreground ml-1">({position})</span>}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                Kartı yaratdı: {selectedKpi.createdByName || selectedKpi.responsible || "—"}
                               </p>
                             </div>
                             <span className={`px-2.5 py-1 text-xs font-semibold rounded-full border inline-flex items-center gap-1 ${badge.cls}`}>{badge.icon} {badge.text}</span>
