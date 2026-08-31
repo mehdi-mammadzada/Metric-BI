@@ -74,33 +74,6 @@ type PasswordSignInData = {
   user: { id: string; email?: string | null };
 };
 
-const getSupabaseStorageKey = () => {
-  try {
-    const ref = new URL(SUPABASE_URL).hostname.split(".")[0];
-    return `sb-${ref}-auth-token`;
-  } catch {
-    return null;
-  }
-};
-
-const storeSessionDirectly = (data: PasswordSignInData) => {
-  const key = getSupabaseStorageKey();
-  if (!key) return;
-  const expiresAt = data.expires_at ?? Math.floor(Date.now() / 1000) + (data.expires_in ?? 3600);
-  const sessionPayload = {
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
-    expires_in: data.expires_in ?? Math.max(0, expiresAt - Math.floor(Date.now() / 1000)),
-    expires_at: expiresAt,
-    token_type: data.token_type ?? "bearer",
-    user: data.user,
-  };
-  localStorage.setItem(key, JSON.stringify(sessionPayload));
-  // Older/newer client versions use one of these wrappers; writing both avoids
-  // hydration gaps after manual REST login.
-  localStorage.setItem(`${key}-code-verifier`, "");
-};
-
 const withPromiseTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
   return Promise.race([
     promise,
@@ -108,21 +81,6 @@ const withPromiseTimeout = <T,>(promise: Promise<T>, ms: number, label: string):
       setTimeout(() => reject(new Error(`${label} (timeout ${ms}ms)`)), ms)
     ),
   ]);
-};
-
-// Removes any leftover Supabase auth token from a previous (possibly broken or
-// expired) session. A stale refresh token makes the auth client start a retry
-// loop against /auth/v1/token which can starve the password grant request and
-// make it hang until it is aborted.
-const purgeStaleAuthStorage = () => {
-  try {
-    const keys: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && /^sb-.*-auth-token/.test(k)) keys.push(k);
-    }
-    keys.forEach((k) => localStorage.removeItem(k));
-  } catch { /* noop */ }
 };
 
 const attemptPasswordGrant = async (
@@ -156,7 +114,6 @@ const attemptPasswordGrant = async (
       };
     }
     const authData = body as PasswordSignInData;
-    storeSessionDirectly(authData);
     return { data: authData };
   } catch (err: any) {
     // Network error / aborted request — always retryable.
@@ -174,10 +131,6 @@ const signInWithPasswordFast = async (
   password: string,
   timeoutMs: number,
 ): Promise<{ data?: PasswordSignInData; error?: { message?: string } }> => {
-  // Make sure no stale session / refresh loop competes with this request.
-  purgeStaleAuthStorage();
-  try { supabase.auth.stopAutoRefresh?.(); } catch { /* noop */ }
-
   let last: { data?: PasswordSignInData; error?: { message?: string }; retryable?: boolean } = {};
   for (let attempt = 0; attempt < 3; attempt++) {
     last = await attemptPasswordGrant(email, password, timeoutMs);
@@ -251,12 +204,12 @@ const fetchAuthUserDirectWithRetry = async (
   email: string,
   accessToken: string,
   timeoutMs: number,
-  attempts = 2,
+  attempts = 4,
 ): Promise<AuthUser | null> => {
   for (let i = 0; i < attempts; i++) {
     const u = await fetchAuthUserDirect(supabaseUserId, email, accessToken, timeoutMs);
     if (u) return u;
-    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 500));
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 500 * (i + 1)));
   }
   return null;
 };
@@ -531,6 +484,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const syncKeyRef = useRef<string | null>(null);
   const syncTimersRef = useRef<number[]>([]);
   const initialHydrationRef = useRef(true);
+  const loginInFlightRef = useRef(false);
 
   const clearBusinessSyncTimers = () => {
     syncTimersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -571,6 +525,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Subscribe first so we never miss an auth event.
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       if (initialHydrationRef.current) return;
+      if (loginInFlightRef.current) return;
       if (session?.user) {
         if (syncKeyRef.current?.endsWith(`:${session.user.id}`)) return;
         // Defer supabase calls to avoid deadlocks inside the callback.
@@ -688,6 +643,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const lower = email.toLowerCase().trim();
+    loginInFlightRef.current = true;
 
     try {
       // 1) Authenticate via the Auth REST endpoint directly. In this project the
@@ -696,33 +652,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await signInWithPasswordFast(lower, password, LOGIN_TIMEOUT_MS);
 
     if (!error && data?.user) {
-      // Establish the SDK session before any RLS-protected profile queries.
-      // In the framed preview the client uses a brokered (postMessage) storage
-      // adapter, so setSession can be slow or never settle. The tokens are
-      // already persisted by storeSessionDirectly(), and the profile fetch
-      // below uses the raw access token, so a slow/failed setSession must NOT
-      // fail the login — we retry it in the background instead.
-      const sessionResult = await withPromiseTimeout(
-        supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token }),
-        12000,
-        "Sessiya aktivləşdirilmədi",
-      ).catch((sessionError) => ({ data: { session: null, user: null }, error: sessionError }));
-
-      if (sessionResult.error || !sessionResult.data.session) {
-        console.warn("[login] setSession did not settle, continuing with direct tokens", sessionResult.error);
-        // Re-persist tokens (in case anything cleared them) and retry the SDK
-        // session in the background so refresh/restore keeps working.
-        storeSessionDirectly(data);
-        void supabase.auth
-          .setSession({ access_token: data.access_token, refresh_token: data.refresh_token })
-          .catch(() => undefined);
-      }
-      try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
-
-
+      // Resolve the profile with the raw access token before touching the SDK
+      // auth lock. In framed previews setSession uses asynchronous brokered
+      // storage; awaiting it here can race with onAuthStateChange and block the
+      // profile RPC even though the password grant has already succeeded.
       const directUser = await withPromiseTimeout(
-        fetchAuthUserDirectWithRetry(data.user.id, data.user.email ?? lower, data.access_token, 12000),
-        26000,
+        fetchAuthUserDirectWithRetry(data.user.id, data.user.email ?? lower, data.access_token, 10000),
+        46000,
         "İstifadəçi məlumatları alınmadı"
       ).catch(() => null);
 
@@ -736,16 +672,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ).catch(() => null);
       }
       if (u) {
+          // Persist through the client's configured storage adapter. In preview
+          // this also updates the parent-frame auth broker, preventing a stale
+          // broker value from replacing the fresh session on reload.
+          const sessionResult = await withPromiseTimeout(
+            supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token }),
+            20000,
+            "Sessiya yadda saxlanmadı",
+          ).catch((sessionError) => ({ data: { session: null, user: null }, error: sessionError }));
+          if (sessionResult.error || !sessionResult.data.session) {
+            console.warn("[login] session persistence failed", sessionResult.error);
+            return { success: false, error: "Sessiya yadda saxlanmadı. Zəhmət olmasa yenidən cəhd edin" };
+          }
+          try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
           setUser(u);
           startBusinessSyncs(u);
           void logAudit({ organizationId: u.currentOrgId ?? null, action: "login", module: "auth", entityType: "user", entityId: u.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
           return { success: true };
         }
-        // Fell through — no profile row. Do not wait on client signOut here;
-        // the auth client can be the part that is blocked. Clearing local
-        // storage is enough to keep the UI responsive.
-        const storageKey = getSupabaseStorageKey();
-        if (storageKey) localStorage.removeItem(storageKey);
+        // Fell through — no profile row. No session has been persisted yet, so
+        // there is no auth storage to clear and no stale broker state to create.
         return { success: false, error: "Profil məlumatları yüklənmədi. Zəhmət olmasa yenidən cəhd edin" };
       }
 
@@ -759,6 +705,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return { success: false, error: "İnternet bağlantısı yoxdur" };
       }
       return { success: false, error: "Giriş zamanı gözlənilməz xəta baş verdi" };
+    } finally {
+      loginInFlightRef.current = false;
     }
   };
 
