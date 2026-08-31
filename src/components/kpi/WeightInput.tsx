@@ -23,10 +23,15 @@ export const WeightInput = React.forwardRef<HTMLInputElement, WeightInputProps>(
     const normalize = (v: number | string) =>
       v === undefined || v === null || v === "" ? "" : String(Number(v));
 
+    // Limitdən kənar dəyər yazmağa icazə verilir (validasiya UI-də göstərilir),
+    // yalnız 0-100 fiziki hədd tətbiq olunur.
     const clamp = (n: number) => {
       if (Number.isNaN(n)) return 0;
-      return Math.max(min, Math.min(max, n));
+      return Math.max(0, Math.min(100, n));
     };
+
+    const numeric = Number(value);
+    const outOfRange = Number.isFinite(numeric) && numeric > 0 && (numeric < min || numeric > max);
 
     const commit = (raw: string) => {
       if (raw === "") {
@@ -44,9 +49,8 @@ export const WeightInput = React.forwardRef<HTMLInputElement, WeightInputProps>(
         ref={ref}
         type="number"
         inputMode="numeric"
-        min={min}
-        max={max}
         step={1}
+        aria-invalid={outOfRange || undefined}
         value={display}
         onFocus={(e) => {
           setIsFocused(true);
@@ -81,7 +85,9 @@ export const WeightInput = React.forwardRef<HTMLInputElement, WeightInputProps>(
           setText(raw);
         }}
         className={cn(
-          "w-full px-2.5 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+          "w-full px-2.5 py-1.5 text-sm border rounded bg-background",
+          outOfRange ? "border-destructive text-destructive focus:border-destructive" : "border-border",
+          " disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
           className,
         )}
         {...rest}

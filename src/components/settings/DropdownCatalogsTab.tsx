@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Database, Plus, Pencil, Trash2, Search, X, Check, CalendarIcon, Save } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   addCatalogValue,
   addCatalogRow,
@@ -388,8 +389,22 @@ const PeriodDialog = ({ open, onClose, onSave }: { open: boolean; onClose: () =>
 // ---------- Hədəflərin Çəki Limiti ----------
 const WeightLimitsEditor = ({ onSaved }: { onSaved: () => void }) => {
   const initial = getWeightLimits();
+  const [saved, setSaved] = useState<{ min: number; max: number }>({ min: initial.min, max: initial.max });
+  const [editing, setEditing] = useState(false);
   const [min, setMin] = useState<string>(String(initial.min));
   const [max, setMax] = useState<string>(String(initial.max));
+
+  const startEdit = () => {
+    setMin(String(saved.min));
+    setMax(String(saved.max));
+    setEditing(true);
+  };
+
+  const cancel = () => {
+    setMin(String(saved.min));
+    setMax(String(saved.max));
+    setEditing(false);
+  };
 
   const save = () => {
     const mn = Number(min);
@@ -398,6 +413,8 @@ const WeightLimitsEditor = ({ onSaved }: { onSaved: () => void }) => {
     if (mn < 0 || mx > 100) { toast.error("Çəki limitləri 0-100 aralığında olmalıdır"); return; }
     if (mn >= mx) { toast.error("Minimum çəki maksimum çəkidən kiçik olmalıdır"); return; }
     if (!setWeightLimits(mn, mx)) { toast.error("Limitlər yadda saxlanılmadı"); return; }
+    setSaved({ min: mn, max: mx });
+    setEditing(false);
     onSaved();
     toast.success("Çəki limitləri yeniləndi");
   };
@@ -411,19 +428,33 @@ const WeightLimitsEditor = ({ onSaved }: { onSaved: () => void }) => {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelCls}>Minimum çəki (%)</label>
-          <input type="number" min={0} max={100} value={min} onChange={e => setMin(e.target.value)} className={inputCls} />
+          <input type="number" min={0} max={100} value={editing ? min : String(saved.min)} disabled={!editing}
+            onChange={e => setMin(e.target.value)} className={cn(inputCls, !editing && "opacity-70 cursor-not-allowed")} />
         </div>
         <div>
           <label className={labelCls}>Maksimum çəki (%)</label>
-          <input type="number" min={0} max={100} value={max} onChange={e => setMax(e.target.value)} className={inputCls} />
+          <input type="number" min={0} max={100} value={editing ? max : String(saved.max)} disabled={!editing}
+            onChange={e => setMax(e.target.value)} className={cn(inputCls, !editing && "opacity-70 cursor-not-allowed")} />
         </div>
       </div>
-      <button onClick={save} className="flex items-center gap-2 px-4 py-2.5 text-sm rounded-lg bg-primary text-primary-foreground font-medium">
-        <Save className="w-4 h-4" /> Yadda Saxla
-      </button>
+      {editing ? (
+        <div className="flex items-center gap-2">
+          <button onClick={save} className="flex items-center gap-2 px-4 py-2.5 text-sm rounded-lg bg-primary text-primary-foreground font-medium">
+            <Save className="w-4 h-4" /> Yadda Saxla
+          </button>
+          <button onClick={cancel} className="px-4 py-2.5 text-sm rounded-lg border border-border font-medium">
+            Ləğv et
+          </button>
+        </div>
+      ) : (
+        <button onClick={startEdit} className="flex items-center gap-2 px-4 py-2.5 text-sm rounded-lg border border-border font-medium">
+          <Pencil className="w-4 h-4" /> Redaktə et
+        </button>
+      )}
     </div>
   );
 };
+
 
 // ---------- Əsas komponent ----------
 const DropdownCatalogsTab = () => {
