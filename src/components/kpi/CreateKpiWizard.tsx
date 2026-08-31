@@ -2660,9 +2660,9 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="w-full max-w-lg h-[640px] max-h-[90vh] flex flex-col overflow-hidden">
 
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-indigo-600" />
             Qiymətləndirici seçimi — "{title || "Qiymətləndirici seçimi"}"
@@ -2680,7 +2680,8 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
           ))}
         </div>
 
-        <div className="min-h-[140px] py-2 flex-1 overflow-y-auto overscroll-contain pr-1">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1 py-2">
+
           {tab === "person" && (
             <div>
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
