@@ -414,9 +414,10 @@ const buildAuthUserFromSupabase = async (
 ): Promise<AuthUser | null> => {
   const authContextResult = await withPromiseTimeout<{ data: AuthContextRpc | null; error: any }>(
     Promise.resolve((supabase as any).rpc("get_user_auth_context", { _user_id: supabaseUserId })),
-    2500,
+    12000,
     "Auth konteksti gecikdi",
   ).catch((): { data: AuthContextRpc | null; error: any } => ({ data: null, error: { message: "Auth konteksti gecikdi" } }));
+
   const { data: authContext, error: authContextError } = authContextResult;
 
   if (!authContextError && authContext) {
@@ -432,7 +433,7 @@ const buildAuthUserFromSupabase = async (
       .select("id, email, first_name, last_name, is_platform_super_admin, must_change_password")
       .eq("id", supabaseUserId)
       .maybeSingle()),
-    3500,
+    12000,
     "Profil məlumatları gecikdi",
   ).catch((): { data: AuthProfileRow | null; error?: any } => ({ data: null }));
   const { data: profile } = profileResult;
@@ -445,8 +446,9 @@ const buildAuthUserFromSupabase = async (
 
   const organizations = await withPromiseTimeout(
     fetchOrgMemberships(supabaseUserId),
-    3000,
+    10000,
     "Təşkilat məlumatları gecikdi",
+
   ).catch(() => []);
   const currentOrgId = organizations[0]?.organizationId;
   const mustChangePassword = !!(profile as any).must_change_password;
@@ -476,8 +478,9 @@ const buildAuthUserFromSupabase = async (
   if (currentOrgId) {
     const r = await withPromiseTimeout(
       fetchRoleDataForOrg(supabaseUserId, currentOrgId),
-      3000,
+      10000,
       "Rol məlumatları gecikdi",
+
     ).catch(() => ({ codes: [], roleCodes: [] }));
     dbCodes = r.codes;
     roleCodes = r.roleCodes;
