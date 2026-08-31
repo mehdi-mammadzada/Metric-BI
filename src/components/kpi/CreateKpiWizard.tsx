@@ -803,8 +803,8 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
         // Review varsa, hər review üçün ən azı 1 reviewer məcburidir
         const reviewersOk = lc.reviews.every(r =>
           (r.reviewerNames && r.reviewerNames.length > 0) || !!(r.reviewerName || "").trim());
-        // Toplu + 2+ şəxs → avtomatik komanda yaranır, lider məcburidir
-        const bulkPersons = bulkTeamMembers;
+        // Toplu → komanda lideri məcburidir (şəxs/vəzifə/komanda/struktur)
+        const bulkPersons = bulkLeaderCandidates;
         const leaderOk = bulkPersons.length < 2
           || (!!draft.bulkTeamLeader && bulkPersons.includes(draft.bulkTeamLeader));
         return !!draft.name.trim() && !!draft.frequency && !!draft.startDate && !!draft.endDate
