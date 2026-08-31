@@ -32,7 +32,10 @@ const COLORS = [
 
 
 const ReportsPage = () => {
+  // Nəticəsi olan KPI-lar üçün nümunə hesabat datası hazırlanır
+  useSampleResultsSeed();
   const [teams, setTeams] = useState<Team[]>(() => getTeams());
+
 
   // Filter type + values
   const [filterType, setFilterType] = useState<FilterType>("team");
