@@ -14,6 +14,7 @@ import { getCompetencyMatrices, type CompetencyMatrix } from "@/lib/competencyMa
 import { getVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { Lock } from "lucide-react";
 import { WeightInput } from "@/components/kpi/WeightInput";
+import { useWeightLimits } from "@/lib/dropdownCatalogStore";
 import { withKartSuffix } from "@/lib/utils";
 
 // Yalnız Məbləğ üçün vahid seçilə bilər. Digərləri auto-unit.
@@ -73,6 +74,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
   const [target, setTarget] = useState("");
   const [unit, setUnit] = useState("AZN");
   const [weight, setWeight] = useState<string>("");
+  const weightLimits = useWeightLimits();
   const [cascadable, setCascadable] = useState(false);
   const [rows, setRows] = useState<ScoreDescRow[]>([]);
   const [scales, setScales] = useState<ScoreScale[]>([]);
@@ -265,6 +267,11 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
     if (!entry) return;
     const err = validate();
     if (err) { toast.error(err); return; }
+    if (weight !== "") {
+      const w = Number(weight);
+      if (w < weightLimits.min) { toast.error(`Hədəf çəkisi minimum ${weightLimits.min}%-dən aşağı ola bilməz`); return; }
+      if (w > weightLimits.max) { toast.error(`Hədəf çəkisi maksimum ${weightLimits.max}%-dən yuxarı ola bilməz`); return; }
+    }
 
     let limits: LimitSet | undefined;
     let dynamicLimits: DynamicTier[] | undefined;
