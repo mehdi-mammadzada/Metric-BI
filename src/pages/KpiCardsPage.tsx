@@ -1144,6 +1144,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
         zone: s.status === "aktiv" ? "green" : s.status === "imtina" ? "red" : "yellow",
         target: "—", current: "0", unit: "", progress: 0, minTarget: 60,
         responsible,
+        createdByName: responsible,
         period: `${(s.startDate || "").slice(0, 4)} - ${s.frequency || ""}`,
         type: "Absolut Hədəf", formula: "—", generalTarget: "",
         department: "—", group: "—", subdivision: "—",
