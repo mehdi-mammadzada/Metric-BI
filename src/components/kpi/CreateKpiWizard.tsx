@@ -1951,6 +1951,18 @@ function Step2Targets({
                     </div>
                   </div>
 
+                  {t.type === "Zaman" && (
+                    <div className="col-span-12 md:col-span-10 md:order-last">
+                      <label className="text-[11px] text-muted-foreground">
+                        Hədəf təsviri {isOther ? <span className="text-amber-600">(təyin edən dolduracaq)</span> : "*"}
+                      </label>
+                      <input value={t.targetDescription || ""} disabled={isOther}
+                        onChange={e => updHedef(t.id, { targetDescription: e.target.value })}
+                        placeholder="Hədəf təsviri"
+                        className="w-full mt-0.5 px-2.5 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
+                    </div>
+                  )}
+
                   <div className="col-span-12 md:col-span-2 flex items-end">
                     <button type="button" onClick={() => setScoreDlgFor(t.id)}
                       disabled={isOther}
