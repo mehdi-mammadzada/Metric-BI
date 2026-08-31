@@ -194,7 +194,7 @@ export const setEntryLimits = (id: string, limits: LimitSet) => {
 export const setEntryDetails = (
   id: string,
   patch: {
-    subKpiName?: string; target?: string; unit?: string;
+    subKpiName?: string; target?: string; targetDescription?: string; unit?: string;
     type?: KpiEntryType;
     limits?: LimitSet; cascadable?: boolean;
     weight?: number; dynamicLimits?: DynamicTier[];
