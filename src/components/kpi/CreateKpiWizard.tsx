@@ -88,6 +88,8 @@ export interface WizardHedef {
   booleanNo: number;
   timeStart: string;
   timeEnd: string;
+  /** Zaman növü üçün məcburi hədəf təsviri */
+  targetDescription?: string;
 
   /** Score-description rows for İcra/Fərdi İnkişaf/Zaman və qiymət popup-u */
   scoreDescriptions?: WizardScoreDesc[];
