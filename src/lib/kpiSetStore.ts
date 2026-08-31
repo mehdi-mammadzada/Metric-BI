@@ -48,6 +48,8 @@ export interface KpiSetEntry {
   /** Hədəfin növü (Məbləğ, Say, Faiz, ...) */
   type?: KpiEntryType;
   target: string;
+  /** Zaman növü üçün məcburi hədəf təsviri */
+  targetDescription?: string;
   unit: string;
   assigneeId?: number;
   assigneeName: string;
