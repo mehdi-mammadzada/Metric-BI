@@ -28,7 +28,7 @@ export interface SubKpiRow {
   active: boolean;
 }
 
-export type CatalogSchema = "target_types" | "kpi_kinds" | "sub_kpis" | "kpi_periods";
+export type CatalogSchema = "target_types" | "kpi_kinds" | "sub_kpis" | "kpi_periods" | "weight_limits";
 export type CatalogRow = TargetTypeRow | KpiKindRow | SubKpiRow;
 
 export interface DropdownCatalog {
