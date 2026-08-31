@@ -2680,7 +2680,7 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
           ))}
         </div>
 
-        <div className="min-h-[140px] py-2">
+        <div className="min-h-[140px] py-2 flex-1 overflow-y-auto overscroll-contain pr-1">
           {tab === "person" && (
             <div>
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
