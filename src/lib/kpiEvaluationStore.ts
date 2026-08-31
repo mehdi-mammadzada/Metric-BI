@@ -67,6 +67,9 @@ const persist = (rows: SubKpi[]) => {
   window.dispatchEvent(new Event(EVT));
 };
 
+/** Bütün qiymətləndirmə sətirləri (hesabatlar üçün). */
+export const getAllSubKpis = (): SubKpi[] => load();
+
 export const getSubKpis = (assigneeId: string): SubKpi[] =>
   load().filter(k => k.assigneeId === assigneeId);
 
