@@ -2649,6 +2649,9 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                                 {h.assignee || "—"}
                                 {position && <span className="text-xs font-normal text-muted-foreground ml-1">({position})</span>}
                               </p>
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                Kartı yaratdı: {selectedKpi.createdByName || selectedKpi.responsible || "—"}
+                              </p>
                             </div>
                             <span className={`px-2.5 py-1 text-xs font-semibold rounded-full border inline-flex items-center gap-1 ${badge.cls}`}>{badge.icon} {badge.text}</span>
                           </div>
