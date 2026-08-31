@@ -12,9 +12,8 @@ import ExcelImportButton from "@/components/common/ExcelImportButton";
 import PeriodPicker, { currentPeriod, periodLabel, type PeriodValue } from "@/components/common/PeriodPicker";
 import DropdownMultiSelect from "@/components/kpi/DropdownMultiSelect";
 import SearchableSelect from "@/components/common/SearchableSelect";
-import { mockEmployees } from "@/data/mockData";
-import { mockStructures, mockTeams } from "@/data/mockExtras";
-import { getAllPositions } from "@/lib/usePositions";
+import { useReportRows, buildTrendSeries, type ReportRow } from "@/lib/reportsDataset";
+import { useSampleResultsSeed } from "@/lib/sampleResultsSeed";
 
 type FilterType = "position" | "person" | "structure" | "team";
 const FILTER_LABELS: Record<FilterType, string> = {
@@ -24,16 +23,19 @@ const FILTER_LABELS: Record<FilterType, string> = {
   team: "Komanda",
 };
 
-// --- Sample KPI dataset (organized by team) ---
-const teamKpis: Record<string, { name: string; structure: string; subStructure: string; progress: number; target: string; current: string; icon: any }[]> = {};
+const uniq = (list: string[]) => Array.from(new Set(list.filter(Boolean)));
 
 const COLORS = [
   "hsl(230, 75%, 50%)", "hsl(145, 65%, 42%)", "hsl(38, 92%, 55%)", "hsl(0, 78%, 60%)",
   "hsl(265, 70%, 55%)", "hsl(192, 80%, 48%)", "hsl(20, 85%, 55%)", "hsl(330, 70%, 55%)",
 ];
 
+
 const ReportsPage = () => {
+  // Nəticəsi olan KPI-lar üçün nümunə hesabat datası hazırlanır
+  useSampleResultsSeed();
   const [teams, setTeams] = useState<Team[]>(() => getTeams());
+
 
   // Filter type + values
   const [filterType, setFilterType] = useState<FilterType>("team");
@@ -60,57 +62,87 @@ const ReportsPage = () => {
     return () => window.removeEventListener("teams-updated", refresh);
   }, []);
 
+  // Təşkilatın real KPI nəticələri (nümunə nəticələr də bura daxildir)
+  const rows = useReportRows();
+
   // Options for the second dropdown based on filter type
   const secondOptions = useMemo(() => {
-    if (filterType === "position") return getAllPositions();
-    if (filterType === "structure") return mockStructures.map(s => s.name);
-    if (filterType === "team") return teams.map(t => t.name);
-    if (filterType === "person") return mockEmployees.map(e => ({ value: e.id, label: e.fullName, group: e.position }));
+    if (filterType === "position") return uniq(rows.map(r => r.position));
+    if (filterType === "structure") return uniq(rows.map(r => r.structure));
+    if (filterType === "team") return uniq(rows.flatMap(r => r.teams));
+    if (filterType === "person") {
+      return uniq(rows.map(r => r.employeeId)).map(id => {
+        const r = rows.find(x => x.employeeId === id)!;
+        return { value: id, label: r.employeeName, group: r.position };
+      });
+    }
     return [];
-  }, [filterType, teams]);
+  }, [filterType, rows]);
 
   const isMulti = filterType !== "person";
 
-  // Resolve selection → team names (keys into teamKpis)
-  const resolvedTeams = useMemo(() => {
-    if (filterType === "team") return filterValues;
-    if (filterType === "structure") {
-      const ids = mockStructures.filter(s => filterValues.includes(s.name)).map(s => s.id);
-      return Array.from(new Set(mockTeams.filter(t => ids.includes(t.structureId)).map(t => t.name)));
-    }
-    if (filterType === "person") {
-      const eid = filterValues[0];
-      if (!eid) return [];
-      return Array.from(new Set(mockTeams.filter(t => t.memberIds.includes(eid)).map(t => t.name)));
-    }
-    if (filterType === "position") {
-      const empIds = mockEmployees.filter(e => filterValues.includes(e.position)).map(e => e.id);
-      return Array.from(new Set(mockTeams.filter(t => t.memberIds.some(m => empIds.includes(m))).map(t => t.name)));
-    }
-    return [];
-  }, [filterType, filterValues]);
+  // Seçimə uyğun nəticə sətirləri
+  const filteredRows = useMemo(() => {
+    if (filterValues.length === 0) return [] as ReportRow[];
+    return rows.filter(r => {
+      if (filterType === "team") return r.teams.some(t => filterValues.includes(t));
+      if (filterType === "structure") return filterValues.some(v => r.structure === v || r.structure.includes(v));
+      if (filterType === "position") return filterValues.includes(r.position);
+      return filterValues.includes(r.employeeId);
+    });
+  }, [rows, filterType, filterValues]);
+
+  const groupOf = (r: ReportRow) => {
+    if (filterType === "team") return r.teams.find(t => filterValues.includes(t)) || "—";
+    if (filterType === "structure") return filterValues.find(v => r.structure.includes(v)) || r.structure;
+    if (filterType === "position") return r.position;
+    return r.employeeName;
+  };
+
+  // Qrup etiketləri (komanda / struktur / vəzifə / şəxs)
+  const resolvedTeams = useMemo(
+    () => uniq(filteredRows.map(groupOf)),
+    [filteredRows, filterType, filterValues],
+  );
 
   // Selection summary label
   const selectionLabel = useMemo(() => {
     if (filterValues.length === 0) return "";
     if (filterType === "person") {
-      const emp = mockEmployees.find(e => e.id === filterValues[0]);
-      return emp?.fullName || "";
+      const opt = (secondOptions as { value: string; label: string }[]).find(o => o.value === filterValues[0]);
+      return opt?.label || "";
     }
     return `${filterValues.length} seçildi`;
-  }, [filterType, filterValues]);
+  }, [filterType, filterValues, secondOptions]);
 
-  // Dedup targets by KPI name across resolved teams
+  // Hədəf adına görə qruplaşdırılmış nəticələr
   const availableTargets = useMemo(() => {
-    const seen = new Set<string>();
-    const out: { team: string; kpi: typeof teamKpis[string][number] }[] = [];
-    resolvedTeams.forEach(t => {
-      (teamKpis[t] || []).forEach(k => {
-        if (!seen.has(k.name)) { seen.add(k.name); out.push({ team: t, kpi: k }); }
+    const map = new Map<string, { team: string; sum: number; n: number; kpi: { name: string; structure: string; subStructure: string; progress: number; target: string; current: string; icon: any } }>();
+    filteredRows.forEach(r => {
+      const prev = map.get(r.targetName);
+      if (prev) {
+        prev.sum += r.progress;
+        prev.n += 1;
+        prev.kpi.progress = Math.round(prev.sum / prev.n);
+        return;
+      }
+      map.set(r.targetName, {
+        team: groupOf(r),
+        sum: r.progress,
+        n: 1,
+        kpi: {
+          name: r.targetName,
+          structure: r.structure,
+          subStructure: r.cardName,
+          progress: r.progress,
+          target: `${r.target}${r.unit ? " " + r.unit : ""}`,
+          current: `${r.actual}${r.unit ? " " + r.unit : ""}`,
+          icon: r.progress >= 100 ? Target : r.progress >= 75 ? Users : AlertCircle,
+        },
       });
     });
-    return out;
-  }, [resolvedTeams]);
+    return Array.from(map.values()).map(v => ({ team: v.team, kpi: v.kpi }));
+  }, [filteredRows, filterType, filterValues]);
 
   const displayedTargets = availableTargets.filter(t => t.kpi.name.toLowerCase().includes(targetSearch.toLowerCase()));
   const allTargetsSelected = displayedTargets.length > 0 && displayedTargets.every(t => selectedTargets.includes(t.kpi.name));
@@ -152,22 +184,20 @@ const ReportsPage = () => {
 
   // Chart data
   const chartKpis = availableTargets.filter(t => selectedTargets.includes(t.kpi.name)).map(t => ({ ...t.kpi, team: t.team }));
+  const selectedRows = filteredRows.filter(r => selectedTargets.includes(r.targetName));
   const pieData = chartKpis.map(k => ({ name: k.name.length > 16 ? k.name.substring(0, 16) + "…" : k.name, value: k.progress }));
   const barData = chartKpis.map(k => ({ name: k.name.length > 12 ? k.name.substring(0, 12) + "…" : k.name, performans: k.progress, hedef: 100 }));
-  const lineData = [
-    { name: "Yan", actual: 55, target: 60 }, { name: "Fev", actual: 62, target: 65 },
-    { name: "Mar", actual: 70, target: 70 }, { name: "Apr", actual: 75, target: 75 },
-    { name: "May", actual: 78, target: 80 }, { name: "İyn", actual: 85, target: 85 },
-  ];
+  const lineData = buildTrendSeries(selectedRows);
   const radarData = chartKpis.slice(0, 6).map(k => ({ subject: k.name.length > 10 ? k.name.substring(0, 10) + "…" : k.name, value: k.progress, fullMark: 100 }));
   const areaData = lineData.map(d => ({ name: d.name, value: d.actual, hedef: d.target }));
 
-  // Per-team comparison
+  // Per-group comparison
   const teamCompare = resolvedTeams.map(t => {
-    const kpis = chartKpis.filter(k => k.team === t);
-    const avg = kpis.length ? Math.round(kpis.reduce((s, k) => s + k.progress, 0) / kpis.length) : 0;
+    const groupRows = selectedRows.filter(r => groupOf(r) === t);
+    const avg = groupRows.length ? Math.round(groupRows.reduce((s, r) => s + r.progress, 0) / groupRows.length) : 0;
     return { name: t.length > 18 ? t.substring(0, 18) + "…" : t, value: avg };
   });
+
 
   const handleDownloadPdf = async () => {
     if (!chartsRef.current) return;
@@ -198,11 +228,10 @@ const ReportsPage = () => {
     setFilterType("team");
     setFilterValues(matched);
     setTimeout(() => {
-      const all: string[] = [];
-      matched.forEach(t => (teamKpis[t] || []).forEach(k => {
-        if (text.includes(k.name.toLowerCase().split(" ")[0])) all.push(k.name);
-      }));
-      const finalTargets = all.length > 0 ? all : matched.flatMap(t => (teamKpis[t] || []).map(k => k.name));
+      const teamRows = rows.filter(r => r.teams.some(t => matched.includes(t)));
+      const named = uniq(teamRows.map(r => r.targetName).filter(n => text.includes(n.toLowerCase().split(" ")[0])));
+      const finalTargets = named.length > 0 ? named : uniq(teamRows.map(r => r.targetName));
+
       setSelectedTargets(finalTargets);
       setGenerated(true);
       toast.success("AI seçimləri tətbiq etdi");
