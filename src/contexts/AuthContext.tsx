@@ -74,15 +74,6 @@ type PasswordSignInData = {
   user: { id: string; email?: string | null };
 };
 
-const getSupabaseStorageKey = () => {
-  try {
-    const ref = new URL(SUPABASE_URL).hostname.split(".")[0];
-    return `sb-${ref}-auth-token`;
-  } catch {
-    return null;
-  }
-};
-
 const withPromiseTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
   return Promise.race([
     promise,
@@ -699,11 +690,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           void logAudit({ organizationId: u.currentOrgId ?? null, action: "login", module: "auth", entityType: "user", entityId: u.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
           return { success: true };
         }
-        // Fell through — no profile row. Do not wait on client signOut here;
-        // the auth client can be the part that is blocked. Clearing local
-        // storage is enough to keep the UI responsive.
-        const storageKey = getSupabaseStorageKey();
-        if (storageKey) localStorage.removeItem(storageKey);
+        // Fell through — no profile row. No session has been persisted yet, so
+        // there is no auth storage to clear and no stale broker state to create.
         return { success: false, error: "Profil məlumatları yüklənmədi. Zəhmət olmasa yenidən cəhd edin" };
       }
 
