@@ -244,6 +244,25 @@ const fetchAuthUserDirect = async (
   }
 };
 
+// The database can be cold (first query after idle takes many seconds), so a
+// single short-lived attempt is not enough: retry before giving up.
+const fetchAuthUserDirectWithRetry = async (
+  supabaseUserId: string,
+  email: string,
+  accessToken: string,
+  timeoutMs: number,
+  attempts = 2,
+): Promise<AuthUser | null> => {
+  for (let i = 0; i < attempts; i++) {
+    const u = await fetchAuthUserDirect(supabaseUserId, email, accessToken, timeoutMs);
+    if (u) return u;
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 500));
+  }
+  return null;
+};
+
+
+
 const buildImmediateAuthUser = (authData: PasswordSignInData, email: string): AuthUser | null => {
   const userEmail = authData.user.email ?? email;
   if (userEmail.toLowerCase() !== "super.admin@outlook.com") return null;
