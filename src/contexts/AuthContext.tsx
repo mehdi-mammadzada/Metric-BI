@@ -251,12 +251,12 @@ const fetchAuthUserDirectWithRetry = async (
   email: string,
   accessToken: string,
   timeoutMs: number,
-  attempts = 2,
+  attempts = 4,
 ): Promise<AuthUser | null> => {
   for (let i = 0; i < attempts; i++) {
     const u = await fetchAuthUserDirect(supabaseUserId, email, accessToken, timeoutMs);
     if (u) return u;
-    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 500));
+    if (i < attempts - 1) await new Promise((r) => setTimeout(r, 500 * (i + 1)));
   }
   return null;
 };
@@ -696,33 +696,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await signInWithPasswordFast(lower, password, LOGIN_TIMEOUT_MS);
 
     if (!error && data?.user) {
-      // Establish the SDK session before any RLS-protected profile queries.
-      // In the framed preview the client uses a brokered (postMessage) storage
-      // adapter, so setSession can be slow or never settle. The tokens are
-      // already persisted by storeSessionDirectly(), and the profile fetch
-      // below uses the raw access token, so a slow/failed setSession must NOT
-      // fail the login — we retry it in the background instead.
-      const sessionResult = await withPromiseTimeout(
-        supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token }),
-        12000,
-        "Sessiya aktivləşdirilmədi",
-      ).catch((sessionError) => ({ data: { session: null, user: null }, error: sessionError }));
-
-      if (sessionResult.error || !sessionResult.data.session) {
-        console.warn("[login] setSession did not settle, continuing with direct tokens", sessionResult.error);
-        // Re-persist tokens (in case anything cleared them) and retry the SDK
-        // session in the background so refresh/restore keeps working.
-        storeSessionDirectly(data);
-        void supabase.auth
-          .setSession({ access_token: data.access_token, refresh_token: data.refresh_token })
-          .catch(() => undefined);
-      }
-      try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
-
-
+      // Resolve the profile with the raw access token before touching the SDK
+      // auth lock. In framed previews setSession uses asynchronous brokered
+      // storage; awaiting it here can race with onAuthStateChange and block the
+      // profile RPC even though the password grant has already succeeded.
       const directUser = await withPromiseTimeout(
-        fetchAuthUserDirectWithRetry(data.user.id, data.user.email ?? lower, data.access_token, 12000),
-        26000,
+        fetchAuthUserDirectWithRetry(data.user.id, data.user.email ?? lower, data.access_token, 10000),
+        46000,
         "İstifadəçi məlumatları alınmadı"
       ).catch(() => null);
 
@@ -738,6 +718,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (u) {
           setUser(u);
           startBusinessSyncs(u);
+          // The login UI no longer waits for brokered persistence. Tokens were
+          // already written synchronously by storeSessionDirectly(); setSession
+          // now hydrates the SDK in the background for refresh and future calls.
+          window.setTimeout(() => {
+            void supabase.auth
+              .setSession({ access_token: data.access_token, refresh_token: data.refresh_token })
+              .then(({ error: sessionError }) => {
+                if (sessionError) console.warn("[login] background session hydration failed", sessionError);
+                else {
+                  try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
+                }
+              })
+              .catch((sessionError) => console.warn("[login] background session hydration failed", sessionError));
+          }, 0);
           void logAudit({ organizationId: u.currentOrgId ?? null, action: "login", module: "auth", entityType: "user", entityId: u.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
           return { success: true };
         }
