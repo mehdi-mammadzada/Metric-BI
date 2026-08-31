@@ -150,6 +150,7 @@ export const VISIBLE_CATALOG_IDS: string[] = [
 
 /** Bu kataloqlara yeni dəyər əlavə etmək olmaz (sistem sabitləri). */
 export const LOCKED_CATALOG_IDS = new Set<string>([
+  "target_weight_limits",
   "kpi_statuses",
   "evaluator_types",
   "sub_kpi_units",
