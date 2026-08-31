@@ -2660,7 +2660,8 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-indigo-600" />
@@ -2668,7 +2669,7 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-1 border-b border-border">
+        <div className="flex gap-1 border-b border-border shrink-0">
           {tabs.map(t => (
             <button key={t.key} type="button" onClick={() => setTab(t.key)}
               className={`px-3 py-1.5 text-xs font-medium border-b-2 transition ${
@@ -2679,7 +2680,7 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
           ))}
         </div>
 
-        <div className="min-h-[140px] py-2">
+        <div className="min-h-[140px] py-2 flex-1 overflow-y-auto overscroll-contain pr-1">
           {tab === "person" && (
             <div>
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
@@ -2965,7 +2966,8 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
 
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border shrink-0">
+
           <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs rounded border border-border bg-card">Ləğv et</button>
           <button
             type="button"
