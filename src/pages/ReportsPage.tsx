@@ -12,9 +12,8 @@ import ExcelImportButton from "@/components/common/ExcelImportButton";
 import PeriodPicker, { currentPeriod, periodLabel, type PeriodValue } from "@/components/common/PeriodPicker";
 import DropdownMultiSelect from "@/components/kpi/DropdownMultiSelect";
 import SearchableSelect from "@/components/common/SearchableSelect";
-import { mockEmployees } from "@/data/mockData";
-import { mockStructures, mockTeams } from "@/data/mockExtras";
-import { getAllPositions } from "@/lib/usePositions";
+import { useReportRows, buildTrendSeries, type ReportRow } from "@/lib/reportsDataset";
+import { useSampleResultsSeed } from "@/lib/sampleResultsSeed";
 
 type FilterType = "position" | "person" | "structure" | "team";
 const FILTER_LABELS: Record<FilterType, string> = {
@@ -24,13 +23,13 @@ const FILTER_LABELS: Record<FilterType, string> = {
   team: "Komanda",
 };
 
-// --- Sample KPI dataset (organized by team) ---
-const teamKpis: Record<string, { name: string; structure: string; subStructure: string; progress: number; target: string; current: string; icon: any }[]> = {};
+const uniq = (list: string[]) => Array.from(new Set(list.filter(Boolean)));
 
 const COLORS = [
   "hsl(230, 75%, 50%)", "hsl(145, 65%, 42%)", "hsl(38, 92%, 55%)", "hsl(0, 78%, 60%)",
   "hsl(265, 70%, 55%)", "hsl(192, 80%, 48%)", "hsl(20, 85%, 55%)", "hsl(330, 70%, 55%)",
 ];
+
 
 const ReportsPage = () => {
   const [teams, setTeams] = useState<Team[]>(() => getTeams());
