@@ -597,9 +597,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Initial hydration from Supabase session. Guarded by a hard timeout so
-    // a slow/hung backend call can never keep the app in a permanent
-    // "loading" (blank) state.
+    // Initial hydration from Supabase session. `loading` is released after a
+    // short safety window so the UI (login page) is never stuck on a spinner,
+    // but the session resolution keeps running in the background and applies
+    // the user as soon as the (possibly cold) database answers.
     let settled = false;
     const finish = () => { if (!settled) { settled = true; setLoading(false); } };
     const safetyTimer = window.setTimeout(finish, 4000);
@@ -607,14 +608,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          const u = (await fetchAuthUserDirect(
+          const u = (await fetchAuthUserDirectWithRetry(
             session.user.id,
             session.user.email ?? "",
             session.access_token,
-            2500,
+            12000,
           )) ?? await withPromiseTimeout(
             buildAuthUserFromSupabase(session.user.id, session.user.email ?? ""),
-            3000,
+            25000,
             "Sessiya məlumatları gecikdi",
           ).catch(() => null);
           if (u) {
@@ -625,6 +626,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (err) {
         console.warn("[auth] initial hydration failed", err);
       } finally {
+
         window.clearTimeout(safetyTimer);
         initialHydrationRef.current = false;
         finish();
@@ -711,8 +713,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const directUser = await withPromiseTimeout(
-        fetchAuthUserDirect(data.user.id, data.user.email ?? lower, data.access_token, 3500),
-        4000,
+        fetchAuthUserDirectWithRetry(data.user.id, data.user.email ?? lower, data.access_token, 12000),
+        26000,
         "İstifadəçi məlumatları alınmadı"
       ).catch(() => null);
 
@@ -720,8 +722,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!u) {
         u = await withPromiseTimeout(
           buildAuthUserFromSupabase(data.user.id, data.user.email ?? lower),
-          7000,
+          25000,
           "Profil məlumatları yüklənmədi",
+
         ).catch(() => null);
       }
       if (u) {
