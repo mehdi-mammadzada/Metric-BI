@@ -219,6 +219,7 @@ const emptyHedef = (): WizardHedef => ({
   booleanNo: 2,
   timeStart: "",
   timeEnd: "",
+  targetDescription: "",
   scoreDescriptions: [],
   cascading: false,
   cascadeMatrix: "",
