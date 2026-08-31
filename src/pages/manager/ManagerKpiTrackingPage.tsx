@@ -28,6 +28,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import KpiScoresPage from "@/pages/KpiScoresPage";
 import KpiDetailView from "@/components/kpi/KpiDetailView";
 import { REVIEW_STATUS_STYLES } from "@/components/kpi/LifecycleView";
+import { useCatalogValues } from "@/lib/dropdownCatalogStore";
 import type { KpiCard as KpiCardShape } from "@/lib/kpiCardTypes";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -2118,11 +2119,22 @@ const groupReviewRows = (rows: ReviewRow[], mode: "individual" | "bulk"): Review
   return list;
 };
 
+/** Review statusu → "Review Statusları" kataloqundakı dəyər. */
+const REVIEW_STATUS_CATALOG_LABEL: Record<ReviewComputedStatus, string> = {
+  held: "Keçirildi",
+  in_progress: "İcrada",
+  missed: "Keçirilmədi",
+  deferred: "Təxirə salındı",
+  pending: "Planlaşdırılıb",
+};
+
 const ReviewsView = () => {
   const rows = useReviewRows();
   const { user } = useAuth();
   const [tab, setTab] = useState<"individual" | "bulk">("individual");
   const [q, setQ] = useState("");
+  const reviewStatusValues = useCatalogValues("review_statuses", ["Keçirildi", "İcrada", "Keçirilmədi", "Təxirə salındı", "Planlaşdırılıb"]);
+  const [statusFilter, setStatusFilter] = useState("all");
   const [colF, setColF] = useState<Record<ReviewColKey, string>>({
     cardName: "", reviewName: "", count: "", progress: "", status: "", start: "", end: "", updated: "",
   });
@@ -2143,6 +2155,7 @@ const ReviewsView = () => {
       const global = !s || withKartSuffix(g.cardName).toLowerCase().includes(s)
         || g.employees.some(e => e.empName.toLowerCase().includes(s));
       if (!global) return false;
+      if (statusFilter !== "all" && REVIEW_STATUS_CATALOG_LABEL[g.reviewStatus] !== statusFilter) return false;
       return m(withKartSuffix(g.cardName), colF.cardName)
         && m(g.reviewLabel, colF.reviewName)
         && m(`${g.employees.length}`, colF.count)
@@ -2154,8 +2167,8 @@ const ReviewsView = () => {
     });
   };
 
-  const filteredIndividual = useMemo(() => filterGroups(individualGroups), [individualGroups, q, colF]);
-  const filteredBulk = useMemo(() => filterGroups(bulkGroups), [bulkGroups, q, colF]);
+  const filteredIndividual = useMemo(() => filterGroups(individualGroups), [individualGroups, q, colF, statusFilter]);
+  const filteredBulk = useMemo(() => filterGroups(bulkGroups), [bulkGroups, q, colF, statusFilter]);
 
   const toOverviewStatus = (s: ReviewComputedStatus): ReviewStatusValue =>
     s === "held" ? "held" : s === "deferred" ? "deferred" : s === "missed" ? "missed" : "in_progress";
@@ -2256,7 +2269,7 @@ const ReviewsView = () => {
       <PageHero badge="Rəhbər Paneli" icon={RefreshCw} title="Reviewlar" subtitle="Hazırda Review mərhələsində olan bütün KPI kartlarının vahid izləmə cədvəli." />
 
       <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-center gap-3 flex-wrap mt-2">
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative w-full sm:w-[280px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             value={q}
@@ -2265,6 +2278,16 @@ const ReviewsView = () => {
             className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[200px] h-[38px]">
+            <SelectValue placeholder="Review statusu" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover z-50">
+            <SelectItem value="all">Bütün statuslar</SelectItem>
+            {reviewStatusValues.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <div className="flex-1" />
         <Badge className="bg-sky-500/15 text-sky-700 hover:bg-sky-500/15">
           Review: {(tab === "individual" ? filteredIndividual : filteredBulk).length}
         </Badge>
