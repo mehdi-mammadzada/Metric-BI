@@ -573,6 +573,29 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     return [] as string[];
   }, [draft.mode, draft.bulkSelections, employeesRaw]);
 
+  /** Komanda lideri üçün namizədlər — Şəxs/Vəzifə seçimindən əlavə olaraq
+   *  seçilmiş komanda(lar) və struktur(lar)ın əməkdaşlarını da əhatə edir. */
+  const bulkLeaderCandidates = useMemo(() => {
+    if (draft.mode !== "bulk") return [] as string[];
+    const bs = draft.bulkSelections;
+    if (bulkTeamMembers.length) return bulkTeamMembers;
+    const names = new Set<string>();
+    if (bs.teams.length) {
+      teamsRaw.filter(t => bs.teams.includes(t.name)).forEach(t => {
+        names.add(t.leader);
+        t.members.forEach(m => names.add(m.name));
+      });
+    }
+    if (bs.structures.length) {
+      employeesRaw
+        .filter(e => bs.structures.some(sp => (e.structurePath || "") === sp || (e.structurePath || "").startsWith(sp + " › ")))
+        .forEach(e => names.add(e.fullName));
+    }
+    // Mümkün olduqda əməkdaş dəyəri (ad — struktur) formatına çevir
+    return Array.from(names).map(n => employeesRaw.find(e => e.fullName === n)?.value ?? n);
+  }, [draft.mode, draft.bulkSelections, bulkTeamMembers, teamsRaw, employeesRaw]);
+
+
   // ===== Individual-mode filters (Vəzifə / Komanda / Struktur) =====
   const [indFilterPositions, setIndFilterPositions] = useState<string[]>([]);
   const [indFilterTeams, setIndFilterTeams] = useState<string[]>([]);
@@ -780,8 +803,8 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
         // Review varsa, hər review üçün ən azı 1 reviewer məcburidir
         const reviewersOk = lc.reviews.every(r =>
           (r.reviewerNames && r.reviewerNames.length > 0) || !!(r.reviewerName || "").trim());
-        // Toplu + 2+ şəxs → avtomatik komanda yaranır, lider məcburidir
-        const bulkPersons = bulkTeamMembers;
+        // Toplu → komanda lideri məcburidir (şəxs/vəzifə/komanda/struktur)
+        const bulkPersons = bulkLeaderCandidates;
         const leaderOk = bulkPersons.length < 2
           || (!!draft.bulkTeamLeader && bulkPersons.includes(draft.bulkTeamLeader));
         return !!draft.name.trim() && !!draft.frequency && !!draft.startDate && !!draft.endDate
@@ -1161,11 +1184,13 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                         <MultiSelectDropdown options={positionOptions} selected={bs.positions}
                           onChange={(v) => setCat("positions", v)} placeholder="Vəzifə seçin" />
                       )}
-                      {bulkTeamMembers.length >= 2 && (
+                      {bulkLeaderCandidates.length >= 2 && (
                         <div className="mt-2 rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
-                          <p className="text-[11px] text-emerald-600 flex items-center gap-1">
-                            <Users className="w-3 h-3" /> Yadda saxladıqda bu {bulkTeamMembers.length} şəxs üçün avtomatik yeni komanda yaradılacaq.
-                          </p>
+                          {bulkTeamMembers.length >= 2 && (
+                            <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+                              <Users className="w-3 h-3" /> Yadda saxladıqda bu {bulkTeamMembers.length} şəxs üçün avtomatik yeni komanda yaradılacaq.
+                            </p>
+                          )}
                           <div>
                             <label className="text-xs font-medium text-foreground">
                               Komanda Lideri <span className="text-destructive">*</span>
@@ -1178,7 +1203,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                               }`}
                             >
                               <option value="">— Lider seçin —</option>
-                              {bulkTeamMembers.map(p => <option key={p} value={p}>{p}</option>)}
+                              {bulkLeaderCandidates.map(p => <option key={p} value={p}>{p}</option>)}
                             </select>
                             {!draft.bulkTeamLeader && (
                               <p className="text-[11px] text-destructive mt-1">
@@ -1188,6 +1213,7 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
                           </div>
                         </div>
                       )}
+
                     </Field>
                   );
                 })()}
