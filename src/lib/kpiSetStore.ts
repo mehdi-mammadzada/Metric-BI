@@ -48,6 +48,8 @@ export interface KpiSetEntry {
   /** Hədəfin növü (Məbləğ, Say, Faiz, ...) */
   type?: KpiEntryType;
   target: string;
+  /** Zaman növü üçün məcburi hədəf təsviri */
+  targetDescription?: string;
   unit: string;
   assigneeId?: number;
   assigneeName: string;
@@ -192,7 +194,7 @@ export const setEntryLimits = (id: string, limits: LimitSet) => {
 export const setEntryDetails = (
   id: string,
   patch: {
-    subKpiName?: string; target?: string; unit?: string;
+    subKpiName?: string; target?: string; targetDescription?: string; unit?: string;
     type?: KpiEntryType;
     limits?: LimitSet; cascadable?: boolean;
     weight?: number; dynamicLimits?: DynamicTier[];

@@ -88,6 +88,8 @@ export interface WizardHedef {
   booleanNo: number;
   timeStart: string;
   timeEnd: string;
+  /** Zaman növü üçün məcburi hədəf təsviri */
+  targetDescription?: string;
 
   /** Score-description rows for İcra/Fərdi İnkişaf/Zaman və qiymət popup-u */
   scoreDescriptions?: WizardScoreDesc[];
@@ -217,6 +219,7 @@ const emptyHedef = (): WizardHedef => ({
   booleanNo: 2,
   timeStart: "",
   timeEnd: "",
+  targetDescription: "",
   scoreDescriptions: [],
   cascading: false,
   cascadeMatrix: "",
@@ -768,6 +771,9 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     const needsRanges = ["Məbləğ", "Say", "Faiz", "Nisbət"].includes(t.type);
     if (isTime && t.createdBy === "self" && (!t.timeStart || !t.timeEnd)) {
       return `"${t.name}": başlama və bitmə tarixləri seçilməlidir`;
+    }
+    if (isTime && t.createdBy === "self" && !(t.targetDescription || "").trim()) {
+      return `"${t.name}": Hədəf təsviri məcburidir`;
     }
 
     if (t.type === "Səriştə") {
@@ -1944,6 +1950,18 @@ function Step2Targets({
                       )}
                     </div>
                   </div>
+
+                  {t.type === "Zaman" && (
+                    <div className="col-span-12 md:col-span-10">
+                      <label className="text-[11px] text-muted-foreground">
+                        Hədəf təsviri {isOther ? <span className="text-amber-600">(təyin edən dolduracaq)</span> : "*"}
+                      </label>
+                      <input value={t.targetDescription || ""} disabled={isOther}
+                        onChange={e => updHedef(t.id, { targetDescription: e.target.value })}
+                        placeholder="Hədəf təsviri"
+                        className="w-full mt-0.5 px-2.5 py-1.5 text-sm border border-border rounded bg-background disabled:opacity-60" />
+                    </div>
+                  )}
 
                   <div className="col-span-12 md:col-span-2 flex items-end">
                     <button type="button" onClick={() => setScoreDlgFor(t.id)}

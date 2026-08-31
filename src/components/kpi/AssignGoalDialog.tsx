@@ -72,6 +72,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
   const [name, setName] = useState("");
   const [type, setType] = useState<HedefType>("Məbləğ");
   const [target, setTarget] = useState("");
+  const [targetDescription, setTargetDescription] = useState("");
   const [unit, setUnit] = useState("AZN");
   const [weight, setWeight] = useState<string>("");
   const weightLimits = useWeightLimits();
@@ -90,6 +91,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
     setName(entry.subKpiName || "");
     setType(entryType);
     setTarget(entry.target || "");
+    setTargetDescription(entry.targetDescription || "");
     // Vahid növə uyğun götürülür: Məbləğ üçün seçilmiş valyuta, digərləri auto-unit.
     // Boş saxlanmış vahid heç vaxt "AZN" ilə əvəz olunmur.
     setUnit(entryType === "Məbləğ" ? (AMOUNT_UNITS.includes(entry.unit) ? entry.unit : "AZN") : (AUTO_UNIT[entryType] || entry.unit || ""));
@@ -241,6 +243,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
     if (type === "Səriştə" && !competencyMatrix) return "Səriştə matrisi seçilməlidir";
     if (isTime) {
       if (!timeStart || !timeEnd) return "Zaman aralığı (başlama və bitmə tarixi) tələb olunur";
+      if (!targetDescription.trim()) return "Hədəf təsviri tələb olunur";
     } else if (type !== "Səriştə" && !target.trim()) return "Hədəf dəyəri tələb olunur";
     if (type === "Səriştə") return null; // bal/izah səriştə üçün matrisdədir
     if (needsMinMax) {
@@ -295,6 +298,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
       type: type as any,
       target: type === "Səriştə" ? competencyMatrices.find(m => m.id === competencyMatrix)?.name || target.trim() : target.trim(),
       unit,
+      targetDescription: isTime ? targetDescription.trim() : undefined,
       cascadable: cascadable && CASCADE_TYPES.includes(type),
       weight: weight ? Number(weight) : undefined,
       limits,
@@ -407,6 +411,14 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
                 </div>
               )}
             </div>
+            {type === "Zaman" && (
+              <div className="col-span-12">
+                <label className="text-[11px] text-muted-foreground">Hədəf təsviri *</label>
+                <input value={targetDescription} onChange={e => setTargetDescription(e.target.value)}
+                  placeholder="Hədəf təsviri"
+                  className="w-full mt-0.5 px-2.5 py-1.5 text-sm border border-border rounded bg-background" />
+              </div>
+            )}
             {type === "Məbləğ" && (
               <div className="col-span-6 md:col-span-2">
                 <label className="text-[11px] text-muted-foreground">Vahid</label>
