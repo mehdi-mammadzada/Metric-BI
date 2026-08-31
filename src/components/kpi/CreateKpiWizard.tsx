@@ -2660,7 +2660,7 @@ function EvaluatorPickerDialog({ initialEvaluators, employeeOptions, onClose, on
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="w-full max-w-lg h-[640px] max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="w-full max-w-lg h-[560px] max-h-[90vh] flex flex-col overflow-hidden">
 
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center gap-2">
