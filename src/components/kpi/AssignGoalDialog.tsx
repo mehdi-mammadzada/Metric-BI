@@ -14,6 +14,7 @@ import { getCompetencyMatrices, type CompetencyMatrix } from "@/lib/competencyMa
 import { getVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { Lock } from "lucide-react";
 import { WeightInput } from "@/components/kpi/WeightInput";
+import { useWeightLimits } from "@/lib/dropdownCatalogStore";
 import { withKartSuffix } from "@/lib/utils";
 
 // Yalnız Məbləğ üçün vahid seçilə bilər. Digərləri auto-unit.
@@ -73,6 +74,7 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
   const [target, setTarget] = useState("");
   const [unit, setUnit] = useState("AZN");
   const [weight, setWeight] = useState<string>("");
+  const weightLimits = useWeightLimits();
   const [cascadable, setCascadable] = useState(false);
   const [rows, setRows] = useState<ScoreDescRow[]>([]);
   const [scales, setScales] = useState<ScoreScale[]>([]);
@@ -265,6 +267,11 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
     if (!entry) return;
     const err = validate();
     if (err) { toast.error(err); return; }
+    if (weight !== "") {
+      const w = Number(weight);
+      if (w < weightLimits.min) { toast.error(`Hədəf çəkisi minimum ${weightLimits.min}%-dən aşağı ola bilməz`); return; }
+      if (w > weightLimits.max) { toast.error(`Hədəf çəkisi maksimum ${weightLimits.max}%-dən yuxarı ola bilməz`); return; }
+    }
 
     let limits: LimitSet | undefined;
     let dynamicLimits: DynamicTier[] | undefined;
@@ -413,7 +420,16 @@ const AssignGoalDialog = ({ open, onOpenChange, entry, readOnly = false, onSaved
             <div className="col-span-6 md:col-span-2">
               <label className="text-[11px] text-muted-foreground">Çəki (%)</label>
               <WeightInput value={weight === "" ? 0 : Number(weight)} onChange={n => setWeight(String(n))}
+                min={weightLimits.min} max={weightLimits.max}
                 className="mt-0.5" />
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Limit: min {weightLimits.min}% – maks {weightLimits.max}%
+              </p>
+              {weight !== "" && Number(weight) > 0 && (Number(weight) < weightLimits.min || Number(weight) > weightLimits.max) && (
+                <p className="text-[10px] text-destructive mt-0.5">
+                  Çəki {weightLimits.min}%–{weightLimits.max}% aralığında olmalıdır
+                </p>
+              )}
             </div>
             {scales.length > 0 && (
               <div className="col-span-12 md:col-span-5">

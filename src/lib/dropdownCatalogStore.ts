@@ -28,7 +28,7 @@ export interface SubKpiRow {
   active: boolean;
 }
 
-export type CatalogSchema = "target_types" | "kpi_kinds" | "sub_kpis" | "kpi_periods";
+export type CatalogSchema = "target_types" | "kpi_kinds" | "sub_kpis" | "kpi_periods" | "weight_limits";
 export type CatalogRow = TargetTypeRow | KpiKindRow | SubKpiRow;
 
 export interface DropdownCatalog {
@@ -79,6 +79,15 @@ const RAW_SEED: DropdownCatalog[] = [
     values: [],
   },
 
+  // Hədəflərin Çəki Limiti — values: [min, max]
+  {
+    id: "target_weight_limits",
+    name: "Hədəflərin Çəki Limiti",
+    system: true,
+    schema: "weight_limits",
+    values: ["5", "40"],
+  },
+
   // KPI Dövrü — virtual (teamsStore.getPeriods)
   {
     id: "kpi_periods",
@@ -87,6 +96,7 @@ const RAW_SEED: DropdownCatalog[] = [
     schema: "kpi_periods",
     values: [],
   },
+
 
   // Sadə (string-list) sistem kataloqları
   { id: "kpi_categories", name: "KPI Kateqoriyaları", system: true, values: []},
@@ -122,10 +132,12 @@ const RAW_SEED: DropdownCatalog[] = [
   ]},
 ];
 
-const SEED: DropdownCatalog[] = RAW_SEED.map(c => ({ ...c, rows: [] }));
+const SEED: DropdownCatalog[] = RAW_SEED.map(c =>
+  c.schema === "weight_limits" ? { ...c } : { ...c, rows: [] });
 
 /** Məlumat Cədvəlində göstərilən yeganə kataloqlar — bu sıra ilə. */
 export const VISIBLE_CATALOG_IDS: string[] = [
+  "target_weight_limits",
   "frequencies",
   "sub_kpi_units",
   "evaluator_types",
@@ -138,6 +150,7 @@ export const VISIBLE_CATALOG_IDS: string[] = [
 
 /** Bu kataloqlara yeni dəyər əlavə etmək olmaz (sistem sabitləri). */
 export const LOCKED_CATALOG_IDS = new Set<string>([
+  "target_weight_limits",
   "kpi_statuses",
   "evaluator_types",
   "sub_kpi_units",
@@ -148,7 +161,7 @@ export const LOCKED_CATALOG_IDS = new Set<string>([
 
 // Strukturlaşdırılmış kataloqlarda values array-ı rows.name-dən avtomatik sinxronlaşdırılır
 const syncValues = (cat: DropdownCatalog): DropdownCatalog => {
-  if (cat.schema && cat.schema !== "kpi_periods" && cat.rows) {
+  if (cat.schema && cat.schema !== "kpi_periods" && cat.schema !== "weight_limits" && cat.rows) {
     return { ...cat, values: cat.rows.filter(r => (r as any).active !== false).map(r => r.name) };
   }
   return cat;
@@ -226,7 +239,7 @@ const ensureSystemCatalogs = (list: DropdownCatalog[]): { list: DropdownCatalog[
       schema: seed.schema ?? existing.schema,
       values,
       removed,
-      rows: seed.schema && seed.schema !== "kpi_periods" ? (existing.rows ?? []) : existing.rows,
+      rows: seed.schema && seed.schema !== "kpi_periods" && seed.schema !== "weight_limits" ? (existing.rows ?? []) : existing.rows,
     };
 
     if (JSON.stringify(existing) !== JSON.stringify(merged)) changed = true;
@@ -421,4 +434,46 @@ export const removeCatalogRow = (id: string, rowId: string): boolean => {
   if (!cat || !cat.rows) return false;
   persist(list.map(c => c.id === id ? { ...c, rows: c.rows!.filter(r => r.id !== rowId) } : c));
   return true;
+};
+
+
+// ---------- Hədəflərin Çəki Limiti ----------
+export const WEIGHT_LIMITS_CATALOG_ID = "target_weight_limits";
+export const DEFAULT_WEIGHT_LIMITS = { min: 5, max: 40 };
+
+export interface WeightLimits { min: number; max: number }
+
+export const getWeightLimits = (): WeightLimits => {
+  const cat = load().find(c => c.id === WEIGHT_LIMITS_CATALOG_ID);
+  const min = Number(cat?.values?.[0]);
+  const max = Number(cat?.values?.[1]);
+  return {
+    min: Number.isFinite(min) ? min : DEFAULT_WEIGHT_LIMITS.min,
+    max: Number.isFinite(max) ? max : DEFAULT_WEIGHT_LIMITS.max,
+  };
+};
+
+export const setWeightLimits = (min: number, max: number): boolean => {
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return false;
+  if (min < 0 || max > 100 || min >= max) return false;
+  const list = load();
+  persist(list.map(c => c.id === WEIGHT_LIMITS_CATALOG_ID
+    ? { ...c, values: [String(min), String(max)] }
+    : c));
+  return true;
+};
+
+/** React hook — kataloq dəyişdikdə limitləri canlı yeniləyir. */
+export const useWeightLimits = (): WeightLimits => {
+  const [limits, setLimits] = useState<WeightLimits>(() => getWeightLimits());
+  useEffect(() => {
+    const refresh = () => setLimits(getWeightLimits());
+    window.addEventListener("dropdown-catalogs-updated", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("dropdown-catalogs-updated", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  return limits;
 };

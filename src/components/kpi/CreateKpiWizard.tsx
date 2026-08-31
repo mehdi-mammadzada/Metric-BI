@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { usePositions } from "@/lib/usePositions";
-import { useCatalogValues } from "@/lib/dropdownCatalogStore";
+import { useCatalogValues, useWeightLimits } from "@/lib/dropdownCatalogStore";
 import { getEmployees } from "@/lib/orgStore";
 import { getStructures, type OrgStructure } from "@/lib/orgStore";
 import { getTeams, addTeam } from "@/lib/teamsStore";
@@ -707,6 +707,8 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
   const removeReview = (id: string) =>
     updLifecycle({ reviews: draft.lifecycle.reviews.filter(r => r.id !== id) });
 
+  const weightLimits = useWeightLimits();
+
   // Scoring system upper bound
   const scoreMax = useMemo<number | undefined>(() => {
     const s = (draft.scoringSystem || "").toLowerCase();
@@ -727,6 +729,8 @@ export default function CreateKpiWizard({ open, onOpenChange, initial, onComplet
     }
     if (!t.name.trim()) return "Hədəf adı boşdur";
     if (!t.weight || t.weight <= 0) return "Hədəf çəkisi 0-dan böyük olmalıdır";
+    if (t.weight < weightLimits.min) return `"${t.name}": hədəf çəkisi minimum ${weightLimits.min}%-dən aşağı ola bilməz`;
+    if (t.weight > weightLimits.max) return `"${t.name}": hədəf çəkisi maksimum ${weightLimits.max}%-dən yuxarı ola bilməz`;
     if (t.evaluators.length === 0) return `"${t.name}" üçün ən az 1 Qiymətləndirici seçin`;
     if (t.evaluators.length > 1) {
       const sum = t.evaluators.reduce((s, e) => s + (Number(e.weight) || 0), 0);
@@ -1653,6 +1657,7 @@ function Step2Targets({
   const [evalPickerFor, setEvalPickerFor] = useState<string | null>(null);
   const [questionsDlgFor, setQuestionsDlgFor] = useState<string | null>(null);
 
+  const weightLimits = useWeightLimits();
   const competencyMatrices = getCompetencyMatrices();
   const competencyMatrixOptions = competencyMatrices;
   const questionsDlgTarget = draft.targets.find(t => t.id === questionsDlgFor) || null;
@@ -1828,8 +1833,17 @@ function Step2Targets({
               <div className="col-span-6 md:col-span-2">
                 <label className="text-[11px] text-muted-foreground">Çəki (%) *</label>
                 <WeightInput value={t.weight} disabled={disabled}
+                  min={weightLimits.min} max={weightLimits.max}
                   onChange={n => updHedef(t.id, { weight: n })}
                   className="mt-0.5" />
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Limit: min {weightLimits.min}% – maks {weightLimits.max}%
+                </p>
+                {t.weight > 0 && (t.weight < weightLimits.min || t.weight > weightLimits.max) && (
+                  <p className="text-[10px] text-destructive mt-0.5">
+                    Çəki {weightLimits.min}%–{weightLimits.max}% aralığında olmalıdır
+                  </p>
+                )}
               </div>
 
               {t.type === "Səriştə" ? (

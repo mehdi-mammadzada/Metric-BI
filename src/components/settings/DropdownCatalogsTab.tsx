@@ -15,6 +15,8 @@ import {
   updateCatalogRow,
   updateCatalogValue,
   LOCKED_CATALOG_IDS,
+  getWeightLimits,
+  setWeightLimits,
   type DropdownCatalog,
   type CatalogRow,
   type TargetTypeRow,
@@ -383,6 +385,46 @@ const PeriodDialog = ({ open, onClose, onSave }: { open: boolean; onClose: () =>
   );
 };
 
+// ---------- Hədəflərin Çəki Limiti ----------
+const WeightLimitsEditor = ({ onSaved }: { onSaved: () => void }) => {
+  const initial = getWeightLimits();
+  const [min, setMin] = useState<string>(String(initial.min));
+  const [max, setMax] = useState<string>(String(initial.max));
+
+  const save = () => {
+    const mn = Number(min);
+    const mx = Number(max);
+    if (!Number.isFinite(mn) || !Number.isFinite(mx)) { toast.error("Dəyərlər rəqəm olmalıdır"); return; }
+    if (mn < 0 || mx > 100) { toast.error("Çəki limitləri 0-100 aralığında olmalıdır"); return; }
+    if (mn >= mx) { toast.error("Minimum çəki maksimum çəkidən kiçik olmalıdır"); return; }
+    if (!setWeightLimits(mn, mx)) { toast.error("Limitlər yadda saxlanılmadı"); return; }
+    onSaved();
+    toast.success("Çəki limitləri yeniləndi");
+  };
+
+  return (
+    <div className="space-y-4 max-w-md">
+      <p className="text-sm text-muted-foreground">
+        Bu limitlər bütün KPI hədəfləri üçün icazə verilən çəki intervalını müəyyən edir.
+        Hədəf təyini və KPI kartı yaradılması pəncərələrində yalnız oxunaqlı formada göstərilir.
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Minimum çəki (%)</label>
+          <input type="number" min={0} max={100} value={min} onChange={e => setMin(e.target.value)} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Maksimum çəki (%)</label>
+          <input type="number" min={0} max={100} value={max} onChange={e => setMax(e.target.value)} className={inputCls} />
+        </div>
+      </div>
+      <button onClick={save} className="flex items-center gap-2 px-4 py-2.5 text-sm rounded-lg bg-primary text-primary-foreground font-medium">
+        <Save className="w-4 h-4" /> Yadda Saxla
+      </button>
+    </div>
+  );
+};
+
 // ---------- Əsas komponent ----------
 const DropdownCatalogsTab = () => {
   const [catalogs, setCatalogs] = useState<DropdownCatalog[]>(() => getDropdownCatalogs());
@@ -564,10 +606,16 @@ const DropdownCatalogsTab = () => {
               </div>
             </div>
 
+            {active.schema !== "weight_limits" && (
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Axtar..." className="w-full pl-10 pr-3 py-2.5 text-sm border border-border rounded-lg bg-background" />
             </div>
+            )}
+
+            {active.schema === "weight_limits" && (
+              <WeightLimitsEditor onSaved={refresh} />
+            )}
 
             {active.schema === "target_types" && (
               <TargetTypesTable
