@@ -119,6 +119,9 @@ const RAW_SEED: DropdownCatalog[] = [
   { id: "evaluation_statuses", name: "Qiymətləndirmə Statusları", system: true, values: [
     "Tamamlanıb", "Gözləyir",
   ]},
+  { id: "review_statuses", name: "Review Statusları", system: true, values: [
+    "Keçirildi", "İcrada", "Keçirilmədi", "Təxirə salındı", "Planlaşdırılıb",
+  ]},
   { id: "integration_systems", name: "İnteqrasiya Sistemləri", system: true, values: []},
   { id: "evaluator_types", name: "Qiymətləndirici Seçimi", system: true, values: [
     "Şəxs", "Komanda", "Struktur", "Özü", "İnteqrasiya",
@@ -144,6 +147,7 @@ export const VISIBLE_CATALOG_IDS: string[] = [
   "kpi_statuses",
   "whistleblower_statuses",
   "evaluation_statuses",
+  "review_statuses",
   "whistleblower_categories",
   "scoring_systems",
 ];
@@ -155,6 +159,7 @@ export const LOCKED_CATALOG_IDS = new Set<string>([
   "evaluator_types",
   "sub_kpi_units",
   "evaluation_statuses",
+  "review_statuses",
   "frequencies",
   "scoring_systems",
 ]);
