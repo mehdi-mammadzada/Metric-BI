@@ -119,6 +119,9 @@ const RAW_SEED: DropdownCatalog[] = [
   { id: "evaluation_statuses", name: "Qiymətləndirmə Statusları", system: true, values: [
     "Tamamlanıb", "Gözləyir",
   ]},
+  { id: "review_statuses", name: "Review Statusları", system: true, values: [
+    "Keçirildi", "İcrada", "Keçirilmədi", "Təxirə salındı", "Planlaşdırılıb",
+  ]},
   { id: "integration_systems", name: "İnteqrasiya Sistemləri", system: true, values: []},
   { id: "evaluator_types", name: "Qiymətləndirici Seçimi", system: true, values: [
     "Şəxs", "Komanda", "Struktur", "Özü", "İnteqrasiya",
