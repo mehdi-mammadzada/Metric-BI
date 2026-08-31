@@ -1689,9 +1689,6 @@ const EmployeesTab = () => {
                   <button onClick={() => startEdit(e)} title="Redaktə et" className="p-1.5 rounded hover:bg-secondary">
                     <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                   </button>
-                  <button onClick={() => handleOtp(e)} title="Şifrə yarat" className="p-1.5 rounded hover:bg-primary/10">
-                    <KeyRound className="w-3.5 h-3.5 text-primary" />
-                  </button>
                 </div>
               ),
             },
