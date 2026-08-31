@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Database, Plus, Pencil, Trash2, Search, X, Check, CalendarIcon, Save } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   addCatalogValue,
   addCatalogRow,
