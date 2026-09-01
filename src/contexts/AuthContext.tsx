@@ -674,31 +674,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         ).catch(() => null);
       }
+
+      // The password grant already succeeded, so persist the session in every
+      // case. If only the profile lookup was slow (cold / busy database), the
+      // session stays valid and hydration completes in the background instead
+      // of throwing the user back to the login screen.
+      const sessionResult = await withPromiseTimeout(
+        supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token }),
+        20000,
+        "Sessiya yadda saxlanmadı",
+      ).catch((sessionError) => ({ data: { session: null, user: null }, error: sessionError }));
+      if (sessionResult.error || !sessionResult.data.session) {
+        console.warn("[login] session persistence failed", sessionResult.error);
+        return { success: false, error: "Sessiya yadda saxlanmadı. Zəhmət olmasa yenidən cəhd edin" };
+      }
+      try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
+
+      if (!u) {
+        // Retry profile resolution now that the SDK session exists; the second
+        // pass usually succeeds once the database has warmed up.
+        u = await fetchAuthUserDirectWithRetry(data.user.id, data.user.email ?? lower, data.access_token, 15000, 3)
+          ?? await withPromiseTimeout(
+            buildAuthUserFromSupabase(data.user.id, data.user.email ?? lower),
+            25000,
+            "Profil məlumatları yüklənmədi",
+          ).catch(() => null);
+      }
+
       if (u) {
-          // Persist through the client's configured storage adapter. In preview
-          // this also updates the parent-frame auth broker, preventing a stale
-          // broker value from replacing the fresh session on reload.
-          const sessionResult = await withPromiseTimeout(
-            supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token }),
-            20000,
-            "Sessiya yadda saxlanmadı",
-          ).catch((sessionError) => ({ data: { session: null, user: null }, error: sessionError }));
-          if (sessionResult.error || !sessionResult.data.session) {
-            console.warn("[login] session persistence failed", sessionResult.error);
-            return { success: false, error: "Sessiya yadda saxlanmadı. Zəhmət olmasa yenidən cəhd edin" };
-          }
-          try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
           setUser(u);
           startBusinessSyncs(u);
           void logAudit({ organizationId: u.currentOrgId ?? null, action: "login", module: "auth", entityType: "user", entityId: u.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
           return { success: true };
         }
-        // Fell through — no profile row. No session has been persisted yet, so
-        // there is no auth storage to clear and no stale broker state to create.
-        return { success: false, error: "Profil məlumatları yüklənmədi. Zəhmət olmasa yenidən cəhd edin" };
+        // Session is stored; only the profile is still unavailable. Ask the user
+        // to retry — the stored session lets the next attempt/reload finish.
+        return { success: false, error: "Server hazırda yüklüdür, profil məlumatları gecikdi. Zəhmət olmasa bir neçə saniyə sonra yenidən cəhd edin" };
       }
 
       return { success: false, error: error?.message ?? "Email və ya şifrə yanlışdır" };
+
     } catch (err: any) {
       console.warn("[login] caught", err);
       if (err?.message?.includes("timeout")) {
