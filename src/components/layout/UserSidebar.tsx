@@ -13,7 +13,7 @@ const allNavItems = [
   { path: "/user/sistem-tesdiq", labelKey: "nav.system_approvals", icon: ClipboardCheck, permissions: ["approvals"] },
   { path: "/user/hesabat", labelKey: "nav.report", icon: BarChart3, permissions: ["reporting"] },
   { path: "/user/komandalar", labelKey: "nav.my_team_alt", icon: Users, permissions: ["teams", "teams_compare"] },
-  { path: "/user/qiymetlendirme", labelKey: "nav.evaluation", icon: ClipboardList, permissions: ["evaluation"] },
+  { path: "/user/qiymetlendirme", labelKey: "nav.responsible_cards", icon: ClipboardList, permissions: ["evaluation"] },
   { path: "/user/ayarlar", labelKey: "nav.settings_alt", icon: Settings, permissions: ["settings"] },
 ];
 
