@@ -163,9 +163,10 @@ export const KpiEvaluationSection = ({ assigneeId }: Props) => {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Button size="sm" variant={evaluated ? "outline" : "default"} onClick={() => setEditing(k)}>
-                        {evaluated ? "Bax / Düzəliş et" : "Qiymətləndir"}
+                        {evaluated ? "Bax" : "Qiymətləndir"}
                       </Button>
                     </td>
+
                   </tr>
                 );
               })}
