@@ -28,6 +28,8 @@ import { RatingCircles } from "@/components/evaluation/RatingCircles";
 import CascadeDistributeDialog from "@/components/kpi/CascadeDistributeDialog";
 import AssignGoalDialog from "@/components/kpi/AssignGoalDialog";
 import CascadeLoadConfirmDialog from "@/components/kpi/CascadeLoadConfirmDialog";
+import { CompetencyEvaluationSection } from "@/components/evaluation/CompetencyEvaluationSection";
+import { MOCK_USER_ID, buildPeerAssignments, CURRENT_CYCLE_ID } from "@/data/mockData";
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("az-AZ").format(Math.round(n * 100) / 100);
@@ -86,7 +88,7 @@ const isEntryAssignedToSetter = (
 };
 
 
-type View = "hub" | "assign" | "evaluate";
+type View = "hub" | "assign" | "evaluate" | "competency";
 
 interface CardGroup {
   cardId: number;
@@ -157,6 +159,7 @@ const ManagerResponsibleCardsPage = () => {
         {view === "hub" && <HubView onOpen={setView} />}
         {view === "assign" && <AssignView />}
         {view === "evaluate" && <EvaluateView />}
+        {view === "competency" && <CompetencyView />}
       </main>
     </div>
   );
@@ -166,9 +169,14 @@ const ManagerResponsibleCardsPage = () => {
 const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
   const rows = useKpiSet();
   const sharedCards = useVisibleSharedKpiCards();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const meId = getCurrentEmployeeId(user);
   const evalItems = useSubKpis(meId || "");
+  const competencyId = meId || MOCK_USER_ID;
+  const peerCount = useMemo(
+    () => (buildPeerAssignments(CURRENT_CYCLE_ID)[competencyId] || []).length,
+    [competencyId],
+  );
 
   // Yalnız cari istifadəçiyə həvalə olunmuş target-setter entry-ləri
   const assignCount = useMemo(
@@ -190,23 +198,31 @@ const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
         title="Məsul olduğum kartlar"
         subtitle="Hədəflərin təyin edilməsi və qiymətləndirilməsi üçün mərkəzi mühit."
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
-        <HubCard
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-2">
+        {hasPermission("evaluation_assign") && <HubCard
           icon={ClipboardList}
           title="Hədəf təyin etmə"
           subtitle="Sizə həvalə olunmuş kartlarda hədəflər təyin edin və kaskadlanan hədəfləri bölüşdürün."
           badge={`${assignCount} hədəf`}
           gradient="from-indigo-500/15 via-indigo-500/5 to-transparent border-indigo-400/40"
           onClick={() => onOpen("assign")}
-        />
-        <HubCard
+        />}
+        {hasPermission("evaluation_goals") && <HubCard
           icon={ClipboardCheck}
-          title="Hədəf & səriştə qiymətləndirmə"
+          title="Hədəf qiymətləndirmə"
           subtitle="Sizə aid KPI kartlarındakı hədəfləri qiymətləndirin və nəticələri qeyd edin."
           badge={`${evalCount} hədəf`}
           gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40"
           onClick={() => onOpen("evaluate")}
-        />
+        />}
+        {hasPermission("evaluation_competency") && <HubCard
+          icon={Award}
+          title="Səriştə üzrə qiymətləndirmə"
+          subtitle="Həmkarlarınızı səriştə kateqoriyaları üzrə anonim qiymətləndirin."
+          badge={`${peerCount} həmkar`}
+          gradient="from-amber-500/15 via-amber-500/5 to-transparent border-amber-400/40"
+          onClick={() => onOpen("competency")}
+        />}
       </div>
     </>
   );
@@ -545,6 +561,24 @@ const pctTone = (pct: number) => {
 const fmtEval = (n: number) =>
   Number.isInteger(n) ? n.toLocaleString("az-AZ") : n.toLocaleString("az-AZ", { maximumFractionDigits: 2 });
 
+const CompetencyView = () => {
+  const { user } = useAuth();
+  const meId = getCurrentEmployeeId(user) || MOCK_USER_ID;
+  return (
+    <>
+      <PageHero
+        badge="Qiymətləndirmə"
+        icon={Award}
+        title="Səriştə üzrə qiymətləndirmə"
+        subtitle="Səriştə kateqoriyaları üzrə anonim qiymətləndirmə aparın və öz nəticələrinizi izləyin."
+      />
+      <div className="mt-5">
+        <CompetencyEvaluationSection employeeId={meId} />
+      </div>
+    </>
+  );
+};
+
 const EvaluateView = () => {
   const { user } = useAuth();
   const meId = getCurrentEmployeeId(user);
@@ -559,7 +593,7 @@ const EvaluateView = () => {
         <PageHero
           badge="Rəhbər Paneli"
           icon={ClipboardCheck}
-          title="Hədəf & səriştə qiymətləndirmə"
+          title="Hədəf qiymətləndirmə"
           subtitle="Sizə aid KPI kartları və hədəflər burada göstərilir."
         />
         <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground">
@@ -580,7 +614,7 @@ const EvaluateView = () => {
       <PageHero
         badge="Rəhbər Paneli"
         icon={ClipboardCheck}
-        title="Hədəf & səriştə qiymətləndirmə"
+        title="Hədəf qiymətləndirmə"
         subtitle="Sizə aid KPI kartlarını açın və hər bir hədəf üzrə qiymətləndirmə aparın."
       />
 
