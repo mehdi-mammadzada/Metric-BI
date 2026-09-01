@@ -201,7 +201,7 @@ const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
         />
         <HubCard
           icon={ClipboardCheck}
-          title="Hədəf qiymətləndirmə"
+          title="Hədəf & səriştə qiymətləndirmə"
           subtitle="Sizə aid KPI kartlarındakı hədəfləri qiymətləndirin və nəticələri qeyd edin."
           badge={`${evalCount} hədəf`}
           gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40"
@@ -559,7 +559,7 @@ const EvaluateView = () => {
         <PageHero
           badge="Rəhbər Paneli"
           icon={ClipboardCheck}
-          title="Hədəf qiymətləndirmə"
+          title="Hədəf & səriştə qiymətləndirmə"
           subtitle="Sizə aid KPI kartları və hədəflər burada göstərilir."
         />
         <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground">
@@ -580,7 +580,7 @@ const EvaluateView = () => {
       <PageHero
         badge="Rəhbər Paneli"
         icon={ClipboardCheck}
-        title="Hədəf qiymətləndirmə"
+        title="Hədəf & səriştə qiymətləndirmə"
         subtitle="Sizə aid KPI kartlarını açın və hər bir hədəf üzrə qiymətləndirmə aparın."
       />
 
