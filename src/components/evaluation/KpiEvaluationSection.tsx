@@ -226,7 +226,7 @@ export const KpiEvalDialog = ({
       challenges,
       evidence,
       nextPlan,
-    });
+    }, item);
     toast.success("KPI qiymətləndirməsi yadda saxlandı");
     onClose();
   };

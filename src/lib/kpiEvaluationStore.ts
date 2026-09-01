@@ -86,8 +86,17 @@ export const upsertSubKpis = (rows: SubKpi[]) => {
 export const saveSubKpiEvaluation = (
   id: string,
   patch: Partial<Pick<SubKpi, "evaluatedScore" | "actual" | "selfComment" | "challenges" | "evidence" | "nextPlan">>,
+  base?: SubKpi,
 ) => {
   const list = load();
+  const idx = list.findIndex(k => k.id === id);
+  if (idx === -1) {
+    // Sətir hələ anbarda yoxdursa (növbədən gələn hədəf) — əlavə et.
+    if (!base) return;
+    const { ...clean } = base;
+    persist([...list, { ...clean, id, ...patch, submittedAt: Date.now() }]);
+    return;
+  }
   persist(list.map(k => (k.id === id ? { ...k, ...patch, submittedAt: Date.now() } : k)));
 };
 
