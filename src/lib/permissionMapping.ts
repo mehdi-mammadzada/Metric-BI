@@ -33,6 +33,10 @@ const EXTRA_KEY_TO_DB_CODES: Record<string, string[]> = {
   teams_compare: ["teams.view"],
   teams_all: ["teams.view", "teams.manage"],
   admin_users: ["users.manage", "users.view", "users.invite"],
+  // "Məsul olduğum kartlar" alt-kartları
+  evaluation_assign: ["kpi.assign", "kpi.manage", "cascading.distribute"],
+  evaluation_goals: ["kpi.evaluate", "evaluations.view", "evaluations.submit"],
+  evaluation_competency: ["evaluation_360.view", "evaluation_360.submit", "evaluation_360.manage"],
 };
 
 const ALL_KEY_TO_DB_CODES = { ...MODULE_KEY_TO_DB_CODES, ...EXTRA_KEY_TO_DB_CODES };
@@ -45,6 +49,8 @@ export const BASELINE_USER_UI_PERMISSIONS = [
   "kpi_own",
   "kpi_team",
   "evaluation",
+  "evaluation_goals",
+  "evaluation_competency",
   "approvals",
   "teams",
   "teams_compare",
@@ -79,6 +85,9 @@ export const deriveRoleFromDbCodes = (
 
 export const HR_FULL_UI_PERMISSIONS = [
   ...ALL_MODULE_KEYS,
+  "evaluation_assign",
+  "evaluation_goals",
+  "evaluation_competency",
   "kpi_own",
   "kpi_team",
   "teams_compare",
