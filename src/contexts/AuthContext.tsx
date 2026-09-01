@@ -576,7 +576,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setTimeout(() => {
           buildAuthUserFromSupabase(session.user.id, session.user.email ?? "").then(u => {
             if (u) {
-              setUser(u);
+              applyUser(u);
               startBusinessSyncs(u);
             }
           });
@@ -592,14 +592,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         deactivateTeamsSync();
         clearBusinessSyncTimers();
         syncKeyRef.current = null;
+        clearCachedAuthUser();
         setUser(null);
       }
     });
 
-    // Initial hydration from Supabase session. `loading` is released after a
-    // short safety window so the UI (login page) is never stuck on a spinner,
-    // but the session resolution keeps running in the background and applies
-    // the user as soon as the (possibly cold) database answers.
+    // Initial hydration from Supabase session. A cached profile is applied
+    // immediately so a reload never waits on the database; the fresh copy is
+    // fetched right after and replaces it.
     let settled = false;
     const finish = () => { if (!settled) { settled = true; setLoading(false); } };
     const safetyTimer = window.setTimeout(finish, 4000);
@@ -607,6 +607,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          const cached = readCachedAuthUser(session.user.id);
+          if (cached) {
+            setUser(cached);
+            finish();
+            startBusinessSyncs(cached);
+          }
           const u = (await fetchAuthUserDirectWithRetry(
             session.user.id,
             session.user.email ?? "",
@@ -618,7 +624,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             "Sessiya məlumatları gecikdi",
           ).catch(() => null);
           if (u) {
-            setUser(u);
+            applyUser(u);
             startBusinessSyncs(u);
           }
         }
@@ -631,6 +637,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         finish();
       }
     })();
+
 
     return () => subscription.subscription.unsubscribe();
   }, []);
