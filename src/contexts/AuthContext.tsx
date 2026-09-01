@@ -65,6 +65,40 @@ export const useAuth = () => useContext(AuthContext);
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
+// ---------------------------------------------------------------------------
+// Local auth-profile cache.
+// After a code change every open tab reloads at once; if each reload must wait
+// for the profile/roles RPC before showing anything, sign-in feels slow or
+// fails. The last resolved profile is cached per user id so a reload (or a
+// repeat login) restores instantly while the fresh copy is fetched in the
+// background.
+// ---------------------------------------------------------------------------
+const AUTH_CACHE_KEY = "auth_user_cache_v1";
+
+const readCachedAuthUser = (userId: string): AuthUser | null => {
+  try {
+    const raw = localStorage.getItem(AUTH_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { userId?: string; user?: AuthUser };
+    if (!parsed?.userId || parsed.userId !== userId || !parsed.user) return null;
+    return parsed.user;
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedAuthUser = (user: AuthUser | null) => {
+  try {
+    if (!user?.supabaseUserId) return;
+    localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify({ userId: user.supabaseUserId, user }));
+  } catch { /* noop */ }
+};
+
+const clearCachedAuthUser = () => {
+  try { localStorage.removeItem(AUTH_CACHE_KEY); } catch { /* noop */ }
+};
+
+
 type PasswordSignInData = {
   access_token: string;
   refresh_token: string;
