@@ -2,9 +2,10 @@ import { useState, useMemo } from "react";
 import { ClipboardCheck, ChevronRight, ChevronLeft, Award, LayoutGrid } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
-import { KpiEvaluationSection } from "@/components/evaluation/KpiEvaluationSection";
+import GoalEvaluationQueue from "@/components/evaluation/GoalEvaluationQueue";
 import { CompetencyEvaluationSection } from "@/components/evaluation/CompetencyEvaluationSection";
-import { useSubKpis } from "@/lib/kpiEvaluationStore";
+import { isEvaluated } from "@/lib/kpiEvaluationStore";
+import { useEvaluatorGoals } from "@/lib/goalEvaluationQueue";
 import { MOCK_USER_ID, buildPeerAssignments, CURRENT_CYCLE_ID } from "@/data/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -47,9 +48,9 @@ const HubCard = ({
 
 const UserEvaluationPage = () => {
   const [view, setView] = useState<View>("hub");
-  const { hasPermission } = useAuth();
-  const items = useSubKpis(MOCK_USER_ID);
-  const evalCount = useMemo(() => items.length, [items]);
+  const { hasPermission, user } = useAuth();
+  const items = useEvaluatorGoals(user);
+  const evalCount = useMemo(() => items.filter(k => !isEvaluated(k)).length, [items]);
   const peerCount = useMemo(
     () => (buildPeerAssignments(CURRENT_CYCLE_ID)[MOCK_USER_ID] || []).length,
     [],
@@ -85,7 +86,7 @@ const UserEvaluationPage = () => {
                   icon={ClipboardCheck}
                   title="Hədəf qiymətləndirmə"
                   subtitle="Sizə aid KPI kartlarındakı hədəfləri qiymətləndirin və nəticələri qeyd edin."
-                  badge={`${evalCount} hədəf`}
+                  badge={`${evalCount} gözləyən`}
                   gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40"
                   onClick={() => setView("evaluate")}
                 />
@@ -115,10 +116,10 @@ const UserEvaluationPage = () => {
               badge="Qiymətləndirmə"
               icon={ClipboardCheck}
               title="Hədəf qiymətləndirmə"
-              subtitle="Sizə aid KPI kartlarını açın və hər bir hədəf üzrə qiymətləndirmə aparın."
+              subtitle="Qiymətləndirmə mərhələsində olan kartların, sizin qiymətləndirməli olduğunuz hədəfləri."
             />
             <div className="mt-5">
-              <KpiEvaluationSection assigneeId={MOCK_USER_ID} />
+              <GoalEvaluationQueue />
             </div>
           </>
         )}

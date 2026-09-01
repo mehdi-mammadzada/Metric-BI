@@ -21,9 +21,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getCurrentEmployeeId } from "@/lib/scope";
 import { getEmployees } from "@/lib/orgStore";
 import {
-  useSubKpis, getKpiCardsFor, calcCompletion, isEvaluated, type SubKpi, type KpiCardInfo,
+  calcCompletion, isEvaluated, type SubKpi,
 } from "@/lib/kpiEvaluationStore";
-import { KpiEvalDialog } from "@/components/evaluation/KpiEvaluationSection";
+import { useEvaluatorGoals, type EvaluatorGoalRow } from "@/lib/goalEvaluationQueue";
+import GoalEvaluationQueue from "@/components/evaluation/GoalEvaluationQueue";
 import { RatingCircles } from "@/components/evaluation/RatingCircles";
 import CascadeDistributeDialog from "@/components/kpi/CascadeDistributeDialog";
 import AssignGoalDialog from "@/components/kpi/AssignGoalDialog";
@@ -171,7 +172,7 @@ const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
   const sharedCards = useVisibleSharedKpiCards();
   const { user, hasPermission } = useAuth();
   const meId = getCurrentEmployeeId(user);
-  const evalItems = useSubKpis(meId || "");
+  const evalItems = useEvaluatorGoals(user);
   const competencyId = meId || MOCK_USER_ID;
   const peerCount = useMemo(
     () => (buildPeerAssignments(CURRENT_CYCLE_ID)[competencyId] || []).length,
@@ -188,7 +189,7 @@ const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
     },
     [rows, sharedCards, user],
   );
-  const evalCount = evalItems.length;
+  const evalCount = evalItems.filter(k => !isEvaluated(k)).length;
 
   return (
     <>
@@ -211,7 +212,7 @@ const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
           icon={ClipboardCheck}
           title="Hədəf qiymətləndirmə"
           subtitle="Sizə aid KPI kartlarındakı hədəfləri qiymətləndirin və nəticələri qeyd edin."
-          badge={`${evalCount} hədəf`}
+          badge={`${evalCount} gözləyən`}
           gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40"
           onClick={() => onOpen("evaluate")}
         />}
@@ -579,157 +580,19 @@ const CompetencyView = () => {
   );
 };
 
-const EvaluateView = () => {
-  const { user } = useAuth();
-  const meId = getCurrentEmployeeId(user);
-  const items = useSubKpis(meId || "");
-  const cards = useMemo(() => (meId ? getKpiCardsFor(meId) : []), [meId]);
-  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
-  const [editing, setEditing] = useState<SubKpi | null>(null);
-
-  if (!cards.length) {
-    return (
-      <>
-        <PageHero
-          badge="Rəhbər Paneli"
-          icon={ClipboardCheck}
-          title="Hədəf qiymətləndirmə"
-          subtitle="Sizə aid KPI kartları və hədəflər burada göstərilir."
-        />
-        <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground">
-          Sizə aid KPI kartı yoxdur.
-        </div>
-      </>
-    );
-  }
-
-  const totals = {
-    done: items.filter(isEvaluated).length,
-    pending: items.filter(k => !isEvaluated(k)).length,
-    cards: cards.length,
-  };
-
-  return (
-    <>
-      <PageHero
-        badge="Rəhbər Paneli"
-        icon={ClipboardCheck}
-        title="Hədəf qiymətləndirmə"
-        subtitle="Sizə aid KPI kartlarını açın və hər bir hədəf üzrə qiymətləndirmə aparın."
-      />
-
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <MiniHeaderStat icon={Award} label="Kart" value={totals.cards} accent="text-indigo-600" />
-        <MiniHeaderStat icon={CheckCircle2} label="Qiymətləndirilib" value={totals.done} accent="text-emerald-600" />
-        <MiniHeaderStat icon={Clock} label="Gözləyir" value={totals.pending} accent="text-amber-600" />
-      </div>
-
-      <div className="space-y-3">
-        {cards.map((c: KpiCardInfo) => {
-          const cardItems = items.filter(k => k.cardId === c.id);
-          const done = cardItems.filter(isEvaluated).length;
-          const isOpen = openMap[c.id] ?? true;
-          return (
-            <div key={c.id} className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
-              <button
-                onClick={() => setOpenMap(o => ({ ...o, [c.id]: !isOpen }))}
-                className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-secondary/40 transition-colors"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  {isOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                    <ClipboardCheck className="w-4 h-4" />
-                  </div>
-                  <span className="font-semibold text-foreground truncate">{withKartSuffix(c.name)}</span>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                    {cardItems.length} hədəf
-                  </span>
-                  <span className="text-[11px] text-muted-foreground shrink-0">{c.period}</span>
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  {done}/{cardItems.length} qiymətləndirilib
-                </div>
-              </button>
-
-              {isOpen && (
-                <div className="border-t border-border overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-emerald-600 text-white">
-                      <tr>
-                        <th className="text-left px-4 py-3 font-medium">Hədəf</th>
-                        <th className="text-right px-4 py-3 font-medium">Hədəf</th>
-                        <th className="text-right px-4 py-3 font-medium">Faktiki</th>
-                        <th className="text-right px-4 py-3 font-medium">İcra %</th>
-                        <th className="text-center px-4 py-3 font-medium">Çəki</th>
-                        <th className="text-center px-4 py-3 font-medium">Yekun bal</th>
-                        <th className="text-center px-4 py-3 font-medium">Status</th>
-                        <th className="text-right px-4 py-3 font-medium">Əməliyyat</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {cardItems.map(k => {
-                        const ev = isEvaluated(k);
-                        const pct = calcCompletion(k);
-                        return (
-                          <tr key={k.id} className="border-t border-border hover:bg-secondary/20">
-                            <td className="px-4 py-3">
-                              <p className="font-medium text-foreground">{withKartSuffix(k.name)}</p>
-                              <p className="text-xs text-muted-foreground line-clamp-1">{k.description}</p>
-                            </td>
-                            <td className="px-4 py-3 text-right text-foreground tabular-nums">{fmtEval(k.target)} {k.unit}</td>
-                            <td className="px-4 py-3 text-right text-foreground tabular-nums">
-                              {k.actual !== undefined ? `${fmtEval(k.actual)} ${k.unit}` : <span className="text-muted-foreground">—</span>}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {ev ? (
-                                <span className={`inline-flex items-center justify-end px-2 py-0.5 rounded-md text-xs font-semibold tabular-nums ${pctTone(pct)}`}>
-                                  {pct.toFixed(0)}%
-                                </span>
-                              ) : <span className="text-muted-foreground">—</span>}
-                            </td>
-                            <td className="px-4 py-3 text-center text-muted-foreground tabular-nums">{k.weight}%</td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center justify-center">
-                                {ev ? (
-                                  <RatingCircles value={k.evaluatedScore ?? 0} size="sm" readOnly showLabel={false} />
-                                ) : <span className="text-muted-foreground text-xs">—</span>}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              {ev ? (
-                                <Badge className="bg-zone-green-bg text-zone-green-text hover:bg-zone-green-bg gap-1">
-                                  <CheckCircle2 className="w-3 h-3" /> Qiymətləndirilib
-                                </Badge>
-                              ) : (
-                                <Badge className="bg-zone-yellow-bg text-zone-yellow-text hover:bg-zone-yellow-bg gap-1">
-                                  <Clock className="w-3 h-3" /> Gözləyir
-                                </Badge>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <Button size="sm" variant={ev ? "outline" : "default"} onClick={() => setEditing(k)}>
-                                {ev ? "Bax / Düzəliş et" : "Qiymətləndir"}
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {cardItems.length === 0 && (
-                        <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-sm">Bu kartda hədəf yoxdur.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                  </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {editing && <KpiEvalDialog item={editing} onClose={() => setEditing(null)} />}
-    </>
-  );
-};
+const EvaluateView = () => (
+  <>
+    <PageHero
+      badge="Rəhbər Paneli"
+      icon={ClipboardCheck}
+      title="Hədəf qiymətləndirmə"
+      subtitle="Lifecycle üzrə qiymətləndirmə mərhələsinə keçmiş kartların, sizin qiymətləndiricisi olduğunuz hədəfləri."
+    />
+    <div className="mt-5">
+      <GoalEvaluationQueue />
+    </div>
+  </>
+);
 
 const MiniHeaderStat = ({ icon: Icon, label, value, accent }: { icon: any; label: string; value: number; accent?: string }) => (
   <div className="rounded-xl border border-border bg-card p-3 flex items-center gap-3">
