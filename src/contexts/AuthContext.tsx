@@ -703,6 +703,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await signInWithPasswordFast(lower, password, LOGIN_TIMEOUT_MS);
 
     if (!error && data?.user) {
+      // Fast path: this user has signed in on this browser before, so the
+      // cached profile lets us finish login immediately (no DB wait) and the
+      // fresh profile is fetched in the background.
+      const cached = readCachedAuthUser(data.user.id);
+      if (cached) {
+        const cachedSession = await withPromiseTimeout(
+          supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token }),
+          20000,
+          "Sessiya yadda saxlanmadı",
+        ).catch((sessionError) => ({ data: { session: null, user: null }, error: sessionError }));
+        if (!cachedSession.error && cachedSession.data.session) {
+          try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
+          setUser(cached);
+          startBusinessSyncs(cached);
+          void logAudit({ organizationId: cached.currentOrgId ?? null, action: "login", module: "auth", entityType: "user", entityId: cached.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
+          void fetchAuthUserDirectWithRetry(data.user.id, data.user.email ?? lower, data.access_token, 12000, 3)
+            .then((fresh) => { if (fresh) { applyUser(fresh); startBusinessSyncs(fresh); } });
+          return { success: true };
+        }
+      }
+
       // Resolve the profile with the raw access token before touching the SDK
       // auth lock. In framed previews setSession uses asynchronous brokered
       // storage; awaiting it here can race with onAuthStateChange and block the
@@ -712,6 +733,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         46000,
         "İstifadəçi məlumatları alınmadı"
       ).catch(() => null);
+
 
       let u = directUser ?? buildImmediateAuthUser(data, lower);
       if (!u) {
