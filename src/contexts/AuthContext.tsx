@@ -510,15 +510,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Start heavy data sync after the app has navigated, and stagger modules so
     // login/page paint is never blocked by multiple large database hydrations.
-    schedule(() => { void activateOrgSync(orgId, uid); }, 800);
-    schedule(() => { void activatePhase1Sync(orgId); }, 1200);
-    schedule(() => { void activateTeamsSync(orgId); }, 1500);
-    schedule(() => { void activateKpiCardsSync(orgId); }, 1800);
-    schedule(() => { void activateApprovalsSync(orgId); }, 2100);
-    schedule(() => { void activatePayrollSync(orgId); }, 2400);
-    schedule(() => { void activateLifecycleSync(orgId); }, 2700);
-    schedule(() => { activateNotificationsSync(orgId); }, 3000);
-    schedule(() => { void hydrateLanguageFromProfile(uid); }, 3300);
+    // The gaps are intentionally wide: on a small database instance a burst of
+    // parallel hydrations starves the connection pool and makes sign-in time out.
+    schedule(() => { void activateOrgSync(orgId, uid); }, 1500);
+    schedule(() => { void activatePhase1Sync(orgId); }, 3000);
+    schedule(() => { void activateTeamsSync(orgId); }, 4500);
+    schedule(() => { void activateKpiCardsSync(orgId); }, 6000);
+    schedule(() => { void activateApprovalsSync(orgId); }, 7500);
+    schedule(() => { void activatePayrollSync(orgId); }, 9000);
+    schedule(() => { void activateLifecycleSync(orgId); }, 10500);
+    schedule(() => { activateNotificationsSync(orgId); }, 12000);
+    schedule(() => { void hydrateLanguageFromProfile(uid); }, 13500);
+
   };
 
   useEffect(() => {
