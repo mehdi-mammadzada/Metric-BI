@@ -65,6 +65,40 @@ export const useAuth = () => useContext(AuthContext);
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
+// ---------------------------------------------------------------------------
+// Local auth-profile cache.
+// After a code change every open tab reloads at once; if each reload must wait
+// for the profile/roles RPC before showing anything, sign-in feels slow or
+// fails. The last resolved profile is cached per user id so a reload (or a
+// repeat login) restores instantly while the fresh copy is fetched in the
+// background.
+// ---------------------------------------------------------------------------
+const AUTH_CACHE_KEY = "auth_user_cache_v1";
+
+const readCachedAuthUser = (userId: string): AuthUser | null => {
+  try {
+    const raw = localStorage.getItem(AUTH_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { userId?: string; user?: AuthUser };
+    if (!parsed?.userId || parsed.userId !== userId || !parsed.user) return null;
+    return parsed.user;
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedAuthUser = (user: AuthUser | null) => {
+  try {
+    if (!user?.supabaseUserId) return;
+    localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify({ userId: user.supabaseUserId, user }));
+  } catch { /* noop */ }
+};
+
+const clearCachedAuthUser = () => {
+  try { localStorage.removeItem(AUTH_CACHE_KEY); } catch { /* noop */ }
+};
+
+
 type PasswordSignInData = {
   access_token: string;
   refresh_token: string;
@@ -486,10 +520,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const initialHydrationRef = useRef(true);
   const loginInFlightRef = useRef(false);
 
+  // Apply a resolved user and keep the local cache in sync.
+  const applyUser = (u: AuthUser) => {
+    setUser(u);
+    writeCachedAuthUser(u);
+  };
+
   const clearBusinessSyncTimers = () => {
     syncTimersRef.current.forEach((timer) => window.clearTimeout(timer));
     syncTimersRef.current = [];
   };
+
 
   const startBusinessSyncs = (u: AuthUser) => {
     if (!u.currentOrgId || !u.supabaseUserId) return;
@@ -535,7 +576,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setTimeout(() => {
           buildAuthUserFromSupabase(session.user.id, session.user.email ?? "").then(u => {
             if (u) {
-              setUser(u);
+              applyUser(u);
               startBusinessSyncs(u);
             }
           });
@@ -551,14 +592,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         deactivateTeamsSync();
         clearBusinessSyncTimers();
         syncKeyRef.current = null;
+        clearCachedAuthUser();
         setUser(null);
       }
     });
 
-    // Initial hydration from Supabase session. `loading` is released after a
-    // short safety window so the UI (login page) is never stuck on a spinner,
-    // but the session resolution keeps running in the background and applies
-    // the user as soon as the (possibly cold) database answers.
+    // Initial hydration from Supabase session. A cached profile is applied
+    // immediately so a reload never waits on the database; the fresh copy is
+    // fetched right after and replaces it.
     let settled = false;
     const finish = () => { if (!settled) { settled = true; setLoading(false); } };
     const safetyTimer = window.setTimeout(finish, 4000);
@@ -566,6 +607,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          const cached = readCachedAuthUser(session.user.id);
+          if (cached) {
+            setUser(cached);
+            finish();
+            startBusinessSyncs(cached);
+          }
           const u = (await fetchAuthUserDirectWithRetry(
             session.user.id,
             session.user.email ?? "",
@@ -577,7 +624,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             "Sessiya məlumatları gecikdi",
           ).catch(() => null);
           if (u) {
-            setUser(u);
+            applyUser(u);
             startBusinessSyncs(u);
           }
         }
@@ -590,6 +637,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         finish();
       }
     })();
+
 
     return () => subscription.subscription.unsubscribe();
   }, []);
@@ -655,6 +703,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await signInWithPasswordFast(lower, password, LOGIN_TIMEOUT_MS);
 
     if (!error && data?.user) {
+      // Fast path: this user has signed in on this browser before, so the
+      // cached profile lets us finish login immediately (no DB wait) and the
+      // fresh profile is fetched in the background.
+      const cached = readCachedAuthUser(data.user.id);
+      if (cached) {
+        const cachedSession = await withPromiseTimeout(
+          supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token }),
+          20000,
+          "Sessiya yadda saxlanmadı",
+        ).catch((sessionError) => ({ data: { session: null, user: null }, error: sessionError }));
+        if (!cachedSession.error && cachedSession.data.session) {
+          try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
+          setUser(cached);
+          startBusinessSyncs(cached);
+          void logAudit({ organizationId: cached.currentOrgId ?? null, action: "login", module: "auth", entityType: "user", entityId: cached.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
+          void fetchAuthUserDirectWithRetry(data.user.id, data.user.email ?? lower, data.access_token, 12000, 3)
+            .then((fresh) => { if (fresh) { applyUser(fresh); startBusinessSyncs(fresh); } });
+          return { success: true };
+        }
+      }
+
       // Resolve the profile with the raw access token before touching the SDK
       // auth lock. In framed previews setSession uses asynchronous brokered
       // storage; awaiting it here can race with onAuthStateChange and block the
@@ -664,6 +733,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         46000,
         "İstifadəçi məlumatları alınmadı"
       ).catch(() => null);
+
 
       let u = directUser ?? buildImmediateAuthUser(data, lower);
       if (!u) {
@@ -702,8 +772,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (u) {
-          setUser(u);
+          applyUser(u);
           startBusinessSyncs(u);
+
           void logAudit({ organizationId: u.currentOrgId ?? null, action: "login", module: "auth", entityType: "user", entityId: u.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
           return { success: true };
         }
@@ -731,7 +802,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     void logAudit({ organizationId: user?.currentOrgId ?? null, action: "logout", module: "auth", entityType: "user", entityId: user?.supabaseUserId ?? null });
+    clearCachedAuthUser();
     setUser(null);
+
     deactivateOrgSync();
     deactivateKpiCardsSync();
     deactivateApprovalsSync();
