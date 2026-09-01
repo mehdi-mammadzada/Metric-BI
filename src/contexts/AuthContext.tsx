@@ -772,8 +772,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (u) {
-          setUser(u);
+          applyUser(u);
           startBusinessSyncs(u);
+
           void logAudit({ organizationId: u.currentOrgId ?? null, action: "login", module: "auth", entityType: "user", entityId: u.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
           return { success: true };
         }
