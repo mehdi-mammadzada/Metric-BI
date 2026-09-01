@@ -172,7 +172,7 @@ const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
   const sharedCards = useVisibleSharedKpiCards();
   const { user, hasPermission } = useAuth();
   const meId = getCurrentEmployeeId(user);
-  const evalItems = useSubKpis(meId || "");
+  const evalItems = useEvaluatorGoals(user);
   const competencyId = meId || MOCK_USER_ID;
   const peerCount = useMemo(
     () => (buildPeerAssignments(CURRENT_CYCLE_ID)[competencyId] || []).length,
@@ -189,7 +189,7 @@ const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
     },
     [rows, sharedCards, user],
   );
-  const evalCount = evalItems.length;
+  const evalCount = evalItems.filter(k => !isEvaluated(k)).length;
 
   return (
     <>
@@ -212,7 +212,7 @@ const HubView = ({ onOpen }: { onOpen: (v: View) => void }) => {
           icon={ClipboardCheck}
           title="Hədəf qiymətləndirmə"
           subtitle="Sizə aid KPI kartlarındakı hədəfləri qiymətləndirin və nəticələri qeyd edin."
-          badge={`${evalCount} hədəf`}
+          badge={`${evalCount} gözləyən`}
           gradient="from-emerald-500/15 via-emerald-500/5 to-transparent border-emerald-400/40"
           onClick={() => onOpen("evaluate")}
         />}
