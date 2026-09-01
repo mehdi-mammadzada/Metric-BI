@@ -21,7 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getCurrentEmployeeId } from "@/lib/scope";
 import { getEmployees } from "@/lib/orgStore";
 import {
-  useSubKpis, calcCompletion, isEvaluated, type SubKpi,
+  calcCompletion, isEvaluated, type SubKpi,
 } from "@/lib/kpiEvaluationStore";
 import { useEvaluatorGoals, type EvaluatorGoalRow } from "@/lib/goalEvaluationQueue";
 import { KpiEvalDialog } from "@/components/evaluation/KpiEvaluationSection";
