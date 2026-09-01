@@ -182,18 +182,25 @@ export const KpiEvaluationSection = ({ assigneeId }: Props) => {
           </div>
       </div>
 
-      {editing && <KpiEvalDialog item={editing} onClose={() => setEditing(null)} />}
+      {editing && (
+        <KpiEvalDialog item={editing} readOnly={isEvaluated(editing)} onClose={() => setEditing(null)} />
+      )}
     </div>
   );
 };
 
-export const KpiEvalDialog = ({ item, onClose }: { item: SubKpi; onClose: () => void }) => {
+export const KpiEvalDialog = ({
+  item,
+  onClose,
+  readOnly = false,
+}: { item: SubKpi; onClose: () => void; readOnly?: boolean }) => {
   const [actual, setActual] = useState<string>(item.actual !== undefined ? String(item.actual) : "");
   const [score, setScore] = useState<number>(item.evaluatedScore ?? 0);
   const [comment, setComment] = useState(item.selfComment || "");
   const [challenges, setChallenges] = useState(item.challenges || "");
   const [evidence, setEvidence] = useState(item.evidence || "");
   const [nextPlan, setNextPlan] = useState(item.nextPlan || "");
+
 
   const actualNum = actual === "" ? undefined : Number(actual.replace(",", ".")) || 0;
   const livePct = actualNum === undefined ? 0 : calcCompletion({ ...item, actual: actualNum });
