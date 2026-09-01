@@ -520,10 +520,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const initialHydrationRef = useRef(true);
   const loginInFlightRef = useRef(false);
 
+  // Apply a resolved user and keep the local cache in sync.
+  const applyUser = (u: AuthUser) => {
+    setUser(u);
+    writeCachedAuthUser(u);
+  };
+
   const clearBusinessSyncTimers = () => {
     syncTimersRef.current.forEach((timer) => window.clearTimeout(timer));
     syncTimersRef.current = [];
   };
+
 
   const startBusinessSyncs = (u: AuthUser) => {
     if (!u.currentOrgId || !u.supabaseUserId) return;
