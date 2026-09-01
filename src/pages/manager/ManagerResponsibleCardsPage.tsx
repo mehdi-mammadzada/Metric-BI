@@ -559,7 +559,7 @@ const EvaluateView = () => {
         <PageHero
           badge="Rəhbər Paneli"
           icon={ClipboardCheck}
-          title="Hədəf qiymətləndirmə"
+          title="Hədəf & səriştə qiymətləndirmə"
           subtitle="Sizə aid KPI kartları və hədəflər burada göstərilir."
         />
         <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground">
