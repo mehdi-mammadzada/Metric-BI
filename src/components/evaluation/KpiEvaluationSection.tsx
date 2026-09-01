@@ -260,6 +260,7 @@ export const KpiEvalDialog = ({
               <input
                 type="number"
                 value={actual}
+                disabled={readOnly}
                 onChange={e => setActual(e.target.value)}
                 placeholder={`Faktiki dəyəri daxil edin (${item.unit})`}
                 className="mt-1 w-full px-3 py-2 text-sm border border-border rounded-lg bg-background"
@@ -279,7 +280,7 @@ export const KpiEvalDialog = ({
           <div className="p-3 rounded-lg border border-border bg-background">
             <label className="text-sm font-medium text-foreground">Yekun bal (0–5)</label>
             <div className="mt-2">
-              <RatingCircles value={score} onChange={setScore} />
+              <RatingCircles value={score} onChange={readOnly ? undefined : setScore} readOnly={readOnly} />
             </div>
             {actualNum !== undefined && (
               <p className="text-xs text-muted-foreground mt-2">
@@ -320,6 +321,7 @@ export const KpiEvalDialog = ({
             <label className="text-sm font-medium text-foreground">Nəticə ilə bağlı şərh</label>
             <Textarea
               value={comment}
+              disabled={readOnly}
               onChange={e => setComment(e.target.value)}
               rows={2}
               placeholder="Bu dövrdə əldə olunan əsas nəticələrin qısa izahı..."
@@ -331,6 +333,7 @@ export const KpiEvalDialog = ({
             <label className="text-sm font-medium text-foreground">Qarşılaşılan çətinliklər</label>
             <Textarea
               value={challenges}
+              disabled={readOnly}
               onChange={e => setChallenges(e.target.value)}
               rows={2}
               placeholder="Hədəfin yerinə yetirilməsinə mane olan amillər..."
@@ -343,6 +346,7 @@ export const KpiEvalDialog = ({
             <input
               type="text"
               value={evidence}
+              disabled={readOnly}
               onChange={e => setEvidence(e.target.value)}
               placeholder="Hesabat nömrəsi, fayl adı və ya keçid..."
               className="mt-1 w-full px-3 py-2 text-sm border border-border rounded-lg bg-background"
@@ -353,6 +357,7 @@ export const KpiEvalDialog = ({
             <label className="text-sm font-medium text-foreground">Növbəti dövr üçün tədbir planı</label>
             <Textarea
               value={nextPlan}
+              disabled={readOnly}
               onChange={e => setNextPlan(e.target.value)}
               rows={2}
               placeholder="Növbəti dövrdə nəticəni yaxşılaşdırmaq üçün konkret addımlar..."
@@ -361,10 +366,10 @@ export const KpiEvalDialog = ({
           </div>
         </div>
         <div className="flex items-center justify-end gap-2 p-4 border-t border-border sticky bottom-0 bg-card">
-          <Button variant="outline" onClick={onClose}>Ləğv et</Button>
-          <Button onClick={submit} className="gap-1 bg-blue-700 hover:bg-blue-800 text-white">
+          <Button variant="outline" onClick={onClose}>{readOnly ? "Bağla" : "Ləğv et"}</Button>
+          {!readOnly && <Button onClick={submit} className="gap-1 bg-blue-700 hover:bg-blue-800 text-white">
             <CheckCircle2 className="w-4 h-4" /> Təsdiqlə
-          </Button>
+          </Button>}
         </div>
       </div>
     </div>
