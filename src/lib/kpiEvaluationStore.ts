@@ -91,7 +91,22 @@ export const saveSubKpiEvaluation = (
   persist(list.map(k => (k.id === id ? { ...k, ...patch, submittedAt: Date.now() } : k)));
 };
 
+export const useAllSubKpis = (): SubKpi[] => {
+  const [list, setList] = useState<SubKpi[]>(() => load());
+  useEffect(() => {
+    const refresh = () => setList(load());
+    window.addEventListener(EVT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(EVT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  return list;
+};
+
 export const useSubKpis = (assigneeId: string): SubKpi[] => {
+
   const [list, setList] = useState<SubKpi[]>(() => getSubKpis(assigneeId));
   useEffect(() => {
     const refresh = () => setList(getSubKpis(assigneeId));
