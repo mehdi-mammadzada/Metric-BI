@@ -14,12 +14,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import PeriodRangePicker, { emptyPeriodSelection, resolvePeriod, type PeriodSelection } from "@/components/kpi/PeriodRangePicker";
 import { toast } from "sonner";
 import { useSampleResultsSeed } from "@/lib/sampleResultsSeed";
 import { useBonusEmployees } from "@/lib/bonusEmployeesData";
 
 
-type Periodicity = "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly" | "other";
+
 
 export interface SubKpi { name: string; weight: number; evaluator: string; score: number | null; }
 export interface Employee {
@@ -51,13 +52,7 @@ const BonusPage = ({ employeesOverride, hideChrome, hideCalcButton, heroTitle, h
   const derived = useBonusEmployees();
   const employees = employeesOverride || derived;
 
-  const [periodicity, setPeriodicity] = useState<Periodicity | "">("monthly");
-  const [weekDate, setWeekDate] = useState<Date | undefined>();
-  const [year, setYear] = useState<string>("2026");
-  const [month, setMonth] = useState<string>("5");
-  const [quarter, setQuarter] = useState<string>("");
-  const [half, setHalf] = useState<string>("");
-  const [range, setRange] = useState<{ from?: Date; to?: Date }>({});
+  const [period, setPeriod] = useState<PeriodSelection>(() => ({ ...emptyPeriodSelection("monthly"), year: "2026", month: "5" }));
   // Default auto-calculated view — May 2026 (has full data)
   const defaultLabel = "May 2026";
   const defaultRows: CalcRow[] = employees.map(emp => {
@@ -73,36 +68,9 @@ const BonusPage = ({ employeesOverride, hideChrome, hideCalcButton, heroTitle, h
   const [missingEmployees, setMissingEmployees] = useState<{ emp: Employee; missing: SubKpi[] }[]>([]);
   const [detailEmp, setDetailEmp] = useState<CalcRow | null>(null);
 
-  const resetSelection = () => {
-    setWeekDate(undefined); setYear(""); setMonth(""); setQuarter(""); setHalf(""); setRange({});
-    setResult(null); setUsedLabel("");
-  };
-
-  const computeLabel = (): string => {
-    if (periodicity === "weekly" && weekDate) {
-      const s = startOfWeek(weekDate, { weekStartsOn: 1 });
-      const e = endOfWeek(weekDate, { weekStartsOn: 1 });
-      return `${format(s, "d MMM", { locale: az })} – ${format(e, "d MMM yyyy", { locale: az })}`;
-    }
-    if (periodicity === "monthly" && year && month) return `${MONTHS_AZ[Number(month) - 1]} ${year}`;
-    if (periodicity === "quarterly" && year && quarter) return `${year} Rüb ${quarter}`;
-    if (periodicity === "halfyear" && year && half) return `${year} ${half} yarımil`;
-    if (periodicity === "yearly" && year) return year;
-    if (periodicity === "other" && range.from && range.to) {
-      return `${format(range.from, "d MMM yyyy", { locale: az })} – ${format(range.to, "d MMM yyyy", { locale: az })}`;
-    }
-    return "";
-  };
-
-  const isPeriodReady = (): boolean => {
-    if (periodicity === "weekly") return !!weekDate;
-    if (periodicity === "monthly") return !!year && !!month;
-    if (periodicity === "quarterly") return !!year && !!quarter;
-    if (periodicity === "halfyear") return !!year && !!half;
-    if (periodicity === "yearly") return !!year;
-    if (periodicity === "other") return !!range.from && !!range.to;
-    return false;
-  };
+  const resolvedPeriod = useMemo(() => resolvePeriod(period), [period]);
+  const computeLabel = (): string => resolvedPeriod?.label || "";
+  const isPeriodReady = (): boolean => !!resolvedPeriod;
 
   const calcRows = (label: string, force: boolean): CalcRow[] => {
     const missingIds = MISSING_BY_LABEL[label] || [];
@@ -149,12 +117,7 @@ const BonusPage = ({ employeesOverride, hideChrome, hideCalcButton, heroTitle, h
     toast.success(`${evaluators.size} qiymətləndirən şəxsə bildiriş göndərildi`);
   };
 
-  const renderPeriodPicker = () => {
-    if (!periodicity) {
-      return <Button variant="outline" className="w-full justify-start" disabled><CalendarIcon className="mr-2 h-4 w-4" />Əvvəlcə dövrlüyü seçin</Button>;
-    }
-    if (periodicity === "weekly") {
-      return (
+  return (
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" className={cn("w-full justify-start", !weekDate && "text-muted-foreground")}>
@@ -264,25 +227,8 @@ const BonusPage = ({ employeesOverride, hideChrome, hideCalcButton, heroTitle, h
         )}
 
         <div className="bg-card rounded-xl border border-border p-4">
-          <div className="grid grid-cols-1 md:grid-cols-[200px_1fr_auto] gap-3 items-end">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Dövrlük</label>
-              <Select value={periodicity} onValueChange={(v) => { setPeriodicity(v as Periodicity); resetSelection(); }}>
-                <SelectTrigger><SelectValue placeholder="Seçin" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="weekly">Həftəlik</SelectItem>
-                  <SelectItem value="monthly">Aylıq</SelectItem>
-                  <SelectItem value="quarterly">Rüblük</SelectItem>
-                  <SelectItem value="halfyear">Yarımillik</SelectItem>
-                  <SelectItem value="yearly">İllik</SelectItem>
-                  <SelectItem value="other">Digər</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Konkret dövr</label>
-              {renderPeriodPicker()}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(400px,460px)_1fr_auto] gap-3 items-end">
+            <PeriodRangePicker value={period} onChange={(v) => { setPeriod(v); setResult(null); setUsedLabel(""); }} />
             <div className="flex items-center gap-2">
               {!hideCalcButton && (
                 <Button onClick={handleCalculate} disabled={!isPeriodReady()}>
