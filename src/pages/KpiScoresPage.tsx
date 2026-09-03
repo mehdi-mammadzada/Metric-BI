@@ -82,18 +82,7 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
   }, [employees]);
   const cardOptions = useMemo(() => Array.from(new Set(cards.map(c => c.name).filter(Boolean))), [cards]);
 
-  const [periodicity, setPeriodicity] = useState<Periodicity>("monthly");
-  const [year, setYear] = useState<string>(String(new Date().getFullYear()));
-  const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1));
-  const [quarter, setQuarter] = useState<string>("");
-  const [half, setHalf] = useState<string>("");
-  const [weekDate, setWeekDate] = useState<Date | undefined>();
-  const [range, setRange] = useState<{ from?: Date; to?: Date }>({});
-
-  const resetSelection = () => {
-    setYear(String(new Date().getFullYear())); setMonth(""); setQuarter(""); setHalf("");
-    setWeekDate(undefined); setRange({});
-  };
+  const [period, setPeriod] = useState<PeriodSelection>(() => emptyPeriodSelection("monthly"));
 
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [cardSearch, setCardSearch] = useState("");
@@ -108,37 +97,7 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
     setSelectedCards(s => (s.includes(c) ? s.filter(x => x !== c) : [...s, c]));
   const toggleAll = () => setSelectedCards(allSelected ? [] : [...cardOptions]);
 
-  const resolvedPeriod = useMemo(() => {
-    const fmtDate = (d: Date) => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
-    if (periodicity === "weekly" && weekDate) {
-      const s = startOfWeek(weekDate, { weekStartsOn: 1 });
-      const e = endOfWeek(weekDate, { weekStartsOn: 1 });
-      return { label: `${format(s, "d MMM", { locale: az })} – ${format(e, "d MMM yyyy", { locale: az })}`, start: fmtDate(s), end: fmtDate(e) };
-    }
-    if (periodicity === "monthly" && year && month) {
-      const yr = Number(year); const mIdx = Number(month) - 1;
-      const s = new Date(yr, mIdx, 1); const e = new Date(yr, mIdx, lastDayOfMonth(yr, mIdx));
-      return { label: `${MONTHS[mIdx]} ${yr}`, start: fmtDate(s), end: fmtDate(e) };
-    }
-    if (periodicity === "quarterly" && year && quarter) {
-      const yr = Number(year); const q = Number(quarter);
-      const sMonth = (q - 1) * 3; const s = new Date(yr, sMonth, 1); const e = new Date(yr, sMonth + 3, 0);
-      return { label: `${yr} Rüb ${q}`, start: fmtDate(s), end: fmtDate(e) };
-    }
-    if (periodicity === "halfyear" && year && half) {
-      const yr = Number(year); const first = half === "I";
-      const s = new Date(yr, first ? 0 : 6, 1); const e = new Date(yr, first ? 6 : 12, 0);
-      return { label: `${yr} ${half} yarımil`, start: fmtDate(s), end: fmtDate(e) };
-    }
-    if (periodicity === "yearly" && year) {
-      const yr = Number(year); const s = new Date(yr, 0, 1); const e = new Date(yr, 11, 31);
-      return { label: `${yr}`, start: fmtDate(s), end: fmtDate(e) };
-    }
-    if (periodicity === "other" && range.from && range.to) {
-      return { label: `${format(range.from, "d MMM yyyy", { locale: az })} – ${format(range.to, "d MMM yyyy", { locale: az })}`, start: fmtDate(range.from), end: fmtDate(range.to) };
-    }
-    return null;
-  }, [periodicity, year, month, quarter, half, weekDate, range]);
+  const resolvedPeriod = useMemo(() => resolvePeriod(period), [period]);
 
   const rows: ScoreRow[] = useMemo(() => {
     if (!resolvedPeriod) return [];
