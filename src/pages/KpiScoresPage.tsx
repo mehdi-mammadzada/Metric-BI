@@ -94,11 +94,12 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
 
   const resolvedPeriod = useMemo(() => resolvePeriod(period), [period]);
 
+  const rows: ScoreRow[] = useMemo(() => {
     if (!resolvedPeriod) return [];
     const activeCards = selectedCards.length > 0 ? selectedCards : cardOptions;
     if (activeCards.length === 0) return [];
     const out: ScoreRow[] = [];
-    cards.filter(card => activeCards.includes(card.name)).forEach(card => {
+    cards.filter(card => activeCards.includes(card.name) && overlapsPeriod(resolvedPeriod, card.startDate, card.endDate)).forEach(card => {
       card.assigneeIds.forEach(assigneeId => {
         const emp = employeeById.get(String(assigneeId));
         if (!emp) return;
@@ -106,27 +107,15 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
         if (evaluated.length === 0) return;
         const totalWeight = evaluated.reduce((sum, item) => sum + item.weight, 0) || 100;
         const goals: GoalRow[] = evaluated.map(item => ({
-          name: item.name,
-          target: item.target,
-          actual: item.actual ?? 0,
-          unit: item.unit,
-          weight: item.weight,
-          score: item.evaluatedScore ?? 0,
-          progress: calcCompletion(item),
-          note: item.selfComment,
+          name: item.name, target: item.target, actual: item.actual ?? 0, unit: item.unit,
+          weight: item.weight, score: item.evaluatedScore ?? 0, progress: calcCompletion(item), note: item.selfComment,
         }));
         const score = evaluated.reduce((sum, item) => sum + ((item.evaluatedScore ?? 0) * item.weight), 0) / totalWeight;
         out.push({
-          empId: emp.id,
-          fullName: `${emp.firstName} ${emp.lastName}`,
-          fatherName: emp.fatherName ?? "",
-          cardId: card.id,
-          cardName: card.name,
-          periodLabel: resolvedPeriod.label,
-          startDate: card.startDate || "—",
-          endDate: card.endDate || "—",
-          score: Math.round(score * 100) / 100,
-          goals,
+          empId: emp.id, fullName: `${emp.firstName} ${emp.lastName}`, fatherName: emp.fatherName ?? "",
+          cardId: card.id, cardName: card.name, periodLabel: resolvedPeriod.label,
+          startDate: card.startDate || "—", endDate: card.endDate || "—",
+          score: Math.round(score * 100) / 100, goals,
         });
       });
     });
