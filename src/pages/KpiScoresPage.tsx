@@ -1,26 +1,21 @@
 import { useMemo, useState } from "react";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
-import { BarChart3, Search, Eye, Check, X as XIcon, ChevronDown, User as UserIcon, Calendar as CalendarIcon } from "lucide-react";
-import { format, startOfWeek, endOfWeek, isSameWeek } from "date-fns";
-import { az } from "date-fns/locale";
+import { BarChart3, Search, Eye, Check, X as XIcon, ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import ExportMenu from "@/components/common/ExportMenu";
 import { DataTable } from "@/components/common/DataTable";
+import PeriodRangePicker, { emptyPeriodSelection, resolvePeriod, overlapsPeriod, type PeriodSelection } from "@/components/kpi/PeriodRangePicker";
 import { getEmployees } from "@/lib/orgStore";
-import { MONTHS } from "@/lib/salaryStore";
-import { cn, withKartSuffix } from "@/lib/utils";
+import { withKartSuffix } from "@/lib/utils";
 import { useVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { calcCompletion, getSubKpis, isEvaluated } from "@/lib/kpiEvaluationStore";
 import { useSampleResultsSeed } from "@/lib/sampleResultsSeed";
 
 
-const YEARS = [2025, 2026];
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const lastDayOfMonth = (year: number, mIdx: number) => new Date(year, mIdx + 1, 0).getDate();
@@ -65,7 +60,7 @@ export interface KpiScoresPageProps {
   heroSubtitle?: string;
 }
 
-type Periodicity = "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly" | "other";
+
 
 const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle }: KpiScoresPageProps = {}) => {
   useSampleResultsSeed();
@@ -82,18 +77,7 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
   }, [employees]);
   const cardOptions = useMemo(() => Array.from(new Set(cards.map(c => c.name).filter(Boolean))), [cards]);
 
-  const [periodicity, setPeriodicity] = useState<Periodicity>("monthly");
-  const [year, setYear] = useState<string>(String(new Date().getFullYear()));
-  const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1));
-  const [quarter, setQuarter] = useState<string>("");
-  const [half, setHalf] = useState<string>("");
-  const [weekDate, setWeekDate] = useState<Date | undefined>();
-  const [range, setRange] = useState<{ from?: Date; to?: Date }>({});
-
-  const resetSelection = () => {
-    setYear(String(new Date().getFullYear())); setMonth(""); setQuarter(""); setHalf("");
-    setWeekDate(undefined); setRange({});
-  };
+  const [period, setPeriod] = useState<PeriodSelection>(() => emptyPeriodSelection("monthly"));
 
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [cardSearch, setCardSearch] = useState("");
@@ -108,44 +92,14 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
     setSelectedCards(s => (s.includes(c) ? s.filter(x => x !== c) : [...s, c]));
   const toggleAll = () => setSelectedCards(allSelected ? [] : [...cardOptions]);
 
-  const resolvedPeriod = useMemo(() => {
-    const fmtDate = (d: Date) => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
-    if (periodicity === "weekly" && weekDate) {
-      const s = startOfWeek(weekDate, { weekStartsOn: 1 });
-      const e = endOfWeek(weekDate, { weekStartsOn: 1 });
-      return { label: `${format(s, "d MMM", { locale: az })} – ${format(e, "d MMM yyyy", { locale: az })}`, start: fmtDate(s), end: fmtDate(e) };
-    }
-    if (periodicity === "monthly" && year && month) {
-      const yr = Number(year); const mIdx = Number(month) - 1;
-      const s = new Date(yr, mIdx, 1); const e = new Date(yr, mIdx, lastDayOfMonth(yr, mIdx));
-      return { label: `${MONTHS[mIdx]} ${yr}`, start: fmtDate(s), end: fmtDate(e) };
-    }
-    if (periodicity === "quarterly" && year && quarter) {
-      const yr = Number(year); const q = Number(quarter);
-      const sMonth = (q - 1) * 3; const s = new Date(yr, sMonth, 1); const e = new Date(yr, sMonth + 3, 0);
-      return { label: `${yr} Rüb ${q}`, start: fmtDate(s), end: fmtDate(e) };
-    }
-    if (periodicity === "halfyear" && year && half) {
-      const yr = Number(year); const first = half === "I";
-      const s = new Date(yr, first ? 0 : 6, 1); const e = new Date(yr, first ? 6 : 12, 0);
-      return { label: `${yr} ${half} yarımil`, start: fmtDate(s), end: fmtDate(e) };
-    }
-    if (periodicity === "yearly" && year) {
-      const yr = Number(year); const s = new Date(yr, 0, 1); const e = new Date(yr, 11, 31);
-      return { label: `${yr}`, start: fmtDate(s), end: fmtDate(e) };
-    }
-    if (periodicity === "other" && range.from && range.to) {
-      return { label: `${format(range.from, "d MMM yyyy", { locale: az })} – ${format(range.to, "d MMM yyyy", { locale: az })}`, start: fmtDate(range.from), end: fmtDate(range.to) };
-    }
-    return null;
-  }, [periodicity, year, month, quarter, half, weekDate, range]);
+  const resolvedPeriod = useMemo(() => resolvePeriod(period), [period]);
 
   const rows: ScoreRow[] = useMemo(() => {
     if (!resolvedPeriod) return [];
     const activeCards = selectedCards.length > 0 ? selectedCards : cardOptions;
     if (activeCards.length === 0) return [];
     const out: ScoreRow[] = [];
-    cards.filter(card => activeCards.includes(card.name)).forEach(card => {
+    cards.filter(card => activeCards.includes(card.name) && overlapsPeriod(resolvedPeriod, card.startDate, card.endDate)).forEach(card => {
       card.assigneeIds.forEach(assigneeId => {
         const emp = employeeById.get(String(assigneeId));
         if (!emp) return;
@@ -153,27 +107,15 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
         if (evaluated.length === 0) return;
         const totalWeight = evaluated.reduce((sum, item) => sum + item.weight, 0) || 100;
         const goals: GoalRow[] = evaluated.map(item => ({
-          name: item.name,
-          target: item.target,
-          actual: item.actual ?? 0,
-          unit: item.unit,
-          weight: item.weight,
-          score: item.evaluatedScore ?? 0,
-          progress: calcCompletion(item),
-          note: item.selfComment,
+          name: item.name, target: item.target, actual: item.actual ?? 0, unit: item.unit,
+          weight: item.weight, score: item.evaluatedScore ?? 0, progress: calcCompletion(item), note: item.selfComment,
         }));
         const score = evaluated.reduce((sum, item) => sum + ((item.evaluatedScore ?? 0) * item.weight), 0) / totalWeight;
         out.push({
-          empId: emp.id,
-          fullName: `${emp.firstName} ${emp.lastName}`,
-          fatherName: emp.fatherName ?? "",
-          cardId: card.id,
-          cardName: card.name,
-          periodLabel: resolvedPeriod.label,
-          startDate: card.startDate || "—",
-          endDate: card.endDate || "—",
-          score: Math.round(score * 100) / 100,
-          goals,
+          empId: emp.id, fullName: `${emp.firstName} ${emp.lastName}`, fatherName: emp.fatherName ?? "",
+          cardId: card.id, cardName: card.name, periodLabel: resolvedPeriod.label,
+          startDate: card.startDate || "—", endDate: card.endDate || "—",
+          score: Math.round(score * 100) / 100, goals,
         });
       });
     });
@@ -188,92 +130,8 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
     setGlobalSearch("");
   };
 
-  const renderPeriodPicker = () => {
-    if (periodicity === "weekly") {
-      return (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className={cn("w-full justify-start", !weekDate && "text-muted-foreground")}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {weekDate ? `${format(startOfWeek(weekDate, { weekStartsOn: 1 }), "d MMM", { locale: az })} – ${format(endOfWeek(weekDate, { weekStartsOn: 1 }), "d MMM yyyy", { locale: az })}` : "Həftə seçin"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={weekDate} onSelect={setWeekDate} weekStartsOn={1}
-              modifiers={{ inWeek: (d) => weekDate ? isSameWeek(d, weekDate, { weekStartsOn: 1 }) : false }}
-              modifiersClassNames={{ inWeek: "bg-primary/10 text-foreground" }}
-              className={cn("p-3 pointer-events-auto")} />
-          </PopoverContent>
-        </Popover>
-      );
-    }
-    if (periodicity === "monthly") {
-      return (
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={year} onValueChange={setYear}>
-            <SelectTrigger><SelectValue placeholder="İl" /></SelectTrigger>
-            <SelectContent>{YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger><SelectValue placeholder="Ay" /></SelectTrigger>
-            <SelectContent>{MONTHS.map((m, i) => <SelectItem key={m} value={String(i + 1)}>{m}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-      );
-    }
-    if (periodicity === "quarterly") {
-      return (
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={year} onValueChange={setYear}>
-            <SelectTrigger><SelectValue placeholder="İl" /></SelectTrigger>
-            <SelectContent>{YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={quarter} onValueChange={setQuarter}>
-            <SelectTrigger><SelectValue placeholder="Rüb" /></SelectTrigger>
-            <SelectContent>{[1,2,3,4].map(q => <SelectItem key={q} value={String(q)}>Rüb {q}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-      );
-    }
-    if (periodicity === "halfyear") {
-      return (
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={year} onValueChange={setYear}>
-            <SelectTrigger><SelectValue placeholder="İl" /></SelectTrigger>
-            <SelectContent>{YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={half} onValueChange={setHalf}>
-            <SelectTrigger><SelectValue placeholder="Yarımil" /></SelectTrigger>
-            <SelectContent><SelectItem value="I">I yarımil</SelectItem><SelectItem value="II">II yarımil</SelectItem></SelectContent>
-          </Select>
-        </div>
-      );
-    }
-    if (periodicity === "yearly") {
-      return (
-        <Select value={year} onValueChange={setYear}>
-          <SelectTrigger><SelectValue placeholder="İl seçin" /></SelectTrigger>
-          <SelectContent>{YEARS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-        </Select>
-      );
-    }
-    if (periodicity === "other") {
-      return (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className={cn("w-full justify-start", !range.from && "text-muted-foreground")}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {range.from && range.to ? `${format(range.from, "d MMM yyyy", { locale: az })} – ${format(range.to, "d MMM yyyy", { locale: az })}` : "Tarix aralığı"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="range" selected={range as any} onSelect={(r: any) => setRange(r || {})} numberOfMonths={2} className={cn("p-3 pointer-events-auto")} />
-          </PopoverContent>
-        </Popover>
-      );
-    }
-    return null;
-  };
+
+
 
   return (
     <div className="min-h-screen">
@@ -290,25 +148,9 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
 
 
         {/* Filter bar */}
-        <div className="rounded-xl border border-border bg-card p-4 mb-4 grid grid-cols-1 md:grid-cols-[200px_260px_1fr_auto] gap-3 items-end">
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Dövrlük</label>
-            <Select value={periodicity} onValueChange={(v) => { setPeriodicity(v as Periodicity); resetSelection(); }}>
-              <SelectTrigger><SelectValue placeholder="Seçin" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="weekly">Həftəlik</SelectItem>
-                <SelectItem value="monthly">Aylıq</SelectItem>
-                <SelectItem value="quarterly">Rüblük</SelectItem>
-                <SelectItem value="halfyear">Yarımillik</SelectItem>
-                <SelectItem value="yearly">İllik</SelectItem>
-                <SelectItem value="other">Digər</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Konkret dövr</label>
-            {renderPeriodPicker()}
-          </div>
+        <div className="rounded-xl border border-border bg-card p-4 mb-4 grid grid-cols-1 md:grid-cols-[minmax(400px,460px)_1fr_auto] gap-3 items-end">
+          <PeriodRangePicker value={period} onChange={setPeriod} />
+
 
           <div className="min-w-[260px]">
             <label className="text-xs text-muted-foreground">KPI Kartları</label>

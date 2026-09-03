@@ -43,6 +43,7 @@ import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamic
 import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import { employeeCommentRef } from "@/components/kpi/EmployeeCardTabs";
 import { reviewCommentRef } from "@/lib/kpiCommentsService";
+import PeriodRangePicker, { emptyPeriodSelection, overlapsPeriod, resolvePeriod, type PeriodSelection, type ResolvedPeriod } from "@/components/kpi/PeriodRangePicker";
 
 
 type Stage = "assigned" | "evaluated" | "pending_assign";
@@ -252,22 +253,21 @@ const initialReminders = (_kpiId: string): ReminderItem[] => [];
 
 const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: string; subtitle: string; data: Kpi[]; cascadeNodes?: CascadeTreeNode[] }) => {
   const [statusF, setStatusF] = useState<string>("all");
-  const [periodF, setPeriodF] = useState<string>("all");
+  const [period, setPeriod] = useState<PeriodSelection>(() => emptyPeriodSelection("monthly"));
   const [q, setQ] = useState("");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [drawerKpi, setDrawerKpi] = useState<Kpi | null>(null);
   const [drawerTab, setDrawerTab] = useState<DrawerTab>("general");
   const [distributeNode, setDistributeNode] = useState<CascadeTreeNode | null>(null);
-
-  const periods = useMemo(() => Array.from(new Set(data.map(d => d.period))), [data]);
+  const resolvedPeriod = useMemo(() => resolvePeriod(period), [period]);
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase();
     return data.filter(k =>
       (statusF === "all" || k.status === statusF) &&
-      (periodF === "all" || k.period === periodF) &&
+      overlapsPeriod(resolvedPeriod, k.createdAt, k.deadline) &&
       (!s || k.name.toLowerCase().includes(s))
     );
-  }, [data, statusF, periodF, q]);
+  }, [data, statusF, resolvedPeriod, q]);
 
   const stats = useMemo(() => {
     const total = data.length;
@@ -306,31 +306,20 @@ const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: stri
       </div>
 
       {/* Filter bar */}
-      <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <div>
-            <label className="text-[11px] text-muted-foreground">Status</label>
-            <Select value={statusF} onValueChange={setStatusF}>
-              <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue placeholder="Bütün statuslar" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Bütün statuslar</SelectItem>
-                <SelectItem value="in_progress">İcrada</SelectItem>
-                <SelectItem value="achieved">Hədəfə çatıb</SelectItem>
-                <SelectItem value="not_achieved">Hədəfə çatmayıb</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-[11px] text-muted-foreground">Dövr</label>
-            <Select value={periodF} onValueChange={setPeriodF}>
-              <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue placeholder="Bütün dövrlər" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Bütün dövrlər</SelectItem>
-                {periods.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-end gap-3 flex-wrap">
+        <div>
+          <label className="text-[11px] text-muted-foreground">Status</label>
+          <Select value={statusF} onValueChange={setStatusF}>
+            <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue placeholder="Bütün statuslar" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Bütün statuslar</SelectItem>
+              <SelectItem value="in_progress">İcrada</SelectItem>
+              <SelectItem value="achieved">Hədəfə çatıb</SelectItem>
+              <SelectItem value="not_achieved">Hədəfə çatmayıb</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+        <PeriodRangePicker compact value={period} onChange={setPeriod} className="min-w-[360px]" />
         <div className="flex-1" />
         <div className="relative">
           <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -338,8 +327,6 @@ const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: stri
             className="w-64 pl-8 pr-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
         </div>
       </div>
-
-      {/* KPI Cards — accordion */}
       <KpiAccordionList
         items={rows.map<AccordionKpi>(k => ({
           id: k.id,
@@ -849,7 +836,7 @@ const hashStr = (s: string) => {
   return h;
 };
 
-const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
+const buildOrgTree = (scopePath?: string | null, period?: ResolvedPeriod | null): TreeNode[] => {
   const emps = getEmployees().filter(e => e.active);
   const structs = getStructures();
 
@@ -863,7 +850,7 @@ const buildOrgTree = (scopePath?: string | null): TreeNode[] => {
   const nodes: TreeNode[] = [];
 
     const makeEmp = (e: (typeof emps)[number], parentId: string, pathLabel: string): TreeNode => {
-    const realCards = getRealKpiCardsForEmployee(e.id);
+    const realCards = getRealKpiCardsForEmployee(e.id).filter(c => overlapsPeriod(period || null, c.createdAt, c.deadline));
     const targets = realCards.flatMap(c => c.targets || []);
     const avgPct = targets.length
       ? Math.round(targets.reduce((sum, t) => sum + (t.plan ? safePct(t.fakt, t.plan) : 0), 0) / targets.length)
@@ -973,14 +960,15 @@ export const SubordinatesView = ({
     window.addEventListener("org-updated", h);
     return () => window.removeEventListener("org-updated", h);
   }, []);
-  const tree = useMemo(() => buildOrgTree(scopePath), [tick, scopePath]);
+  const [period, setPeriod] = useState<PeriodSelection>(() => emptyPeriodSelection("monthly"));
+  const resolvedPeriod = useMemo(() => resolvePeriod(period), [period]);
+  const tree = useMemo(() => buildOrgTree(scopePath, resolvedPeriod), [tick, scopePath, resolvedPeriod]);
 
   const childrenOf = (id: string) => tree.filter(n => n.parent === id);
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<SubTab>("info");
-  const [period, setPeriod] = useState("2025 / 1-ci rüb");
   const [metric, setMetric] = useState("avg");
   const [status, setStatus] = useState("all");
   const [q, setQ] = useState("");
@@ -1096,20 +1084,9 @@ export const SubordinatesView = ({
         </div>
 
         {/* Filter row */}
-        <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-center gap-3 flex-wrap">
+        <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-end gap-3 flex-wrap">
+          <PeriodRangePicker compact value={period} onChange={setPeriod} className="min-w-[360px]" />
           <div>
-            <label className="text-[11px] text-muted-foreground">Dövr</label>
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2025 / 1-ci rüb">2025 / 1-ci rüb</SelectItem>
-                <SelectItem value="2025 / 2-ci rüb">2025 / 2-ci rüb</SelectItem>
-                <SelectItem value="2025 / il">2025 / il</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-
             <label className="text-[11px] text-muted-foreground">Status</label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue /></SelectTrigger>
@@ -1127,7 +1104,7 @@ export const SubordinatesView = ({
             <input value={q} onChange={e => setQ(e.target.value)} placeholder="Axtarış..."
               className="w-56 pl-8 pr-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
           </div>
-          </div>
+        </div>
 
         {/* Tree grid */}
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
@@ -2133,6 +2110,8 @@ const ReviewsView = () => {
   const { user } = useAuth();
   const [tab, setTab] = useState<"individual" | "bulk">("individual");
   const [q, setQ] = useState("");
+  const [period, setPeriod] = useState<PeriodSelection>(() => emptyPeriodSelection("monthly"));
+  const resolvedPeriod = useMemo(() => resolvePeriod(period), [period]);
   const reviewStatusValues = useCatalogValues("review_statuses", ["Keçirildi", "İcrada", "Keçirilmədi", "Təxirə salındı", "Planlaşdırılıb"]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [colF, setColF] = useState<Record<ReviewColKey, string>>({
@@ -2156,6 +2135,7 @@ const ReviewsView = () => {
         || g.employees.some(e => e.empName.toLowerCase().includes(s));
       if (!global) return false;
       if (statusFilter !== "all" && REVIEW_STATUS_CATALOG_LABEL[g.reviewStatus] !== statusFilter) return false;
+      if (!overlapsPeriod(resolvedPeriod, g.reviewStart, g.reviewEnd)) return false;
       return m(withKartSuffix(g.cardName), colF.cardName)
         && m(g.reviewLabel, colF.reviewName)
         && m(`${g.employees.length}`, colF.count)
@@ -2167,8 +2147,8 @@ const ReviewsView = () => {
     });
   };
 
-  const filteredIndividual = useMemo(() => filterGroups(individualGroups), [individualGroups, q, colF, statusFilter]);
-  const filteredBulk = useMemo(() => filterGroups(bulkGroups), [bulkGroups, q, colF, statusFilter]);
+  const filteredIndividual = useMemo(() => filterGroups(individualGroups), [individualGroups, q, colF, statusFilter, resolvedPeriod]);
+  const filteredBulk = useMemo(() => filterGroups(bulkGroups), [bulkGroups, q, colF, statusFilter, resolvedPeriod]);
 
   const toOverviewStatus = (s: ReviewComputedStatus): ReviewStatusValue =>
     s === "held" ? "held" : s === "deferred" ? "deferred" : s === "missed" ? "missed" : "in_progress";
@@ -2269,6 +2249,7 @@ const ReviewsView = () => {
       <PageHero badge="Rəhbər Paneli" icon={RefreshCw} title="Reviewlar" subtitle="Hazırda Review mərhələsində olan bütün KPI kartlarının vahid izləmə cədvəli." />
 
       <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-center gap-3 flex-wrap mt-2">
+        <PeriodRangePicker compact value={period} onChange={setPeriod} className="min-w-[360px]" />
         <div className="relative w-full sm:w-[280px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
