@@ -249,25 +249,9 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
 
 
         {/* Filter bar */}
-        <div className="rounded-xl border border-border bg-card p-4 mb-4 grid grid-cols-1 md:grid-cols-[200px_260px_1fr_auto] gap-3 items-end">
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Dövrlük</label>
-            <Select value={periodicity} onValueChange={(v) => { setPeriodicity(v as Periodicity); resetSelection(); }}>
-              <SelectTrigger><SelectValue placeholder="Seçin" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="weekly">Həftəlik</SelectItem>
-                <SelectItem value="monthly">Aylıq</SelectItem>
-                <SelectItem value="quarterly">Rüblük</SelectItem>
-                <SelectItem value="halfyear">Yarımillik</SelectItem>
-                <SelectItem value="yearly">İllik</SelectItem>
-                <SelectItem value="other">Digər</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Konkret dövr</label>
-            {renderPeriodPicker()}
-          </div>
+        <div className="rounded-xl border border-border bg-card p-4 mb-4 grid grid-cols-1 md:grid-cols-[minmax(400px,460px)_1fr_auto] gap-3 items-end">
+          <PeriodRangePicker value={period} onChange={setPeriod} />
+
 
           <div className="min-w-[260px]">
             <label className="text-xs text-muted-foreground">KPI Kartları</label>
