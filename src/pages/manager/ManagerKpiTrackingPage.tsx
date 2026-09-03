@@ -252,23 +252,8 @@ const initialReminders = (_kpiId: string): ReminderItem[] => [];
 
 
 const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: string; subtitle: string; data: Kpi[]; cascadeNodes?: CascadeTreeNode[] }) => {
-  const [statusF, setStatusF] = useState<string>("all");
-  const [periodF, setPeriodF] = useState<string>("all");
+  const [period, setPeriod] = useState<PeriodSelection>(() => emptyPeriodSelection("monthly"));
   const [q, setQ] = useState("");
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [drawerKpi, setDrawerKpi] = useState<Kpi | null>(null);
-  const [drawerTab, setDrawerTab] = useState<DrawerTab>("general");
-  const [distributeNode, setDistributeNode] = useState<CascadeTreeNode | null>(null);
-
-  const periods = useMemo(() => Array.from(new Set(data.map(d => d.period))), [data]);
-  const rows = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return data.filter(k =>
-      (statusF === "all" || k.status === statusF) &&
-      (periodF === "all" || k.period === periodF) &&
-      (!s || k.name.toLowerCase().includes(s))
-    );
-  }, [data, statusF, periodF, q]);
 
   const stats = useMemo(() => {
     const total = data.length;
