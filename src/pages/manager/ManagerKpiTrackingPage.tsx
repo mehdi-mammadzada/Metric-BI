@@ -326,7 +326,7 @@ const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: stri
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="Axtarış..."
             className="w-64 pl-8 pr-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
         </div>
-      {/* KPI Cards — accordion */}
+      </div>
       <KpiAccordionList
         items={rows.map<AccordionKpi>(k => ({
           id: k.id,
