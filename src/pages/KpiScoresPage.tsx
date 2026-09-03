@@ -94,7 +94,6 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
 
   const resolvedPeriod = useMemo(() => resolvePeriod(period), [period]);
 
-  const rows: ScoreRow[] = useMemo(() => {
     if (!resolvedPeriod) return [];
     const activeCards = selectedCards.length > 0 ? selectedCards : cardOptions;
     if (activeCards.length === 0) return [];
