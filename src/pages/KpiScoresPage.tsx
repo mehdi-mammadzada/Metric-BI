@@ -1,26 +1,21 @@
 import { useMemo, useState } from "react";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
-import { BarChart3, Search, Eye, Check, X as XIcon, ChevronDown, User as UserIcon, Calendar as CalendarIcon } from "lucide-react";
-import { format, startOfWeek, endOfWeek, isSameWeek } from "date-fns";
-import { az } from "date-fns/locale";
+import { BarChart3, Search, Eye, Check, X as XIcon, ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import ExportMenu from "@/components/common/ExportMenu";
 import { DataTable } from "@/components/common/DataTable";
+import PeriodRangePicker, { emptyPeriodSelection, resolvePeriod, overlapsPeriod, type PeriodSelection } from "@/components/kpi/PeriodRangePicker";
 import { getEmployees } from "@/lib/orgStore";
-import { MONTHS } from "@/lib/salaryStore";
-import { cn, withKartSuffix } from "@/lib/utils";
+import { withKartSuffix } from "@/lib/utils";
 import { useVisibleSharedKpiCards } from "@/lib/kpiCardStore";
 import { calcCompletion, getSubKpis, isEvaluated } from "@/lib/kpiEvaluationStore";
 import { useSampleResultsSeed } from "@/lib/sampleResultsSeed";
 
 
-const YEARS = [2025, 2026];
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const lastDayOfMonth = (year: number, mIdx: number) => new Date(year, mIdx + 1, 0).getDate();
