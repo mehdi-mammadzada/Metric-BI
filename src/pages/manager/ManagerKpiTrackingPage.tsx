@@ -306,31 +306,27 @@ const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: stri
       </div>
 
       {/* Filter bar */}
-      <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <div>
-            <label className="text-[11px] text-muted-foreground">Status</label>
-            <Select value={statusF} onValueChange={setStatusF}>
-              <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue placeholder="Bütün statuslar" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Bütün statuslar</SelectItem>
-                <SelectItem value="in_progress">İcrada</SelectItem>
-                <SelectItem value="achieved">Hədəfə çatıb</SelectItem>
-                <SelectItem value="not_achieved">Hədəfə çatmayıb</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-[11px] text-muted-foreground">Dövr</label>
-            <Select value={periodF} onValueChange={setPeriodF}>
-              <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue placeholder="Bütün dövrlər" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Bütün dövrlər</SelectItem>
-                {periods.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-end gap-3 flex-wrap">
+        <div>
+          <label className="text-[11px] text-muted-foreground">Status</label>
+          <Select value={statusF} onValueChange={setStatusF}>
+            <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue placeholder="Bütün statuslar" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Bütün statuslar</SelectItem>
+              <SelectItem value="in_progress">İcrada</SelectItem>
+              <SelectItem value="achieved">Hədəfə çatıb</SelectItem>
+              <SelectItem value="not_achieved">Hədəfə çatmayıb</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+        <PeriodRangePicker compact value={period} onChange={setPeriod} className="min-w-[360px]" />
+        <div className="flex-1" />
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Axtarış..."
+            className="w-64 pl-8 pr-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
+        </div>
+      </div>
         <div className="flex-1" />
         <div className="relative">
           <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
