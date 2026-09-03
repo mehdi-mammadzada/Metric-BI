@@ -43,7 +43,7 @@ import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamic
 import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import { employeeCommentRef } from "@/components/kpi/EmployeeCardTabs";
 import { reviewCommentRef } from "@/lib/kpiCommentsService";
-import PeriodRangePicker, { emptyPeriodSelection, overlapsPeriod, resolvePeriod, type PeriodSelection } from "@/components/kpi/PeriodRangePicker";
+import PeriodRangePicker, { emptyPeriodSelection, overlapsPeriod, resolvePeriod, type PeriodSelection, type ResolvedPeriod } from "@/components/kpi/PeriodRangePicker";
 
 
 type Stage = "assigned" | "evaluated" | "pending_assign";
