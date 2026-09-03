@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import Header from "@/components/layout/Header";
 import { PageHero } from "@/components/ui/page-hero";
-import { BarChart3, Search, Eye, Check, X as XIcon, ChevronDown } from "lucide-react";
+import { BarChart3, Search, Eye, Check, X as XIcon, ChevronDown, User as UserIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
