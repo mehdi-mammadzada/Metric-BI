@@ -60,7 +60,7 @@ export interface KpiScoresPageProps {
   heroSubtitle?: string;
 }
 
-type Periodicity = "weekly" | "monthly" | "quarterly" | "halfyear" | "yearly" | "other";
+
 
 const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle }: KpiScoresPageProps = {}) => {
   useSampleResultsSeed();
