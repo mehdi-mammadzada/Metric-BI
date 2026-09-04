@@ -381,7 +381,7 @@ const KpiDetailView = ({
                   })()}
                 </div>
               </div>
-              {!isPersonalCard && (() => {
+              {(() => {
 
                 const own = selectedKpi.subKpis || [];
                 let merged: any[] = mergeCardTargets(selectedKpi.id, own as any[]).map(r => ({
