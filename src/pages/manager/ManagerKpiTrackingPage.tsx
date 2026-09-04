@@ -1283,7 +1283,6 @@ export const SubordinatesView = ({
                   <tr>
                     <th className="text-left px-4 py-3 font-medium">KPI kartının adı</th>
                     <th className="text-left px-4 py-3 font-medium">Təyinat növü</th>
-                    <th className="text-left px-4 py-3 font-medium">Dövr</th>
                     <th className="text-center px-4 py-3 font-medium">Status</th>
                     <th className="text-left px-4 py-3 font-medium w-44">Progress</th>
                     <th className="text-left px-4 py-3 font-medium">Yaradılma tarixi</th>
