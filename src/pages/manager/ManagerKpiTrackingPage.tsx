@@ -1283,7 +1283,6 @@ export const SubordinatesView = ({
                   <tr>
                     <th className="text-left px-4 py-3 font-medium">KPI kartının adı</th>
                     <th className="text-left px-4 py-3 font-medium">Təyinat növü</th>
-                    <th className="text-left px-4 py-3 font-medium">Dövr</th>
                     <th className="text-center px-4 py-3 font-medium">Status</th>
                     <th className="text-left px-4 py-3 font-medium w-44">Progress</th>
                     <th className="text-left px-4 py-3 font-medium">Yaradılma tarixi</th>
@@ -1293,7 +1292,7 @@ export const SubordinatesView = ({
                 </thead>
                 <tbody>
                   {empKpiCards.length === 0 ? (
-                    <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">Bu əməkdaş üçün KPI kartı yoxdur.</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">Bu əməkdaş üçün KPI kartı yoxdur.</td></tr>
                   ) : empKpiCards.map(k => (
                     <tr key={k.id} className="border-t border-border hover:bg-secondary/20">
                       <td className="px-4 py-3">
@@ -1305,7 +1304,6 @@ export const SubordinatesView = ({
                           {assignKindOf(k)}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{k.period}</td>
                       <td className="px-4 py-3 text-center">
                         <Badge className={statusMeta[k.status].cls}>{statusMeta[k.status].label}</Badge>
                       </td>
