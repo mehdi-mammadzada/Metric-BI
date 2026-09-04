@@ -1307,7 +1307,7 @@ export const SubordinatesView = ({
                         </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{k.createdAt}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{k.updatedAt}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{k.deadline}</td>
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => {
