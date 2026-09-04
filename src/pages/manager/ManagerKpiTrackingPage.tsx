@@ -1255,10 +1255,12 @@ export const SubordinatesView = ({
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => {
-                            if (!empKpiListFor) return;
-                            setCardDrawer({ card: k, employee: empKpiListFor });
+                            // Hədəf səviyyəsi deyil — birbaşa KPI kartının tam detallı baxışı
+                            setViewKpi(k);
+                            setViewKpiTab("general");
                             setEmpKpiListFor(null);
                           }}
+
                           className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                           aria-label="Bax"
                           title="Bax"
