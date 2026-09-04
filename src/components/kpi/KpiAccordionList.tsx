@@ -26,6 +26,8 @@ export interface AccordionKpi {
   createdAt: string;
   deadline: string;
   status: AccordionKpiStatus;
+  /** Təyinat növü — Fərdi / Toplu. */
+  assignmentKind?: "Fərdi" | "Toplu";
   targets: AccordionTarget[];
 }
 
@@ -104,6 +106,16 @@ const KpiAccordionList = ({ items, defaultExpandFirst = true, emptyLabel = "KPI 
               <button type="button" onClick={activate} className="min-w-0 flex-1 text-left">
                 <div className="font-semibold text-foreground truncate">{withKartSuffix(kpi.name)}</div>
               </button>
+              {kpi.assignmentKind && (
+                <div className="hidden md:block shrink-0">
+                  <div className="text-[11px] text-muted-foreground">Təyinat növü</div>
+                  <Badge className={kpi.assignmentKind === "Toplu"
+                    ? "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300"
+                    : "bg-secondary text-secondary-foreground"}>
+                    {kpi.assignmentKind}
+                  </Badge>
+                </div>
+              )}
               <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground shrink-0">
                 <CalendarDays className="w-4 h-4" />
                 <div className="leading-tight">

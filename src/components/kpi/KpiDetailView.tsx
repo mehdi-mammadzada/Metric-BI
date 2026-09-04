@@ -92,9 +92,8 @@ const KpiDetailView = ({
 
   const hasMatrix = !!selectedKpi.matrixId;
   const isPersonalCard = getAssignKindFor(selectedKpi.id) === "Fərdi";
-  const tabs = KPI_DETAIL_TABS
-    .filter(([k]) => k !== "status" || hasMatrix)
-    .filter(([k]) => !isPersonalCard || (k !== "reviewTrack" && k !== "history"));
+  // Fərdi və toplu kartlar üçün eyni tam detallı tab dəsti göstərilir.
+  const tabs = KPI_DETAIL_TABS.filter(([k]) => k !== "status" || hasMatrix);
 
 
   const st = getStatusFor(selectedKpi.id);
