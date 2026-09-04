@@ -35,7 +35,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   Activity, User, Users, Network, ChevronLeft, ChevronRight, ChevronDown, Search, Bell, Check, X, Clock,
   MoreVertical, Eye, LineChart, MessageSquare, Filter, Send, Paperclip, AlertTriangle, Building2,
-  TrendingUp, TrendingDown, Minus, MapPin, Layers, ShieldAlert, Target as TargetIcon, GitBranch, RefreshCw,
+  MapPin, Layers, ShieldAlert, Target as TargetIcon, GitBranch, RefreshCw,
 } from "lucide-react";
 import KpiAccordionList, { type AccordionKpi, type AccordionKpiStatus } from "@/components/kpi/KpiAccordionList";
 import ReviewOverviewDialog, { type ReviewOverviewData } from "@/components/kpi/ReviewOverviewDialog";
