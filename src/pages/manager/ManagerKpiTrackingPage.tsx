@@ -1279,7 +1279,7 @@ export const SubordinatesView = ({
                     <th className="text-center px-4 py-3 font-medium">Status</th>
                     <th className="text-left px-4 py-3 font-medium w-44">Progress</th>
                     <th className="text-left px-4 py-3 font-medium">Yaradılma tarixi</th>
-                    <th className="text-left px-4 py-3 font-medium">Son yenilənmə tarixi</th>
+                    <th className="text-left px-4 py-3 font-medium">Bitmə tarixi</th>
                     <th className="text-right px-4 py-3 font-medium w-24">Əməliyyat</th>
                   </tr>
                 </thead>
