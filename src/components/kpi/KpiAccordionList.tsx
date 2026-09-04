@@ -61,9 +61,15 @@ interface Props {
   emptyLabel?: string;
   /** Hədəfin göz ikonuna kliklədikdə çağırılır — kart-səviyyəli menyu artıq yoxdur. */
   onAction?: (kpi: AccordionKpi, target: AccordionTarget, action: AccordionAction) => void;
+  /**
+   * Verilibsə: karta klik hədəfləri açmır, birbaşa kartın tam detallı baxışını
+   * (drawer) açır. Hədəf cədvəli tamamilə göstərilmir.
+   */
+  onCardClick?: (kpi: AccordionKpi) => void;
 }
 
-const KpiAccordionList = ({ items, defaultExpandFirst = true, emptyLabel = "KPI tapılmadı.", onAction }: Props) => {
+const KpiAccordionList = ({ items, defaultExpandFirst = true, emptyLabel = "KPI tapılmadı.", onAction, onCardClick }: Props) => {
+
   const [openIds, setOpenIds] = useState<Set<string | number>>(() => {
     const s = new Set<string | number>();
     if (defaultExpandFirst && items[0]) s.add(items[0].id);
