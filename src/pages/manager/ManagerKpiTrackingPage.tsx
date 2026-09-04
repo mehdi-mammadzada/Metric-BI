@@ -1203,7 +1203,7 @@ export const SubordinatesView = ({
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-foreground">{isEmp ? "—" : fmt(node.employees)}</td>
+                      
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
