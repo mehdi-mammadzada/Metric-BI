@@ -1215,11 +1215,6 @@ export const SubordinatesView = ({
                       </td>
                       <td className="px-4 py-2.5 text-center tabular-nums">{fmt(node.completed)}</td>
                       <td className="px-4 py-2.5 text-center tabular-nums text-rose-600">{fmt(node.notAchieved)}</td>
-                      <td className="px-4 py-2.5 text-center">
-                        {node.trend === "up" && <TrendingUp className="w-4 h-4 text-emerald-500 inline" />}
-                        {node.trend === "down" && <TrendingDown className="w-4 h-4 text-rose-500 inline" />}
-                        {node.trend === "flat" && <Minus className="w-4 h-4 text-muted-foreground inline" />}
-                      </td>
                       <td className="px-4 py-2.5 text-right" onClick={e => e.stopPropagation()}>
                         {isEmp ? (
                           actionsMode === "results" ? (
