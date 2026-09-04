@@ -1,7 +1,7 @@
 // Rəhbər modulları üçün REAL KPI datası (mock yoxdur).
 // Mənbələr: shared_kpi_cards (HR-in yaratdığı kartlar) + cascade_tree (paylanmış hədəflər).
 import { getEmployees } from "@/lib/orgStore";
-import { getSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
+import { getSharedKpiCards, inferSharedCardAssignmentMode, type SharedKpiCard } from "@/lib/kpiCardStore";
 import { getNodes, type CascadeTreeNode } from "@/lib/cascadeTreeStore";
 import { getTeams } from "@/lib/teamsStore";
 import { getAssignedTargetValues, type AssignedTargetValue } from "@/lib/kpiSetStore";
@@ -28,6 +28,10 @@ export interface RealKpiCard {
   cardStatus?: string;
   scoringSystem?: string;
   frequency?: string;
+  /** Təyinat növü — Fərdi / Toplu (shared kartdan gəlir). */
+  assignmentMode?: "individual" | "bulk";
+  /** Mənbə shared kartın id-si (detal baxışı üçün). */
+  sharedId?: string;
 }
 
 const num = (v: unknown): number => {
@@ -89,6 +93,8 @@ const cardToReal = (c: SharedKpiCard): RealKpiCard => {
   return {
     id: `sk-${c.id}`,
     cardId: c.numericId,
+    assignmentMode: inferSharedCardAssignmentMode(c),
+    sharedId: c.id,
     name: c.name,
     createdAt: dt(c.startDate || (c.createdAt || "").slice(0, 10)),
     deadline: dt(c.endDate),
@@ -112,6 +118,7 @@ const cascadeToReal = (nodes: CascadeTreeNode[]): RealKpiCard[] => {
   return [...byCard.entries()].map(([cardName, list]) => ({
     id: `ct-${cardName}`,
     name: cardName,
+    assignmentMode: "individual" as const,
     createdAt: new Date(Math.min(...list.map(n => n.createdAt))).toLocaleDateString("az-AZ"),
     deadline: "—",
     status: "in_progress" as const,
