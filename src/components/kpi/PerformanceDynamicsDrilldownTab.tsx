@@ -260,7 +260,7 @@ const PerformanceDynamicsDrilldownTab = ({ kpi }: { kpi: KpiCard }) => {
   return (
     <div className="space-y-3">
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        <div className="grid grid-cols-[1fr_80px_112px_120px_170px_130px_40px] gap-3 border-b border-border bg-secondary/50 px-4 py-3 text-xs font-semibold text-muted-foreground max-lg:hidden"><span>Hədəf</span><span>Çəki</span><span>Ümumi icra (%)</span><span>Cari nəticə</span><span>Son yenilənmə</span><span>Status</span><span /></div>
+        <div className="border-b border-border bg-secondary/50 px-4 py-3 text-xs font-semibold text-muted-foreground">Hədəflər üzrə performans dinamikası</div>
         <div className="space-y-3 p-3">{targets.map((target, index) => <TargetRow key={target.id} item={target} cardId={kpi.id} frequency={frequency} targetIdx={index} />)}</div>
       </div>
     </div>
