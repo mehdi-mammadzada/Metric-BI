@@ -30,6 +30,7 @@ import KpiDetailView from "@/components/kpi/KpiDetailView";
 import { REVIEW_STATUS_STYLES } from "@/components/kpi/LifecycleView";
 import { useCatalogValues } from "@/lib/dropdownCatalogStore";
 import type { KpiCard as KpiCardShape } from "@/lib/kpiCardTypes";
+import { findSharedCard, sharedToKpiCardShape } from "@/lib/kpiCardShape";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Activity, User, Users, Network, ChevronLeft, ChevronRight, ChevronDown, Search, Bell, Check, X, Clock,
@@ -57,6 +58,12 @@ interface Kpi {
   cascadeNodeId?: string;
   /** Real (DB/store) hədəflər — mock generatorlar əvəzinə istifadə olunur. */
   realTargets?: CardTarget[];
+  /** Təyinat növü — Fərdi / Toplu. */
+  assignmentMode?: "individual" | "bulk";
+  /** Mənbə shared kartın id-si. */
+  sharedId?: string;
+  /** Mənbə kartın numerik id-si (lifecycle/hədəf mənbələri üçün). */
+  cardId?: number;
 }
 
 interface Person { id: string; name: string; position: string; parent?: string; level: number; assigned: boolean; stage: Stage; }
@@ -160,6 +167,9 @@ const ManagerKpiTrackingPage = () => {
       method: "—",
       weight: 0,
       realTargets: c.targets.map(t => ({ ...t, status: "in_progress" as KpiStatus })),
+      assignmentMode: c.assignmentMode,
+      sharedId: c.sharedId,
+      cardId: c.cardId,
     };
   };
 
@@ -334,6 +344,7 @@ const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: stri
           createdAt: k.createdAt,
           deadline: k.deadline,
           status: k.status as AccordionKpiStatus,
+          assignmentKind: assignKindOf(k),
           targets: targetsForKpi(k),
         }))}
         onCardClick={(item) => {
@@ -387,35 +398,80 @@ const StatCard = ({ icon: Icon, label, value, tone }: { icon: any; label: string
 // DRAWER — no backdrop, right-side, ~440px
 // ============================================================
 const initialsOf = (n: string) => n.split(" ").filter(Boolean).slice(0, 2).map(s => s[0]?.toUpperCase() || "").join("");
-const kpiToKpiCard = (k: Kpi): KpiCardShape => ({
-  id: (hashStr(k.id) % 100000) + 1,
-  name: k.name,
-  icon: null,
-  zone: "green",
-  target: String(k.target),
-  current: String(k.actual),
-  unit: k.unit,
-  progress: pctOf(k),
-  minTarget: 0,
-  responsible: k.responsible.name,
-  period: k.period,
-  type: k.type,
-  formula: "",
-  generalTarget: `${fmt(k.target)} ${k.unit}`,
-  department: "",
-  group: "",
-  subdivision: "",
-  startDate: k.createdAt,
-  endDate: k.deadline,
-  frequency: k.type,
-  team: [{ name: k.responsible.name, role: k.responsible.role, avatar: initialsOf(k.responsible.name) }],
-  history: [],
-  description: k.description,
-  weight: k.weight,
-  approvalStatus: "approved",
-  subKpis: [],
-  matrixId: null,
-});
+const assignKindOf = (k: Kpi): "Fərdi" | "Toplu" => {
+  if (k.assignmentMode) return k.assignmentMode === "bulk" ? "Toplu" : "Fərdi";
+  const shared = findSharedCard({ sharedId: k.sharedId, numericId: k.cardId, name: k.name });
+  return shared && shared.assignmentMode === "bulk" ? "Toplu" : "Fərdi";
+};
+
+const kpiToKpiCard = (k: Kpi): KpiCardShape => {
+  const shared = findSharedCard({ sharedId: k.sharedId, numericId: k.cardId, name: k.name });
+  const fallback: KpiCardShape = {
+    id: k.cardId ?? (hashStr(k.id) % 100000) + 1,
+    name: k.name,
+    icon: null,
+    zone: "green",
+    target: String(k.target),
+    current: String(k.actual),
+    unit: k.unit,
+    progress: pctOf(k),
+    minTarget: 0,
+    responsible: k.responsible.name,
+    period: k.period,
+    type: k.type,
+    formula: "",
+    generalTarget: `${fmt(k.target)} ${k.unit}`,
+    department: "",
+    group: "",
+    subdivision: "",
+    startDate: k.createdAt,
+    endDate: k.deadline,
+    frequency: k.type,
+    team: [{ name: k.responsible.name, role: k.responsible.role, avatar: initialsOf(k.responsible.name) }],
+    history: [],
+    description: k.description,
+    weight: k.weight,
+    approvalStatus: "approved",
+    subKpis: (k.realTargets || []).map((t, i) => ({
+      id: i + 1,
+      name: t.name,
+      target: String(t.plan ?? ""),
+      current: String(t.fakt ?? ""),
+      unit: t.unit || "",
+      weight: Number((t as any).weight) || 0,
+    })),
+    matrixId: null,
+  };
+  if (!shared) return fallback;
+
+  const base = sharedToKpiCardShape(shared);
+  // Faktiki nəticələr izlənmə datasından (realTargets) gəlir.
+  const normName = (v: unknown) => String(v ?? "").split(" — ")[0].trim().toLowerCase().replace(/\s+/g, " ");
+  const factByName = new Map((k.realTargets || []).map(t => [normName(t.name), t]));
+  const subKpis = (base.subKpis || []).map(sk => {
+    const real = factByName.get(normName(sk.name));
+    if (!real) return sk;
+    const plan = Number(real.plan) || parseNumber(sk.target);
+    return {
+      ...sk,
+      target: real.plan ? String(real.plan) : sk.target,
+      current: String(real.fakt ?? ""),
+      progress: plan ? Math.round(((Number(real.fakt) || 0) / plan) * 100) : 0,
+      unit: real.unit || sk.unit,
+    };
+  });
+  return {
+    ...base,
+    startDate: base.startDate || k.createdAt,
+    endDate: base.endDate || k.deadline,
+    responsible: base.responsible || k.responsible.name,
+    target: String(k.target || base.target),
+    current: String(k.actual || base.current),
+    unit: k.unit || base.unit,
+    progress: pctOf(k) || base.progress,
+    subKpis: subKpis.length ? subKpis : base.subKpis,
+  };
+};
 
 const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFilter }: {
   kpi: Kpi | null; tab: DrawerTab; setTab: (t: DrawerTab) => void; onClose: () => void;
@@ -443,7 +499,7 @@ const KpiDrawer = ({ kpi, tab, setTab, onClose, onOpenTarget, reviewMeta, tabsFi
       </div>
 
       {!tabsFilter && (
-        <KpiDetailView kpi={kpiToKpiCard(kpi)} compact />
+        <KpiDetailView kpi={kpiToKpiCard(kpi)} compact getAssignKindFor={() => assignKindOf(kpi)} />
       )}
       {tabsFilter && (
       <div className="flex-1 overflow-y-auto" ref={scrollRef}>
@@ -995,6 +1051,9 @@ export const SubordinatesView = ({
         responsible: { name: empKpiListFor.name, role: empKpiListFor.position || "Əməkdaş" },
         measure: c.targets[0]?.unit || "—", type: c.frequency || "—", method: "—", weight: 0,
         realTargets: c.targets.map(t => ({ ...t, status: "in_progress" as KpiStatus })),
+        assignmentMode: c.assignmentMode,
+        sharedId: c.sharedId,
+        cardId: c.cardId,
       };
       return { ...kpi, progress: Math.min(pct, 100), createdAt: c.createdAt, updatedAt: c.createdAt };
     });
@@ -1223,6 +1282,7 @@ export const SubordinatesView = ({
                 <thead className="bg-secondary/40 text-muted-foreground">
                   <tr>
                     <th className="text-left px-4 py-3 font-medium">KPI kartının adı</th>
+                    <th className="text-left px-4 py-3 font-medium">Təyinat növü</th>
                     <th className="text-left px-4 py-3 font-medium">Dövr</th>
                     <th className="text-center px-4 py-3 font-medium">Status</th>
                     <th className="text-left px-4 py-3 font-medium w-44">Progress</th>
@@ -1233,12 +1293,17 @@ export const SubordinatesView = ({
                 </thead>
                 <tbody>
                   {empKpiCards.length === 0 ? (
-                    <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">Bu əməkdaş üçün KPI kartı yoxdur.</td></tr>
+                    <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">Bu əməkdaş üçün KPI kartı yoxdur.</td></tr>
                   ) : empKpiCards.map(k => (
                     <tr key={k.id} className="border-t border-border hover:bg-secondary/20">
                       <td className="px-4 py-3">
                         <div className="font-medium text-foreground">{withKartSuffix(k.name)}</div>
                         <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{k.description}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge className={assignKindOf(k) === "Toplu" ? "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300" : "bg-secondary text-secondary-foreground"}>
+                          {assignKindOf(k)}
+                        </Badge>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{k.period}</td>
                       <td className="px-4 py-3 text-center">
