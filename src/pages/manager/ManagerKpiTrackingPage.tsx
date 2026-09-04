@@ -35,7 +35,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   Activity, User, Users, Network, ChevronLeft, ChevronRight, ChevronDown, Search, Bell, Check, X, Clock,
   MoreVertical, Eye, LineChart, MessageSquare, Filter, Send, Paperclip, AlertTriangle, Building2,
-  TrendingUp, TrendingDown, Minus, MapPin, Layers, ShieldAlert, Target as TargetIcon, GitBranch, RefreshCw,
+  MapPin, Layers, ShieldAlert, Target as TargetIcon, GitBranch, RefreshCw,
 } from "lucide-react";
 import KpiAccordionList, { type AccordionKpi, type AccordionKpiStatus } from "@/components/kpi/KpiAccordionList";
 import ReviewOverviewDialog, { type ReviewOverviewData } from "@/components/kpi/ReviewOverviewDialog";
@@ -1166,11 +1166,9 @@ export const SubordinatesView = ({
               <thead className="bg-secondary/40 text-muted-foreground">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium">Səviyyə</th>
-                  <th className="text-right px-4 py-3 font-medium">Əhatə dairəsi</th>
                   <th className="text-left px-4 py-3 font-medium w-56">Ortalama icra faizi</th>
                   <th className="text-center px-4 py-3 font-medium">Hədəfə çatan KPI</th>
                   <th className="text-center px-4 py-3 font-medium">Hədəfə çatmayan KPI</th>
-                  <th className="text-center px-4 py-3 font-medium">Trend</th>
                   <th className="text-right px-4 py-3 font-medium w-24">Əməliyyatlar</th>
                 </tr>
               </thead>
@@ -1205,7 +1203,7 @@ export const SubordinatesView = ({
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-foreground">{isEmp ? "—" : fmt(node.employees)}</td>
+                      
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
@@ -1217,11 +1215,6 @@ export const SubordinatesView = ({
                       </td>
                       <td className="px-4 py-2.5 text-center tabular-nums">{fmt(node.completed)}</td>
                       <td className="px-4 py-2.5 text-center tabular-nums text-rose-600">{fmt(node.notAchieved)}</td>
-                      <td className="px-4 py-2.5 text-center">
-                        {node.trend === "up" && <TrendingUp className="w-4 h-4 text-emerald-500 inline" />}
-                        {node.trend === "down" && <TrendingDown className="w-4 h-4 text-rose-500 inline" />}
-                        {node.trend === "flat" && <Minus className="w-4 h-4 text-muted-foreground inline" />}
-                      </td>
                       <td className="px-4 py-2.5 text-right" onClick={e => e.stopPropagation()}>
                         {isEmp ? (
                           actionsMode === "results" ? (
@@ -1286,7 +1279,7 @@ export const SubordinatesView = ({
                     <th className="text-center px-4 py-3 font-medium">Status</th>
                     <th className="text-left px-4 py-3 font-medium w-44">Progress</th>
                     <th className="text-left px-4 py-3 font-medium">Yaradılma tarixi</th>
-                    <th className="text-left px-4 py-3 font-medium">Son yenilənmə tarixi</th>
+                    <th className="text-left px-4 py-3 font-medium">Bitmə tarixi</th>
                     <th className="text-right px-4 py-3 font-medium w-24">Əməliyyat</th>
                   </tr>
                 </thead>
@@ -1314,7 +1307,7 @@ export const SubordinatesView = ({
                         </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{k.createdAt}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{k.updatedAt}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{k.deadline}</td>
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => {
