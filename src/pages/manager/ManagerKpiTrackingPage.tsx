@@ -336,17 +336,11 @@ const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: stri
           status: k.status as AccordionKpiStatus,
           targets: targetsForKpi(k),
         }))}
-        onAction={(item, _t, a) => {
+        onCardClick={(item) => {
           const k = rows.find(r => r.id === item.id);
-          if (!k) return;
-          const tab: DrawerTab = a === "history" ? "history" : a === "comments" ? "comments" : "general";
-          if (a === "reminders") {
-            openDrawer(k, "general");
-            setTimeout(() => setDrawerTab("history" as DrawerTab), 0);
-            return;
-          }
-          openDrawer(k, tab);
+          if (k) openDrawer(k, "general");
         }}
+
       />
 
 
