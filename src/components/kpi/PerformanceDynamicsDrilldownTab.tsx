@@ -224,15 +224,21 @@ const TargetRow = ({ item, cardId, frequency, targetIdx }: { item: TargetItem; c
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-      <button type="button" onClick={() => setOpen((v) => !v)} className="grid w-full grid-cols-[auto_1fr] gap-3 p-4 text-left transition-colors duration-200 hover:bg-secondary/40 lg:grid-cols-[auto_1fr_80px_112px_120px_170px_130px_auto] lg:items-center">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">{open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</div>
-        <div className="min-w-0"><div className="flex items-center gap-2"><TargetIcon className="h-4 w-4 shrink-0 text-primary" /><p className="truncate text-sm font-semibold text-foreground">{item.name}</p></div><div className="mt-2 flex items-center gap-2 lg:max-w-[320px]"><Progress value={Math.min(overallPct, 100)} className={cn("h-2", status.bar)} /><span className="w-10 text-right text-xs font-semibold text-foreground">{overallPct}%</span></div></div>
-        <div className="col-start-2 lg:col-auto"><p className="text-[11px] text-muted-foreground">Çəki</p><p className="text-sm font-semibold text-foreground">{item.weight ?? 100}%</p></div>
-        <div className="col-start-2 lg:col-auto"><p className="text-[11px] text-muted-foreground">Ümumi icra</p><div className="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-xs font-bold text-primary">{overallPct}%</div></div>
-        <div className="col-start-2 lg:col-auto"><p className="text-[11px] text-muted-foreground">Cari nəticə</p><p className="text-sm font-semibold text-foreground">{current}</p></div>
-        <div className="col-start-2 lg:col-auto"><p className="text-[11px] text-muted-foreground">Son yenilənmə</p><p className="text-sm font-semibold text-foreground">{lastUpdate}</p></div>
-        <div className="col-start-2 lg:col-auto"><span className={cn("inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold", status.badge)}><span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />{status.label}</span></div>
-        <ChevronDown className={cn("col-start-2 h-4 w-4 justify-self-end text-muted-foreground transition-transform duration-200 lg:col-auto", open && "rotate-180")} />
+      <button type="button" onClick={() => setOpen((v) => !v)} className="flex w-full flex-col gap-3 p-4 text-left transition-colors duration-200 hover:bg-secondary/40">
+        <div className="flex w-full items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">{open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}</div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2"><TargetIcon className="h-4 w-4 shrink-0 text-primary" /><p className="truncate text-sm font-semibold text-foreground">{item.name}</p></div>
+            <div className="mt-2 flex items-center gap-2"><Progress value={Math.min(overallPct, 100)} className={cn("h-2 flex-1", status.bar)} /><span className="w-10 shrink-0 text-right text-xs font-semibold text-foreground">{overallPct}%</span></div>
+          </div>
+          <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold", status.badge)}><span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />{status.label}</span>
+        </div>
+        <div className="grid w-full grid-cols-2 gap-x-4 gap-y-2 pl-12 sm:grid-cols-4">
+          <div className="min-w-0"><p className="text-[11px] text-muted-foreground">Çəki</p><p className="truncate text-sm font-semibold text-foreground">{item.weight ?? 100}%</p></div>
+          <div className="min-w-0"><p className="text-[11px] text-muted-foreground">Ümumi icra</p><p className="truncate text-sm font-semibold text-foreground">{overallPct}%</p></div>
+          <div className="min-w-0"><p className="text-[11px] text-muted-foreground">Cari nəticə</p><p className="truncate text-sm font-semibold text-foreground">{current || "—"}</p></div>
+          <div className="min-w-0"><p className="text-[11px] text-muted-foreground">Son yenilənmə</p><p className="truncate text-sm font-semibold text-foreground">{lastUpdate}</p></div>
+        </div>
       </button>
       <div className={cn("grid transition-all duration-300 ease-out", open ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}><div className="min-h-0 overflow-hidden"><div className="space-y-3 border-t border-border bg-secondary/20 p-4">
         {mode === "quarterly" ? <><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">{buckets.map((bucket) => <PeriodCard key={bucket.key} bucket={bucket} unit={displayUnit} onQuarterClick={() => setOpenQuarter((v) => v === bucket.key ? null : bucket.key)} />)}</div>{openQuarter && (() => { const q = Number(openQuarter.split("-")[1]); const now = new Date(); const months = [q * 3 - 2, q * 3 - 1, q * 3].map((month) => buildMonthBucket(cardId * 1009 + targetIdx * 131, now.getFullYear(), month, month === now.getMonth() + 1, baseTarget)); return <div className="space-y-2 rounded-xl border border-border bg-background p-3"><p className="text-xs font-semibold uppercase text-muted-foreground">{q}-ci rübün ayları</p><div className="grid gap-3 lg:grid-cols-3">{months.map((month) => <PeriodCard key={month.key} bucket={month} unit={displayUnit} />)}</div></div>; })()}</> : <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{buckets.map((bucket) => <PeriodCard key={bucket.key} bucket={bucket} unit={displayUnit} />)}</div>}
