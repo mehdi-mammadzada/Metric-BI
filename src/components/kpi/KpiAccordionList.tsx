@@ -61,9 +61,15 @@ interface Props {
   emptyLabel?: string;
   /** Hədəfin göz ikonuna kliklədikdə çağırılır — kart-səviyyəli menyu artıq yoxdur. */
   onAction?: (kpi: AccordionKpi, target: AccordionTarget, action: AccordionAction) => void;
+  /**
+   * Verilibsə: karta klik hədəfləri açmır, birbaşa kartın tam detallı baxışını
+   * (drawer) açır. Hədəf cədvəli tamamilə göstərilmir.
+   */
+  onCardClick?: (kpi: AccordionKpi) => void;
 }
 
-const KpiAccordionList = ({ items, defaultExpandFirst = true, emptyLabel = "KPI tapılmadı.", onAction }: Props) => {
+const KpiAccordionList = ({ items, defaultExpandFirst = true, emptyLabel = "KPI tapılmadı.", onAction, onCardClick }: Props) => {
+
   const [openIds, setOpenIds] = useState<Set<string | number>>(() => {
     const s = new Set<string | number>();
     if (defaultExpandFirst && items[0]) s.add(items[0].id);
@@ -85,12 +91,17 @@ const KpiAccordionList = ({ items, defaultExpandFirst = true, emptyLabel = "KPI 
     <>
     <div className="space-y-3">
       {items.map(kpi => {
-        const isOpen = openIds.has(kpi.id);
+        const cardMode = !!onCardClick;
+        const isOpen = !cardMode && openIds.has(kpi.id);
         const st = STATUS[normalize(kpi.status)];
+        const activate = () => (cardMode ? onCardClick!(kpi) : toggle(kpi.id));
         return (
           <div key={kpi.id} className="bg-card rounded-2xl border border-border overflow-hidden">
-            <div className="w-full flex items-center gap-4 p-4 hover:bg-secondary/40 transition-colors">
-              <button type="button" onClick={() => toggle(kpi.id)} className="min-w-0 flex-1 text-left">
+            <div
+              className={`w-full flex items-center gap-4 p-4 hover:bg-secondary/40 transition-colors ${cardMode ? "cursor-pointer" : ""}`}
+              onClick={cardMode ? activate : undefined}
+            >
+              <button type="button" onClick={activate} className="min-w-0 flex-1 text-left">
                 <div className="font-semibold text-foreground truncate">{withKartSuffix(kpi.name)}</div>
               </button>
               <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground shrink-0">
@@ -108,12 +119,19 @@ const KpiAccordionList = ({ items, defaultExpandFirst = true, emptyLabel = "KPI 
                 </div>
               </div>
               <Badge className={st.cls}>{st.label}</Badge>
-              <button type="button" onClick={() => toggle(kpi.id)} className="shrink-0">
-                <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
-              </button>
+              {cardMode ? (
+                <span className="shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-md text-muted-foreground" title="Kartın detallı baxışı">
+                  <Eye className="w-4 h-4" />
+                </span>
+              ) : (
+                <button type="button" onClick={() => toggle(kpi.id)} className="shrink-0">
+                  <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                </button>
+              )}
             </div>
 
             {isOpen && (
+
               <div className="border-t border-border bg-secondary/10">
                 {kpi.targets.length === 0 ? (
                   <div className="p-6 text-center text-sm text-muted-foreground">Bu KPI üçün hədəf təyin olunmayıb.</div>

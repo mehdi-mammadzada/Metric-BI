@@ -336,17 +336,11 @@ const OwnKpisView = ({ title, subtitle, data, cascadeNodes = [] }: { title: stri
           status: k.status as AccordionKpiStatus,
           targets: targetsForKpi(k),
         }))}
-        onAction={(item, _t, a) => {
+        onCardClick={(item) => {
           const k = rows.find(r => r.id === item.id);
-          if (!k) return;
-          const tab: DrawerTab = a === "history" ? "history" : a === "comments" ? "comments" : "general";
-          if (a === "reminders") {
-            openDrawer(k, "general");
-            setTimeout(() => setDrawerTab("history" as DrawerTab), 0);
-            return;
-          }
-          openDrawer(k, tab);
+          if (k) openDrawer(k, "general");
         }}
+
       />
 
 
@@ -1261,10 +1255,12 @@ export const SubordinatesView = ({
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => {
-                            if (!empKpiListFor) return;
-                            setCardDrawer({ card: k, employee: empKpiListFor });
+                            // Hədəf səviyyəsi deyil — birbaşa KPI kartının tam detallı baxışı
+                            setViewKpi(k);
+                            setViewKpiTab("general");
                             setEmpKpiListFor(null);
                           }}
+
                           className="w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                           aria-label="Bax"
                           title="Bax"
