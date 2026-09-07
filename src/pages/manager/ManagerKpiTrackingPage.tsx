@@ -173,21 +173,25 @@ const ManagerKpiTrackingPage = () => {
     };
   };
 
-  // Mənim KPI-larım — yalnız REAL kartlar (shared_kpi_cards + cascade_tree).
+  // Mənim KPI-larım — yalnız FƏRDİ kartlar (shared_kpi_cards + cascade_tree).
   const myKpis = useMemo<Kpi[]>(() => {
     if (!me) return [];
-    return getRealKpiCardsForEmployee(me.id).map(c =>
-      realToKpi(c, `${me.firstName} ${me.lastName}`, me.positionName || "İcraçı"),
-    );
+    return getRealKpiCardsForEmployee(me.id)
+      .filter(c => c.assignmentMode !== "bulk")
+      .map(c => realToKpi(c, `${me.firstName} ${me.lastName}`, me.positionName || "İcraçı"));
   }, [me, sharedCards, tree]);
 
-  // Komanda KPI-ları — istifadəçinin üzv olduğu komandalara TOPLU verilmiş kartlar.
+  // Komanda KPI-ları — komandalara verilmiş kartlar + əməkdaşın iştirak etdiyi TOPLU kartlar.
   const teamKpis = useMemo<Kpi[]>(() => {
     if (!me) return [];
-    return getRealTeamKpiCards(me.id).map(c =>
-      realToKpi(c, `${me.firstName} ${me.lastName}`, me.positionName || "İcraçı"),
-    );
+    const bulkOwn = getRealKpiCardsForEmployee(me.id).filter(c => c.assignmentMode === "bulk");
+    const merged = [...getRealTeamKpiCards(me.id), ...bulkOwn];
+    const seen = new Set<string>();
+    return merged
+      .filter(c => (seen.has(c.id) ? false : (seen.add(c.id), true)))
+      .map(c => realToKpi(c, `${me.firstName} ${me.lastName}`, me.positionName || "İcraçı"));
   }, [me, sharedCards]);
+
 
 
   // Rəhbər yalnız öz strukturunu görməlidir, HR/SUPER_ADMIN isə bütün şirkəti.
