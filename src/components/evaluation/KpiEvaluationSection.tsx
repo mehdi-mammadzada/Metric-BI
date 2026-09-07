@@ -197,10 +197,6 @@ export const KpiEvalDialog = ({
   const [actual, setActual] = useState<string>(item.actual !== undefined ? String(item.actual) : "");
   const [score, setScore] = useState<number>(item.evaluatedScore ?? 0);
   const [comment, setComment] = useState(item.selfComment || "");
-  const [challenges, setChallenges] = useState(item.challenges || "");
-  const [evidence, setEvidence] = useState(item.evidence || "");
-  const [nextPlan, setNextPlan] = useState(item.nextPlan || "");
-
 
   const actualNum = actual === "" ? undefined : Number(actual.replace(",", ".")) || 0;
   const livePct = actualNum === undefined ? 0 : calcCompletion({ ...item, actual: actualNum });
@@ -223,9 +219,6 @@ export const KpiEvalDialog = ({
       actual: actualNum,
       evaluatedScore: score,
       selfComment: comment,
-      challenges,
-      evidence,
-      nextPlan,
     }, item);
     toast.success("KPI qiymətləndirməsi yadda saxlandı");
     onClose();
@@ -329,41 +322,6 @@ export const KpiEvalDialog = ({
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-foreground">Qarşılaşılan çətinliklər</label>
-            <Textarea
-              value={challenges}
-              disabled={readOnly}
-              onChange={e => setChallenges(e.target.value)}
-              rows={2}
-              placeholder="Hədəfin yerinə yetirilməsinə mane olan amillər..."
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-foreground">Dəstəkləyici sübut / istinad</label>
-            <input
-              type="text"
-              value={evidence}
-              disabled={readOnly}
-              onChange={e => setEvidence(e.target.value)}
-              placeholder="Hesabat nömrəsi, fayl adı və ya keçid..."
-              className="mt-1 w-full px-3 py-2 text-sm border border-border rounded-lg bg-background"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-foreground">Növbəti dövr üçün tədbir planı</label>
-            <Textarea
-              value={nextPlan}
-              disabled={readOnly}
-              onChange={e => setNextPlan(e.target.value)}
-              rows={2}
-              placeholder="Növbəti dövrdə nəticəni yaxşılaşdırmaq üçün konkret addımlar..."
-              className="mt-1"
-            />
-          </div>
         </div>
         <div className="flex items-center justify-end gap-2 p-4 border-t border-border sticky bottom-0 bg-card">
           <Button variant="outline" onClick={onClose}>{readOnly ? "Bağla" : "Ləğv et"}</Button>
