@@ -5,7 +5,7 @@
 // The visual container (Dialog / Drawer) is provided by the caller — this component
 // renders only the tab strip and the tab content.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Target, Clock, ArrowUp, ArrowDown, CheckCircle, AlertTriangle, Calendar,
   ChevronDown, ChevronUp, Info, ShoppingCart, Store, Monitor, BarChart3,
@@ -26,6 +26,7 @@ import { mergeCardTargets } from "@/lib/targetMerge";
 import { getApprovalMatrices, formatAssignee } from "@/lib/matrixStore";
 import { getEmployees } from "@/lib/orgStore";
 import { withKartSuffix } from "@/lib/utils";
+import { fetchKpiComments, formatCommentDate, KPI_COMMENTS_EVT, type KpiComment } from "@/lib/kpiCommentsService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -87,7 +88,16 @@ const KpiDetailView = ({
   const [reviewCommentFilters, setReviewCommentFilters] =
     useState<Record<string, { author: string; date: string }>>({});
   const [outcomeDialog, setOutcomeDialog] = useState<{ reviewId: string; status: "held" | "deferred"; comment: string } | null>(null);
+  const [reviewComments, setReviewComments] = useState<KpiComment[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (detailTab !== "reviewTrack") return;
+    const load = () => { void fetchKpiComments(`card:${selectedKpi.id}`).then(setReviewComments); };
+    load();
+    window.addEventListener(KPI_COMMENTS_EVT, load);
+    return () => window.removeEventListener(KPI_COMMENTS_EVT, load);
+  }, [detailTab, selectedKpi.id]);
 
 
   const hasMatrix = !!selectedKpi.matrixId;
@@ -204,17 +214,12 @@ const KpiDetailView = ({
                           )}
 
                           {(() => {
-                            const key = `kpi_review_comments_v1::${selectedKpi.id}::${r.id}`;
-                            let comments: { author: string; date: string; text: string }[] = [];
-                            try {
-                              const raw = localStorage.getItem(key);
-                              if (raw) comments = JSON.parse(raw);
-                            } catch {}
                             const filter = reviewCommentFilters[r.id] || { author: "", date: "" };
+                            const comments = reviewComments.filter(c => c.cardRef.includes(`#rev:${r.id}`));
                             const availableAuthors = Array.from(new Set(comments.map(c => c.author).filter(Boolean)));
                             const filteredComments = comments.filter(c => {
                               if (filter.author && c.author !== filter.author) return false;
-                              if (filter.date && !(c.date || "").includes(filter.date)) return false;
+                              if (filter.date && !c.createdAt.includes(filter.date)) return false;
                               return true;
                             });
                             const isExpanded = expandedReviews.has(r.id);
@@ -273,7 +278,7 @@ const KpiDetailView = ({
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center justify-between gap-2">
                                             <p className="text-[11px] font-semibold text-foreground">{c.author}</p>
-                                            {c.date && <p className="text-[10px] text-muted-foreground">{c.date}</p>}
+                                            {c.createdAt && <p className="text-[10px] text-muted-foreground">{formatCommentDate(c.createdAt)}</p>}
                                           </div>
                                           <p className="text-xs text-foreground/90 mt-0.5">{c.text}</p>
                                         </div>

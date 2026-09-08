@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,24 @@ import {
   type KpiComment,
 } from "@/lib/kpiCommentsService";
 
+const reviewIdFromRef = (ref?: string | number | null): string | null => {
+  const m = /#rev:([^#]+)$/.exec(String(ref ?? ""));
+  return m ? m[1] : null;
+};
+
+/**
+ * Verilən ref-ə uyğun şərhləri filtrləyir.
+ * - Review ref-i deyilsə, review şərhlərini (#rev:) gizlədir (ümumi şərhlər tabında görsənməsin).
+ * - Review ref-idirsə, yalnız həmin review-a aid şərhləri göstərir.
+ */
+const filterForRef = (rows: KpiComment[], refId?: string | number | null): KpiComment[] => {
+  const reviewId = reviewIdFromRef(refId);
+  if (reviewId != null) {
+    return rows.filter(c => c.cardRef.includes(`#rev:${reviewId}`));
+  }
+  return rows.filter(c => !c.cardRef.includes("#rev:"));
+};
+
 /**
  * Daimi (bazada saxlanılan) şərh axını. `refId` — şərhlərin bağlandığı obyekt
  * (KPI kartı id-si, hədəf id-si və s.). Refresh / yeni giriş / digər cihazlarda
@@ -20,7 +38,7 @@ import {
  */
 export default function KpiCommentThread({ refId, placeholder = "Şərhinizi yazın..." }: { refId?: string | number | null; placeholder?: string }) {
   const { user } = useAuth();
-  const [items, setItems] = useState<KpiComment[]>(() => getCachedComments(refId));
+  const [items, setItems] = useState<KpiComment[]>(() => filterForRef(getCachedComments(refId), refId));
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -29,14 +47,14 @@ export default function KpiCommentThread({ refId, placeholder = "Şərhinizi yaz
   const reload = useCallback(async () => {
     if (refId == null) return;
     setLoading(true);
-    setItems(await fetchKpiComments(refId));
+    setItems(filterForRef(await fetchKpiComments(refId), refId));
     setLoading(false);
   }, [refId]);
 
   useEffect(() => {
-    setItems(getCachedComments(refId));
+    setItems(filterForRef(getCachedComments(refId), refId));
     void reload();
-    const onCache = () => setItems(getCachedComments(refId));
+    const onCache = () => setItems(filterForRef(getCachedComments(refId), refId));
     window.addEventListener(KPI_COMMENTS_EVT, onCache);
     window.addEventListener("storage", onCache);
     return () => {
@@ -58,7 +76,7 @@ export default function KpiCommentThread({ refId, placeholder = "Şərhinizi yaz
       toast({ title: "Şərh yadda saxlanılmadı", description: res.error, variant: "destructive" });
       return;
     }
-    setItems(res.rows);
+    setItems(filterForRef(res.rows, refId));
     setDraft("");
     toast({ title: "Şərh əlavə edildi" });
     requestAnimationFrame(() => endRef.current?.scrollIntoView({ block: "nearest" }));
@@ -66,11 +84,11 @@ export default function KpiCommentThread({ refId, placeholder = "Şərhinizi yaz
 
   const remove = async (id: string) => {
     if (refId == null) return;
-    setItems(await deleteKpiComment(refId, id));
+    setItems(filterForRef(await deleteKpiComment(refId, id), refId));
   };
 
   // Ən köhnədən ən yeniyə (chat sırası)
-  const ordered = [...items].reverse();
+  const ordered = useMemo(() => [...items].reverse(), [items]);
 
   return (
     <>
