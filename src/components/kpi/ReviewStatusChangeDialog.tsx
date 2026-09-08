@@ -8,9 +8,10 @@ import { Check, Clock, CalendarClock, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ReviewStatusValue = "held" | "in_progress" | "deferred" | "missed";
+export type SelectableReviewStatus = Exclude<ReviewStatusValue, "in_progress">;
 
 const OPTIONS: {
-  value: ReviewStatusValue;
+  value: SelectableReviewStatus;
   label: string;
   desc: string;
   icon: typeof Check;
@@ -20,7 +21,6 @@ const OPTIONS: {
   iconColor: string;
 }[] = [
   { value: "held", label: "Keçirildi", desc: "Review tamamlanıb.", icon: Check, color: "text-emerald-600", ring: "border-emerald-500 bg-emerald-500/5", iconBg: "bg-emerald-500/15", iconColor: "text-emerald-600" },
-  { value: "in_progress", label: "İcrada", desc: "Hazırda review müddəti davam edir.", icon: Clock, color: "text-amber-600", ring: "border-amber-500 bg-amber-500/5", iconBg: "bg-amber-500/15", iconColor: "text-amber-600" },
   { value: "deferred", label: "Təxirə salındı", desc: "Review başqa tarixə ertələnib.", icon: CalendarClock, color: "text-violet-600", ring: "border-violet-500 bg-violet-500/5", iconBg: "bg-violet-500/15", iconColor: "text-violet-600" },
   { value: "missed", label: "Keçirilmədi", desc: "Review dövrü bitib, lakin review keçirilməyib.", icon: XCircle, color: "text-rose-600", ring: "border-rose-500 bg-rose-500/5", iconBg: "bg-rose-500/15", iconColor: "text-rose-600" },
 ];
