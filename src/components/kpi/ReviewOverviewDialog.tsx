@@ -54,11 +54,11 @@ interface Props {
   title: string;
   data: ReviewOverviewData;
   onChangeStatus?: () => void;
-  /** Fərdi review-larda karta görə ümumi status göstərilmir. */
-  showStatus?: boolean;
   onOpenTarget?: (index: number) => void;
   /** Şərhlərin bağlandığı ümumi KPI kartı referansı (məs: `card:12`). */
   commentRefId?: string | number | null;
+  /** Fərdi review-larda karta görə ümumi status badge-i göstərilmir, lakin "Statusu dəyiş" buttonu ayrıca idarə olunur. */
+  showStatus?: boolean;
 }
 
 const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus, onOpenTarget, commentRefId, showStatus = true }: Props) => {
@@ -89,7 +89,7 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
             </div>
             <p className="text-xs text-muted-foreground pl-9 truncate">{title} — Review haqqında ümumi məlumat və xülasə</p>
           </div>
-          {showStatus && onChangeStatus && (
+          {onChangeStatus && (
             <Button variant="outline" onClick={onChangeStatus} className="gap-1.5 shrink-0">
               <RefreshCw className="w-3.5 h-3.5" /> Statusu dəyiş
             </Button>
