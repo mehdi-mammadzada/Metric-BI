@@ -2374,7 +2374,7 @@ const ReviewsView = () => {
                       </tr>
                       {expanded === g.groupKey && (
                         <tr key={`${g.groupKey}-drill`} className="bg-secondary/20">
-                          <td colSpan={7} className="px-4 py-3">
+                          <td colSpan={6} className="px-4 py-3">
                             <div className="rounded-lg border border-border bg-card overflow-hidden">
                               <table className="w-full text-sm">
                                 <thead className="bg-secondary/40 text-muted-foreground text-[11px] uppercase">
@@ -2486,7 +2486,8 @@ const ReviewsView = () => {
           title={withKartSuffix(overview.group.cardName) + (overview.row ? ` · ${overview.row.empName}` : "")}
           data={overview.data}
           commentRefId={overview.commentRef}
-          onChangeStatus={() => setStatusDialog({
+          showStatus={!overview.row}
+          onChangeStatus={overview.row ? undefined : () => setStatusDialog({
             cardId: overview.group.cardId,
             cardName: overview.group.cardName,
             reviewId: overview.group.reviewId,
