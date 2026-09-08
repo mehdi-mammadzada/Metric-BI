@@ -275,7 +275,7 @@ const KpiDetailView = ({
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center justify-between gap-2">
                                             <p className="text-[11px] font-semibold text-foreground">{c.author}</p>
-                                            {c.date && <p className="text-[10px] text-muted-foreground">{c.date}</p>}
+                                            {c.createdAt && <p className="text-[10px] text-muted-foreground">{formatCommentDate(c.createdAt)}</p>}
                                           </div>
                                           <p className="text-xs text-foreground/90 mt-0.5">{c.text}</p>
                                         </div>
