@@ -735,7 +735,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           try { supabase.auth.startAutoRefresh?.(); } catch { /* noop */ }
           setUser(cached);
           startBusinessSyncs(cached);
-          void logAudit({ organizationId: cached.currentOrgId ?? null, actorUserId: cached.supabaseUserId, action: "login", module: "auth", entityType: "user", entityId: cached.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
+          void logAudit({ organizationId: cached.currentOrgId ?? null, action: "login", module: "auth", entityType: "user", entityId: cached.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
           void fetchAuthUserDirectWithRetry(data.user.id, data.user.email ?? lower, data.access_token, 12000, 3)
             .then((fresh) => { if (fresh) { applyUser(fresh); startBusinessSyncs(fresh); } });
           return { success: true };
@@ -793,7 +793,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           applyUser(u);
           startBusinessSyncs(u);
 
-          void logAudit({ organizationId: u.currentOrgId ?? null, actorUserId: u.supabaseUserId, action: "login", module: "auth", entityType: "user", entityId: u.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
+          void logAudit({ organizationId: u.currentOrgId ?? null, action: "login", module: "auth", entityType: "user", entityId: u.supabaseUserId ?? null, metadata: { method: "password", email: lower } });
           return { success: true };
         }
         // Session is stored; only the profile is still unavailable. Ask the user
@@ -819,7 +819,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   const logout = async () => {
-    void logAudit({ organizationId: user?.currentOrgId ?? null, actorUserId: user?.supabaseUserId, action: "logout", module: "auth", entityType: "user", entityId: user?.supabaseUserId ?? null });
+    void logAudit({ organizationId: user?.currentOrgId ?? null, action: "logout", module: "auth", entityType: "user", entityId: user?.supabaseUserId ?? null });
     clearCachedAuthUser();
     setUser(null);
 
@@ -833,13 +833,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     deactivateTeamsSync();
     clearBusinessSyncTimers();
     syncKeyRef.current = null;
-    try {
-      await withPromiseTimeout(supabase.auth.signOut(), 8000, "Çıxış gecikdi");
-    } catch (err) {
-      // Local UI/cache state is already cleared above. A stale preview lock must
-      // never surface as an unhandled rejection or block the next sign-in.
-      console.warn("[auth] remote sign-out did not complete", err);
-    }
+    await supabase.auth.signOut();
   };
 
   const hasPermission = (perm: string) => {
