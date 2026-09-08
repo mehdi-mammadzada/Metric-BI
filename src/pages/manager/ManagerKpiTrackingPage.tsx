@@ -2204,7 +2204,7 @@ const ReviewsView = () => {
     });
   };
 
-  const filteredIndividual = useMemo(() => filterGroups(individualGroups), [individualGroups, q, colF, statusFilter, resolvedPeriod]);
+  const filteredIndividual = useMemo(() => filterGroups(individualGroups, false), [individualGroups, q, colF, statusFilter, resolvedPeriod]);
   const filteredBulk = useMemo(() => filterGroups(bulkGroups), [bulkGroups, q, colF, statusFilter, resolvedPeriod]);
 
   const toOverviewStatus = (s: ReviewComputedStatus): ReviewStatusValue =>
@@ -2347,7 +2347,6 @@ const ReviewsView = () => {
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="KPI Kartı" value={colF.cardName} onChange={setCol("cardName")} /></th>
                     <th className="text-left px-4 py-3 font-medium align-top w-[140px]"><ColumnSearchHeader label="Review adı" value={colF.reviewName} onChange={setCol("reviewName")} placeholder="Məs: Review #1" /></th>
                     <th className="text-left px-4 py-3 font-medium align-top w-[140px]"><ColumnSearchHeader label="Əməkdaş sayı" value={colF.count} onChange={setCol("count")} placeholder="Məs: 3" /></th>
-                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review statusu" value={colF.status} onChange={setCol("status")} /></th>
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review başlanma" value={colF.start} onChange={setCol("start")} placeholder="Məs: 01.08.2026" /></th>
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review bitmə" value={colF.end} onChange={setCol("end")} placeholder="Məs: 31.08.2026" /></th>
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Son yenilənmə" value={colF.updated} onChange={setCol("updated")} placeholder="Məs: 01.08.2026" /></th>
