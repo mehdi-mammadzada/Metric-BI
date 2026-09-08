@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Clock, CalendarClock, XCircle } from "lucide-react";
+import { Check, CalendarClock, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ReviewStatusValue = "held" | "in_progress" | "deferred" | "missed";
+export type SelectableReviewStatus = Exclude<ReviewStatusValue, "in_progress">;
 
 const OPTIONS: {
-  value: ReviewStatusValue;
+  value: SelectableReviewStatus;
   label: string;
   desc: string;
   icon: typeof Check;
@@ -20,7 +21,6 @@ const OPTIONS: {
   iconColor: string;
 }[] = [
   { value: "held", label: "Keçirildi", desc: "Review tamamlanıb.", icon: Check, color: "text-emerald-600", ring: "border-emerald-500 bg-emerald-500/5", iconBg: "bg-emerald-500/15", iconColor: "text-emerald-600" },
-  { value: "in_progress", label: "İcrada", desc: "Hazırda review müddəti davam edir.", icon: Clock, color: "text-amber-600", ring: "border-amber-500 bg-amber-500/5", iconBg: "bg-amber-500/15", iconColor: "text-amber-600" },
   { value: "deferred", label: "Təxirə salındı", desc: "Review başqa tarixə ertələnib.", icon: CalendarClock, color: "text-violet-600", ring: "border-violet-500 bg-violet-500/5", iconBg: "bg-violet-500/15", iconColor: "text-violet-600" },
   { value: "missed", label: "Keçirilmədi", desc: "Review dövrü bitib, lakin review keçirilməyib.", icon: XCircle, color: "text-rose-600", ring: "border-rose-500 bg-rose-500/5", iconBg: "bg-rose-500/15", iconColor: "text-rose-600" },
 ];
@@ -36,17 +36,17 @@ interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   currentStatus: ReviewStatusValue;
-  onSave: (v: { status: ReviewStatusValue; comment: string }) => void;
+  onSave: (v: { status: SelectableReviewStatus; comment: string }) => void;
 }
 
 const ReviewStatusChangeDialog = ({ open, onOpenChange, currentStatus, onSave }: Props) => {
-  const [status, setStatus] = useState<ReviewStatusValue>(currentStatus);
+  const [status, setStatus] = useState<SelectableReviewStatus>(currentStatus === "in_progress" ? "held" : currentStatus);
   const [comment, setComment] = useState("");
   const [touched, setTouched] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setStatus(currentStatus);
+      setStatus(currentStatus === "in_progress" ? "held" : currentStatus);
       setComment("");
       setTouched(false);
     }
@@ -56,7 +56,6 @@ const ReviewStatusChangeDialog = ({ open, onOpenChange, currentStatus, onSave }:
   const labels = useMemo(() => {
     switch (status) {
       case "held": return { label: "Qeyd (istəyə bağlı)", placeholder: "Yekun qeydi daxil edin...", helper: "Review tamamlanması ilə bağlı əlavə qeyd yazıla bilər." };
-      case "in_progress": return { label: "Qeyd (istəyə bağlı)", placeholder: "Review prosesi barədə qeyd daxil edin...", helper: "İcra prosesi ilə bağlı əlavə qeyd yazıla bilər." };
       case "deferred": return { label: "Qeyd *", placeholder: "Təxirə salınma səbəbini daxil edin...", helper: "Statusu dəyişmək üçün qeyd məcburidir.", err: "Təxirə salınma səbəbi daxil edilməlidir." };
       case "missed": return { label: "Qeyd *", placeholder: "Review-un keçirilməməsinin səbəbini daxil edin...", helper: "Statusu dəyişmək üçün qeyd məcburidir.", err: "Review-un keçirilməmə səbəbi daxil edilməlidir." };
     }

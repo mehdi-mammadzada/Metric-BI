@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import KpiAccordionList, { type AccordionKpi, type AccordionKpiStatus } from "@/components/kpi/KpiAccordionList";
 import ReviewOverviewDialog, { type ReviewOverviewData } from "@/components/kpi/ReviewOverviewDialog";
-import ReviewStatusChangeDialog, { type ReviewStatusValue } from "@/components/kpi/ReviewStatusChangeDialog";
+import ReviewStatusChangeDialog, { type ReviewStatusValue, type SelectableReviewStatus } from "@/components/kpi/ReviewStatusChangeDialog";
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
 import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import { employeeCommentRef } from "@/components/kpi/EmployeeCardTabs";
@@ -2255,7 +2255,7 @@ const ReviewsView = () => {
   };
 
 
-  const saveStatus = (v: { status: ReviewStatusValue; comment: string }) => {
+  const saveStatus = (v: { status: SelectableReviewStatus; comment: string }) => {
     if (!statusDialog) return;
     setReviewOutcome(statusDialog.cardId, statusDialog.cardName, undefined, statusDialog.reviewId, {
       status: v.status,
