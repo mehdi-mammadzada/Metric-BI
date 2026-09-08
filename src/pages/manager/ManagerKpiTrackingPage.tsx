@@ -2255,7 +2255,7 @@ const ReviewsView = () => {
   };
 
 
-  const saveStatus = (v: { status: ReviewStatusValue; comment: string }) => {
+  const saveStatus = (v: { status: SelectableReviewStatus; comment: string }) => {
     if (!statusDialog) return;
     setReviewOutcome(statusDialog.cardId, statusDialog.cardName, undefined, statusDialog.reviewId, {
       status: v.status,
