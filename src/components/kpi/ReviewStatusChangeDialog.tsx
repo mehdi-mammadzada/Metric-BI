@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Clock, CalendarClock, XCircle } from "lucide-react";
+import { Check, CalendarClock, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ReviewStatusValue = "held" | "in_progress" | "deferred" | "missed";
