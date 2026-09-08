@@ -2184,27 +2184,27 @@ const ReviewsView = () => {
   const individualGroups = useMemo(() => groupReviewRows(rows, "individual"), [rows]);
   const bulkGroups = useMemo(() => groupReviewRows(rows, "bulk"), [rows]);
 
-  const filterGroups = (groups: ReviewCardGroup[]) => {
+  const filterGroups = (groups: ReviewCardGroup[], withStatus = true) => {
     const s = q.trim().toLowerCase();
     const m = (val: string, f: string) => !f.trim() || String(val ?? "").toLowerCase().includes(f.trim().toLowerCase());
     return groups.filter(g => {
       const global = !s || withKartSuffix(g.cardName).toLowerCase().includes(s)
         || g.employees.some(e => e.empName.toLowerCase().includes(s));
       if (!global) return false;
-      if (statusFilter !== "all" && REVIEW_STATUS_CATALOG_LABEL[g.reviewStatus] !== statusFilter) return false;
+      if (withStatus && statusFilter !== "all" && REVIEW_STATUS_CATALOG_LABEL[g.reviewStatus] !== statusFilter) return false;
       if (!overlapsPeriod(resolvedPeriod, g.reviewStart, g.reviewEnd)) return false;
       return m(withKartSuffix(g.cardName), colF.cardName)
         && m(g.reviewLabel, colF.reviewName)
         && m(`${g.employees.length}`, colF.count)
         && m(`${g.overallProgress}`, colF.progress)
-        && m(REVIEW_STATUS_STYLES[g.reviewStatus]?.badgeLabel || "", colF.status)
+        && (!withStatus || m(REVIEW_STATUS_STYLES[g.reviewStatus]?.badgeLabel || "", colF.status))
         && m(g.reviewStart, colF.start)
         && m(g.reviewEnd, colF.end)
         && m(g.updatedAt, colF.updated);
     });
   };
 
-  const filteredIndividual = useMemo(() => filterGroups(individualGroups), [individualGroups, q, colF, statusFilter, resolvedPeriod]);
+  const filteredIndividual = useMemo(() => filterGroups(individualGroups, false), [individualGroups, q, colF, statusFilter, resolvedPeriod]);
   const filteredBulk = useMemo(() => filterGroups(bulkGroups), [bulkGroups, q, colF, statusFilter, resolvedPeriod]);
 
   const toOverviewStatus = (s: ReviewComputedStatus): ReviewStatusValue =>
@@ -2347,14 +2347,13 @@ const ReviewsView = () => {
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="KPI Kartı" value={colF.cardName} onChange={setCol("cardName")} /></th>
                     <th className="text-left px-4 py-3 font-medium align-top w-[140px]"><ColumnSearchHeader label="Review adı" value={colF.reviewName} onChange={setCol("reviewName")} placeholder="Məs: Review #1" /></th>
                     <th className="text-left px-4 py-3 font-medium align-top w-[140px]"><ColumnSearchHeader label="Əməkdaş sayı" value={colF.count} onChange={setCol("count")} placeholder="Məs: 3" /></th>
-                    <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review statusu" value={colF.status} onChange={setCol("status")} /></th>
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review başlanma" value={colF.start} onChange={setCol("start")} placeholder="Məs: 01.08.2026" /></th>
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review bitmə" value={colF.end} onChange={setCol("end")} placeholder="Məs: 31.08.2026" /></th>
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Son yenilənmə" value={colF.updated} onChange={setCol("updated")} placeholder="Məs: 01.08.2026" /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredIndividual.length === 0 ? emptyRow(7, "Fərdi review mərhələsində olan KPI kartı yoxdur.") : filteredIndividual.map(g => (
+                  {filteredIndividual.length === 0 ? emptyRow(6, "Fərdi review mərhələsində olan KPI kartı yoxdur.") : filteredIndividual.map(g => (
                     <React.Fragment key={g.groupKey}>
                       <tr
                         key={g.groupKey}
@@ -2369,14 +2368,13 @@ const ReviewsView = () => {
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{g.reviewLabel}</td>
                         <td className="px-4 py-3 text-muted-foreground tabular-nums">{g.employees.length}</td>
-                        <td className="px-4 py-3"><StatusBadge g={g} /></td>
                         <td className="px-4 py-3 text-muted-foreground">{g.reviewStart}</td>
                         <td className="px-4 py-3 text-muted-foreground">{g.reviewEnd}</td>
                         <td className="px-4 py-3 text-muted-foreground">{g.updatedAt}</td>
                       </tr>
                       {expanded === g.groupKey && (
                         <tr key={`${g.groupKey}-drill`} className="bg-secondary/20">
-                          <td colSpan={7} className="px-4 py-3">
+                          <td colSpan={6} className="px-4 py-3">
                             <div className="rounded-lg border border-border bg-card overflow-hidden">
                               <table className="w-full text-sm">
                                 <thead className="bg-secondary/40 text-muted-foreground text-[11px] uppercase">
@@ -2488,7 +2486,8 @@ const ReviewsView = () => {
           title={withKartSuffix(overview.group.cardName) + (overview.row ? ` · ${overview.row.empName}` : "")}
           data={overview.data}
           commentRefId={overview.commentRef}
-          onChangeStatus={() => setStatusDialog({
+          showStatus={!overview.row}
+          onChangeStatus={overview.row ? undefined : () => setStatusDialog({
             cardId: overview.group.cardId,
             cardName: overview.group.cardName,
             reviewId: overview.group.reviewId,
