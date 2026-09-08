@@ -91,6 +91,11 @@ const KpiDetailView = ({
   const [reviewComments, setReviewComments] = useState<KpiComment[]>([]);
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (detailTab !== "reviewTrack") return;
+    void fetchKpiComments(`card:${selectedKpi.id}`).then(setReviewComments);
+  }, [detailTab, selectedKpi.id]);
+
 
   const hasMatrix = !!selectedKpi.matrixId;
   const isPersonalCard = getAssignKindFor(selectedKpi.id) === "Fərdi";
