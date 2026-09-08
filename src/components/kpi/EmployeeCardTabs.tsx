@@ -138,7 +138,7 @@ export default function EmployeeCardTabs({ card, tab, employeeName }: Props) {
             const computed = computeReviewStatus(r);
             const styleDef = REVIEW_STATUS_STYLES[computed];
             const BadgeIcon = styleDef.badgeIcon;
-            const filteredComments = commentsForReview(r, i);
+            const filteredComments = commentsForReview(r);
 
             return (
               <div key={r.id} className={`flex items-start gap-3 p-3 rounded-lg border ${styleDef.card}`}>
