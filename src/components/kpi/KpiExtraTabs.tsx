@@ -86,8 +86,9 @@ function Comments({ cardId }: { cardId?: number | string }) {
   };
 
   const initial = (name: string) => (name || "?").trim().charAt(0).toUpperCase();
-  const availableAuthors = Array.from(new Set(items.map(c => c.author).filter(Boolean)));
+  const availableAuthors = Array.from(new Set(items.filter(c => !c.cardRef.includes("#rev:")).map(c => c.author).filter(Boolean)));
   const filtered = items.filter(c => {
+    if (c.cardRef.includes("#rev:")) return false; // Review şərhləri yalnız Review İzləmə tabında görünsün.
     if (filterAuthor && c.author !== filterAuthor) return false;
     if (filterDate && !formatCommentDate(c.createdAt).includes(filterDate.split("-").reverse().join("."))) return false;
     return true;
