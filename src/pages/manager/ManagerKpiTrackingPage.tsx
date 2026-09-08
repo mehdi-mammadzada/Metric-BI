@@ -45,6 +45,7 @@ import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import { employeeCommentRef } from "@/components/kpi/EmployeeCardTabs";
 import { reviewCommentRef } from "@/lib/kpiCommentsService";
 import PeriodRangePicker, { emptyPeriodSelection, overlapsPeriod, resolvePeriod, type PeriodSelection, type ResolvedPeriod } from "@/components/kpi/PeriodRangePicker";
+import { useSampleBulkReviewsSeed } from "@/lib/sampleBulkReviewsSeed";
 
 
 type Stage = "assigned" | "evaluated" | "pending_assign";
@@ -142,6 +143,8 @@ const ManagerKpiTrackingPage = () => {
   const { user } = useAuth();
   const tree = useCascadeTree();
   const sharedCards = useVisibleSharedKpiCards();
+  useSampleBulkReviewsSeed();
+
 
   const me = useMemo(() => findEmployeeByUser(user), [user?.email, user?.name, sharedCards, tree]);
 
