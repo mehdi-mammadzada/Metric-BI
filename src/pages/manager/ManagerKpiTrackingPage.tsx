@@ -2353,7 +2353,7 @@ const ReviewsView = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredIndividual.length === 0 ? emptyRow(7, "Fərdi review mərhələsində olan KPI kartı yoxdur.") : filteredIndividual.map(g => (
+                  {filteredIndividual.length === 0 ? emptyRow(6, "Fərdi review mərhələsində olan KPI kartı yoxdur.") : filteredIndividual.map(g => (
                     <React.Fragment key={g.groupKey}>
                       <tr
                         key={g.groupKey}
@@ -2368,7 +2368,6 @@ const ReviewsView = () => {
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{g.reviewLabel}</td>
                         <td className="px-4 py-3 text-muted-foreground tabular-nums">{g.employees.length}</td>
-                        <td className="px-4 py-3"><StatusBadge g={g} /></td>
                         <td className="px-4 py-3 text-muted-foreground">{g.reviewStart}</td>
                         <td className="px-4 py-3 text-muted-foreground">{g.reviewEnd}</td>
                         <td className="px-4 py-3 text-muted-foreground">{g.updatedAt}</td>
