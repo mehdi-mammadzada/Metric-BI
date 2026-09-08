@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +12,11 @@ import {
   KPI_COMMENTS_EVT,
   type KpiComment,
 } from "@/lib/kpiCommentsService";
+
+const reviewIdFromRef = (ref?: string | number | null): string | null => {
+  const m = /#rev:([^#]+)$/.exec(String(ref ?? ""));
+  return m ? m[1] : null;
+};
 
 /**
  * Daimi (bazada saxlanılan) şərh axını. `refId` — şərhlərin bağlandığı obyekt
