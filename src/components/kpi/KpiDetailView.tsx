@@ -93,7 +93,10 @@ const KpiDetailView = ({
 
   useEffect(() => {
     if (detailTab !== "reviewTrack") return;
-    void fetchKpiComments(`card:${selectedKpi.id}`).then(setReviewComments);
+    const load = () => { void fetchKpiComments(`card:${selectedKpi.id}`).then(setReviewComments); };
+    load();
+    window.addEventListener(KPI_COMMENTS_EVT, load);
+    return () => window.removeEventListener(KPI_COMMENTS_EVT, load);
   }, [detailTab, selectedKpi.id]);
 
 
