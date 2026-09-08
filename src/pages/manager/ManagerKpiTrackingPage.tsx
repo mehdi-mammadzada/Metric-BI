@@ -2197,7 +2197,7 @@ const ReviewsView = () => {
         && m(g.reviewLabel, colF.reviewName)
         && m(`${g.employees.length}`, colF.count)
         && m(`${g.overallProgress}`, colF.progress)
-        && m(REVIEW_STATUS_STYLES[g.reviewStatus]?.badgeLabel || "", colF.status)
+        && (!withStatus || m(REVIEW_STATUS_STYLES[g.reviewStatus]?.badgeLabel || "", colF.status))
         && m(g.reviewStart, colF.start)
         && m(g.reviewEnd, colF.end)
         && m(g.updatedAt, colF.updated);
