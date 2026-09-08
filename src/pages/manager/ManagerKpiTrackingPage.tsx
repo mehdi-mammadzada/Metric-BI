@@ -1796,7 +1796,7 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
               const ALL_TABS: [typeof tab, string][] = [
                 ["general", "Ümumi"], ["execution", "İcra"], ["fact", "Fakt"],
                 ["evaluation", "Qiymət."], ["history", "Tarixçə"], ["review", "Review"],
-                ["performance", "Performans"], ["attachments", "Əlavələr"],
+                ["performance", "Performans dinamikası"], ["attachments", "Əlavələr"],
               ];
               const visible = ALL_TABS.filter(([k]) => !tabsFilter || tabsFilter.includes(k));
               return (
@@ -1903,20 +1903,18 @@ const TargetDetailDrawer = ({ data, onClose, tabsFilter }: {
 
 
               <TabsContent value="performance" className="mt-0 space-y-3">
-                <div className="rounded-xl border border-border p-3 space-y-2 text-xs">
-                  <MetaRow label="Cari nəticə" value={`${fmt(target.fakt)} ${target.unit}`} />
-                  <MetaRow label="Hədəf" value={`${fmt(target.plan)} ${target.unit}`} />
-                  <MetaRow label="İcra faizi" value={`${pct}%`} />
-                  <MetaRow label="Trend" value={<span className={pct >= 90 ? "text-emerald-600" : pct >= 70 ? "text-amber-600" : "text-rose-600"}>{pct >= 90 ? "▲ Yüksəliş" : pct >= 70 ? "▬ Sabit" : "▼ Enmə"}</span>} />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-foreground mb-2">Dövr üzrə dinamika</div>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    <div className="col-span-4 rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-                      Performans dinamikası qeyd edilməyib.
-                    </div>
-                  </div>
-                </div>
+                {(() => {
+                  // KPI-lar → Əməkdaşlar üzrə detal baxışı ilə eyni komponent/mənbə (sinxron).
+                  const shared = findSharedCard({ name: cardName });
+                  if (!shared) {
+                    return (
+                      <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+                        Performans dinamikası qeyd edilməyib.
+                      </div>
+                    );
+                  }
+                  return <PerformanceDynamicsDrilldownTab kpi={sharedToKpiCardShape(shared)} />;
+                })()}
               </TabsContent>
 
               <TabsContent value="attachments" className="mt-0">
@@ -2501,7 +2499,7 @@ const ReviewsView = () => {
         />
       )}
 
-      <TargetDetailDrawer data={targetDetail} onClose={() => setTargetDetail(null)} tabsFilter={["review", "performance"]} />
+      <TargetDetailDrawer data={targetDetail} onClose={() => setTargetDetail(null)} tabsFilter={["performance"]} />
 
       <ReviewStatusChangeDialog
         open={!!statusDialog}
