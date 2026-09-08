@@ -26,7 +26,7 @@ import { mergeCardTargets } from "@/lib/targetMerge";
 import { getApprovalMatrices, formatAssignee } from "@/lib/matrixStore";
 import { getEmployees } from "@/lib/orgStore";
 import { withKartSuffix } from "@/lib/utils";
-import { fetchKpiComments, type KpiComment } from "@/lib/kpiCommentsService";
+import { fetchKpiComments, formatCommentDate, type KpiComment } from "@/lib/kpiCommentsService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
