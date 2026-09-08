@@ -111,19 +111,9 @@ export default function EmployeeCardTabs({ card, tab, employeeName }: Props) {
     return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
   };
 
-  /** Ümumi (review-a bağlanmamış) şərhi tarixinə görə uyğun review-a yerləşdirir. */
-  const reviewIndexForDate = (day: string): number => {
-    if (!day || reviews.length === 0) return -1;
-    const inRange = reviews.findIndex((r: any) => r.start && r.end && r.start <= day && day <= r.end);
-    if (inRange >= 0) return inRange;
-    let last = -1;
-    reviews.forEach((r: any, i: number) => { if (r.start && r.start <= day) last = i; });
-    return last >= 0 ? last : 0;
-  };
-
   /** Verilmiş review-a aid şərhlər — yalnız review-a bağlı şərhlər (#rev:<id>) burada göstərilir.
    *  Ümumi kart şərhləri (Şərhlər tabı) review izlənməyə düşməməlidir. */
-  const commentsForReview = (r: any, idx: number) => cardComments.filter(c => {
+  const commentsForReview = (r: any) => cardComments.filter(c => {
     const rid = commentReviewId(c.cardRef);
     if (rid == null || String(rid) !== String(r.id)) return false;
     if (filterAuthor && c.author !== filterAuthor) return false;
