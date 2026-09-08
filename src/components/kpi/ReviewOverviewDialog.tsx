@@ -89,9 +89,11 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
             </div>
             <p className="text-xs text-muted-foreground pl-9 truncate">{title} — Review haqqında ümumi məlumat və xülasə</p>
           </div>
-          <Button variant="outline" onClick={onChangeStatus} className="gap-1.5 shrink-0">
-            <RefreshCw className="w-3.5 h-3.5" /> Statusu dəyiş
-          </Button>
+          {showStatus && onChangeStatus && (
+            <Button variant="outline" onClick={onChangeStatus} className="gap-1.5 shrink-0">
+              <RefreshCw className="w-3.5 h-3.5" /> Statusu dəyiş
+            </Button>
+          )}
         </div>
 
         <div className="p-6 space-y-6">
@@ -125,10 +127,14 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
             </div>
             {/* Sağ */}
             <div>
-              <div className="text-xs text-muted-foreground mb-2">Review statusu</div>
-              <Badge className={cn(cur.badge, "hover:" + cur.badge, "border inline-flex items-center gap-1.5 mb-3")}>
-                <CurIcon className="w-3 h-3" /> {cur.label}
-              </Badge>
+              {showStatus && (
+                <>
+                  <div className="text-xs text-muted-foreground mb-2">Review statusu</div>
+                  <Badge className={cn(cur.badge, "hover:" + cur.badge, "border inline-flex items-center gap-1.5 mb-3")}>
+                    <CurIcon className="w-3 h-3" /> {cur.label}
+                  </Badge>
+                </>
+              )}
               <div className="text-xs text-muted-foreground mb-2">Tamamlanma progressi</div>
               <div className="flex items-center gap-3">
                 <svg width="100" height="100" className="shrink-0">
