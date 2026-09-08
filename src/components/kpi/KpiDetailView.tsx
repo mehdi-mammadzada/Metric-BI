@@ -88,6 +88,7 @@ const KpiDetailView = ({
   const [reviewCommentFilters, setReviewCommentFilters] =
     useState<Record<string, { author: string; date: string }>>({});
   const [outcomeDialog, setOutcomeDialog] = useState<{ reviewId: string; status: "held" | "deferred"; comment: string } | null>(null);
+  const [reviewComments, setReviewComments] = useState<KpiComment[]>([]);
   const { toast } = useToast();
 
 
