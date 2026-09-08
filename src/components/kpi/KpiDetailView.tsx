@@ -211,17 +211,12 @@ const KpiDetailView = ({
                           )}
 
                           {(() => {
-                            const key = `kpi_review_comments_v1::${selectedKpi.id}::${r.id}`;
-                            let comments: { author: string; date: string; text: string }[] = [];
-                            try {
-                              const raw = localStorage.getItem(key);
-                              if (raw) comments = JSON.parse(raw);
-                            } catch {}
                             const filter = reviewCommentFilters[r.id] || { author: "", date: "" };
+                            const comments = reviewComments.filter(c => c.cardRef.includes(`#rev:${r.id}`));
                             const availableAuthors = Array.from(new Set(comments.map(c => c.author).filter(Boolean)));
                             const filteredComments = comments.filter(c => {
                               if (filter.author && c.author !== filter.author) return false;
-                              if (filter.date && !(c.date || "").includes(filter.date)) return false;
+                              if (filter.date && !c.createdAt.includes(filter.date)) return false;
                               return true;
                             });
                             const isExpanded = expandedReviews.has(r.id);
