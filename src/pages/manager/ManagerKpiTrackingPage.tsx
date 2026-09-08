@@ -142,6 +142,8 @@ const ManagerKpiTrackingPage = () => {
   const { user } = useAuth();
   const tree = useCascadeTree();
   const sharedCards = useVisibleSharedKpiCards();
+  useSampleBulkReviewsSeed();
+
 
   const me = useMemo(() => findEmployeeByUser(user), [user?.email, user?.name, sharedCards, tree]);
 
