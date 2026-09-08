@@ -135,6 +135,9 @@ export const ensureSampleBulkReviews = (cards: SharedKpiCard[]) => {
         .map(nameOf)
         .filter((n): n is string => !!n)
         .slice(0, 2);
+      const sessionKey = String(card.numericId ?? card.id);
+      if (seededInSession.has(sessionKey)) continue;
+      seededInSession.add(sessionKey);
       if (seedCard(card, reviewerNames)) seeded += 1;
     }
   } catch {
