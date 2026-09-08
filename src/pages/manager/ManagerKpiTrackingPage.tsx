@@ -2487,7 +2487,7 @@ const ReviewsView = () => {
           data={overview.data}
           commentRefId={overview.commentRef}
           showStatus={!overview.row}
-          onChangeStatus={overview.row ? undefined : () => setStatusDialog({
+          onChangeStatus={() => setStatusDialog({
             cardId: overview.group.cardId,
             cardName: overview.group.cardName,
             reviewId: overview.group.reviewId,
