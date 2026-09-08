@@ -121,11 +121,11 @@ export default function EmployeeCardTabs({ card, tab, employeeName }: Props) {
     return last >= 0 ? last : 0;
   };
 
-  /** Verilmiş review-a aid şərhlər (yalnız o review-da görünür). */
+  /** Verilmiş review-a aid şərhlər — yalnız review-a bağlı şərhlər (#rev:<id>) burada göstərilir.
+   *  Ümumi kart şərhləri (Şərhlər tabı) review izlənməyə düşməməlidir. */
   const commentsForReview = (r: any, idx: number) => cardComments.filter(c => {
     const rid = commentReviewId(c.cardRef);
-    if (rid) { if (String(rid) !== String(r.id)) return false; }
-    else if (reviewIndexForDate(dayOf(c.createdAt)) !== idx) return false;
+    if (rid == null || String(rid) !== String(r.id)) return false;
     if (filterAuthor && c.author !== filterAuthor) return false;
     if (filterDate && dayOf(c.createdAt) !== filterDate) return false;
     return true;
