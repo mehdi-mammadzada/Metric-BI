@@ -58,17 +58,24 @@ const REVIEW_PLAN: {
 ];
 
 const seedCard = (card: SharedKpiCard, reviewerNames: string[]): boolean => {
-  const key = `${FLAG}:${card.id}`;
-  if (localStorage.getItem(key)) return false;
+  const numericId = card.numericId;
+  if (!numericId) return false;
 
-  const existing = getLifecycle(card.numericId ?? -1);
+  // Əsas qayda: kartda artıq review varsa heç vaxt yenisi yaradılmır.
+  const existing = getLifecycle(numericId);
   if (existing && (existing.reviews || []).length > 0) {
-    localStorage.setItem(key, "1");
+    localStorage.setItem(`${FLAG}:${numericId}`, "1");
+    localStorage.setItem(`${FLAG}:${card.id}`, "1");
     return false;
   }
 
-  const numericId = card.numericId;
-  if (!numericId) return false;
+  // Həm numericId, həm də kart id-si üzrə flag yoxlanılır (id dəyişsə də təkrar yaranmasın).
+  if (
+    localStorage.getItem(`${FLAG}:${numericId}`) ||
+    localStorage.getItem(`${FLAG}:${card.id}`)
+  ) {
+    return false;
+  }
 
   const meta = {
     startDate: card.startDate,
