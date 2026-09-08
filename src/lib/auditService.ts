@@ -16,6 +16,7 @@ export interface AuditLogRow {
 
 export interface LogAuditInput {
   organizationId?: string | null;
+  actorUserId?: string | null;
   action: string;                    // e.g. "create", "update", "delete", "invite"
   module: string;                    // e.g. "invitations", "kpi_cards", "org_structure"
   entityType?: string | null;
@@ -36,8 +37,10 @@ export async function logAudit(input: LogAuditInput): Promise<void> {
     // real user actions only; sync bookkeeping is intentionally skipped.
     if (input.action === "sync") return;
 
-    const { data } = await supabase.auth.getSession();
-    const actorId = data.session?.user?.id;
+    // Auth flows already know the actor id. Reusing it avoids starting a second
+    // auth-storage lock while setSession/signOut is still completing (especially
+    // after preview HMR). Other callers keep the existing session lookup.
+    const actorId = input.actorUserId ?? (await supabase.auth.getSession()).data.session?.user?.id;
     if (!actorId) return;
 
     await supabase.from("audit_logs").insert({
