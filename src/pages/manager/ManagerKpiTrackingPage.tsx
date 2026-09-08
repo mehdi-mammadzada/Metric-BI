@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import KpiAccordionList, { type AccordionKpi, type AccordionKpiStatus } from "@/components/kpi/KpiAccordionList";
 import ReviewOverviewDialog, { type ReviewOverviewData } from "@/components/kpi/ReviewOverviewDialog";
-import ReviewStatusChangeDialog, { type ReviewStatusValue } from "@/components/kpi/ReviewStatusChangeDialog";
+import ReviewStatusChangeDialog, { type SelectableReviewStatus } from "@/components/kpi/ReviewStatusChangeDialog";
 import PerformanceDynamicsDrilldownTab from "@/components/kpi/PerformanceDynamicsDrilldownTab";
 import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import { employeeCommentRef } from "@/components/kpi/EmployeeCardTabs";
