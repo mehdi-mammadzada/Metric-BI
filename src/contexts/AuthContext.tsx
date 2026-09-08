@@ -410,8 +410,20 @@ const buildAuthUserFromContext = (
     supabaseUserId,
     currentOrgId,
     organizations,
+    rbacResolved: roleCodes.length > 0 || dbCodes.length > 0,
   };
 };
+
+// Arxa fonda edilən yeniləmə rol/səlahiyyət məlumatını itirmiş halda qayıdarsa
+// (RPC boş cavab verib), mövcud (tam həll olunmuş) profil saxlanılır — əks halda
+// HR istifadəçisi bir anda USER panelinə atılır.
+const shouldReplaceUser = (prev: AuthUser | null, next: AuthUser): boolean => {
+  if (!prev) return true;
+  if (prev.supabaseUserId !== next.supabaseUserId) return true;
+  if (next.rbacResolved) return true;
+  return !prev.rbacResolved;
+};
+
 
 // ── Resolve a Supabase-authenticated user into an AuthUser (role + perms) ─────
 const buildAuthUserFromSupabase = async (
