@@ -5,7 +5,7 @@
 // The visual container (Dialog / Drawer) is provided by the caller — this component
 // renders only the tab strip and the tab content.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Target, Clock, ArrowUp, ArrowDown, CheckCircle, AlertTriangle, Calendar,
   ChevronDown, ChevronUp, Info, ShoppingCart, Store, Monitor, BarChart3,
@@ -26,6 +26,7 @@ import { mergeCardTargets } from "@/lib/targetMerge";
 import { getApprovalMatrices, formatAssignee } from "@/lib/matrixStore";
 import { getEmployees } from "@/lib/orgStore";
 import { withKartSuffix } from "@/lib/utils";
+import { fetchKpiComments, type KpiComment } from "@/lib/kpiCommentsService";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
