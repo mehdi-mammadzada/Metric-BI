@@ -2184,14 +2184,14 @@ const ReviewsView = () => {
   const individualGroups = useMemo(() => groupReviewRows(rows, "individual"), [rows]);
   const bulkGroups = useMemo(() => groupReviewRows(rows, "bulk"), [rows]);
 
-  const filterGroups = (groups: ReviewCardGroup[]) => {
+  const filterGroups = (groups: ReviewCardGroup[], withStatus = true) => {
     const s = q.trim().toLowerCase();
     const m = (val: string, f: string) => !f.trim() || String(val ?? "").toLowerCase().includes(f.trim().toLowerCase());
     return groups.filter(g => {
       const global = !s || withKartSuffix(g.cardName).toLowerCase().includes(s)
         || g.employees.some(e => e.empName.toLowerCase().includes(s));
       if (!global) return false;
-      if (statusFilter !== "all" && REVIEW_STATUS_CATALOG_LABEL[g.reviewStatus] !== statusFilter) return false;
+      if (withStatus && statusFilter !== "all" && REVIEW_STATUS_CATALOG_LABEL[g.reviewStatus] !== statusFilter) return false;
       if (!overlapsPeriod(resolvedPeriod, g.reviewStart, g.reviewEnd)) return false;
       return m(withKartSuffix(g.cardName), colF.cardName)
         && m(g.reviewLabel, colF.reviewName)
