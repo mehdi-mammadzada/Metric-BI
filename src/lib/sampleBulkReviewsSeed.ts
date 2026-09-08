@@ -102,9 +102,13 @@ const seedCard = (card: SharedKpiCard, reviewerNames: string[]): boolean => {
     }
   });
 
-  localStorage.setItem(key, "1");
+  localStorage.setItem(`${FLAG}:${numericId}`, "1");
+  localStorage.setItem(`${FLAG}:${card.id}`, "1");
   return true;
 };
+
+/** Bir sessiya ərzində eyni kart üçün təkrar cəhdləri dayandırır. */
+const seededInSession = new Set<string>();
 
 /** Toplu KPI kartları üçün nümunə reviewlar yaradır. */
 export const ensureSampleBulkReviews = (cards: SharedKpiCard[]) => {
