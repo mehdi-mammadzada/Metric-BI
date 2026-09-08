@@ -111,21 +111,11 @@ export default function EmployeeCardTabs({ card, tab, employeeName }: Props) {
     return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
   };
 
-  /** Ümumi (review-a bağlanmamış) şərhi tarixinə görə uyğun review-a yerləşdirir. */
-  const reviewIndexForDate = (day: string): number => {
-    if (!day || reviews.length === 0) return -1;
-    const inRange = reviews.findIndex((r: any) => r.start && r.end && r.start <= day && day <= r.end);
-    if (inRange >= 0) return inRange;
-    let last = -1;
-    reviews.forEach((r: any, i: number) => { if (r.start && r.start <= day) last = i; });
-    return last >= 0 ? last : 0;
-  };
-
-  /** Verilmiş review-a aid şərhlər (yalnız o review-da görünür). */
-  const commentsForReview = (r: any, idx: number) => cardComments.filter(c => {
+  /** Verilmiş review-a aid şərhlər — yalnız review-a bağlı şərhlər (#rev:<id>) burada göstərilir.
+   *  Ümumi kart şərhləri (Şərhlər tabı) review izlənməyə düşməməlidir. */
+  const commentsForReview = (r: any) => cardComments.filter(c => {
     const rid = commentReviewId(c.cardRef);
-    if (rid) { if (String(rid) !== String(r.id)) return false; }
-    else if (reviewIndexForDate(dayOf(c.createdAt)) !== idx) return false;
+    if (rid == null || String(rid) !== String(r.id)) return false;
     if (filterAuthor && c.author !== filterAuthor) return false;
     if (filterDate && dayOf(c.createdAt) !== filterDate) return false;
     return true;
@@ -148,7 +138,7 @@ export default function EmployeeCardTabs({ card, tab, employeeName }: Props) {
             const computed = computeReviewStatus(r);
             const styleDef = REVIEW_STATUS_STYLES[computed];
             const BadgeIcon = styleDef.badgeIcon;
-            const filteredComments = commentsForReview(r, i);
+            const filteredComments = commentsForReview(r);
 
             return (
               <div key={r.id} className={`flex items-start gap-3 p-3 rounded-lg border ${styleDef.card}`}>
