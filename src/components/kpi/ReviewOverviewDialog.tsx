@@ -124,10 +124,10 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                 <Badge className={cn(cur.badge, "hover:" + cur.badge, "border inline-flex items-center gap-1.5 mb-2")}>
                   <CurIcon className="w-3 h-3" /> {cur.label}
                 </Badge>
-                {data.targets.some(t => t.note) && (
+                {data.note && (
                   <div className="text-xs text-muted-foreground bg-secondary/40 rounded-lg px-3 py-2">
                     <span className="font-medium text-foreground">Qeyd:</span>{" "}
-                    {data.targets.find(t => t.note)?.note}
+                    {data.note}
                   </div>
                 )}
               </div>
