@@ -74,8 +74,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
   const cur = STATUS_META[data.status];
   const CurIcon = cur.icon;
   // Circle progress
-  const R = 44, C = 2 * Math.PI * R;
-  const dash = (Math.min(data.overallProgress, 100) / 100) * C;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
