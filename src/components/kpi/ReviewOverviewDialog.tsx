@@ -142,7 +142,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                     <th className="text-left px-4 py-3 font-medium w-10">#</th>
                     <th className="text-left px-4 py-3 font-medium">KPI / Hədəf</th>
                     <th className="text-left px-4 py-3 font-medium w-[200px]">Progress</th>
-                    <th className="text-left px-4 py-3 font-medium">Status</th>
                     <th className="text-right px-4 py-3 font-medium">Son nəticə</th>
                     <th className="text-left px-4 py-3 font-medium">Review qeydi</th>
                     <th className="text-center px-4 py-3 font-medium w-14">Bax</th>
@@ -150,8 +149,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                 </thead>
                 <tbody className="divide-y divide-border">
                   {data.targets.map((t, i) => {
-                    const meta = STATUS_META[t.status];
-                    const Icon = meta.icon;
                     return (
                       <tr key={i} className="hover:bg-secondary/30 transition-colors">
                         <td className="px-4 py-3 tabular-nums text-muted-foreground">{i + 1}</td>
@@ -159,15 +156,10 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
-                              <div className={cn("h-full transition-all", meta.bar)} style={{ width: `${Math.min(t.progress, 100)}%` }} />
+                              <div className={cn("h-full transition-all", t.progress >= 100 ? "bg-emerald-500" : t.progress >= 75 ? "bg-amber-500" : "bg-rose-500")} style={{ width: `${Math.min(t.progress, 100)}%` }} />
                             </div>
                             <span className="text-xs tabular-nums font-medium w-10 text-right">{t.progress}%</span>
                           </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge className={cn(meta.badge, "hover:" + meta.badge, "border inline-flex items-center gap-1")}>
-                            <Icon className="w-3 h-3" /> {meta.label}
-                          </Badge>
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums text-foreground">{t.lastScore || "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground text-xs max-w-[280px] truncate" title={t.note}>{t.note || "—"}</td>
