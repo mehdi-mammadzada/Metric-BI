@@ -1150,25 +1150,81 @@ export const SubordinatesView = ({
         <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-end gap-3 flex-wrap">
           <PeriodRangePicker value={period} onChange={setPeriod} className="min-w-[360px]" />
 
-          <div>
-            <label className="text-[11px] text-muted-foreground">Status</label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Bütün statuslar</SelectItem>
-                <SelectItem value="in_progress">İcrada</SelectItem>
-                <SelectItem value="achieved">Hədəfə çatıb</SelectItem>
-                <SelectItem value="not_achieved">Hədəfə çatmayıb</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex-1" />
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input value={q} onChange={e => setQ(e.target.value)} placeholder="Axtarış..."
-              className="w-56 pl-8 pr-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
-          </div>
+          {actionsMode === "results" ? (
+            <>
+              <div className="flex-1 min-w-[260px]">
+                <label className="text-xs text-muted-foreground">KPI Kartları</label>
+                <Popover open={cardOpen} onOpenChange={setCardOpen}>
+                  <PopoverTrigger asChild>
+                    <button type="button" className="mt-1 w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md border border-border bg-background text-sm hover:bg-secondary/40">
+                      <span className="flex items-center gap-1 flex-wrap min-h-[1.25rem]">
+                        {selectedCards.length === 0 ? (
+                          <span className="text-muted-foreground">KPI kartı seçin...</span>
+                        ) : (
+                          <>
+                            {selectedCards.slice(0, 2).map(c => (
+                              <span key={c} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+                                {c}
+                                <X className="w-3 h-3 cursor-pointer" onClick={(e) => { e.stopPropagation(); toggleCard(c); }} />
+                              </span>
+                            ))}
+                            {selectedCards.length > 2 && (
+                              <span className="px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground text-xs">+{selectedCards.length - 2}</span>
+                            )}
+                          </>
+                        )}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[320px] p-0" align="start">
+                    <div className="p-2 border-b border-border">
+                      <div className="relative">
+                        <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input autoFocus value={cardSearch} onChange={(e) => setCardSearch(e.target.value)} placeholder="KPI kartı axtar..."
+                          className="w-full pl-8 pr-2 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
+                      </div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {filteredCardOpts.length === 0 ? (
+                        <div className="px-3 py-4 text-center text-sm text-muted-foreground">Tapılmadı</div>
+                      ) : filteredCardOpts.map(c => (
+                        <button key={c} type="button" onClick={() => toggleCard(c)} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/40">
+                          <Checkbox checked={selectedCards.includes(c)} />
+                          <span className="text-left">{c}</span>
+                          {selectedCards.includes(c) && <Check className="w-3.5 h-3.5 ml-auto text-primary" />}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Button variant="outline" onClick={() => { setSelectedCards([]); setCardSearch(""); setQ(""); }}>Təmizlə</Button>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="text-[11px] text-muted-foreground">Status</label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger className="w-44 h-9 mt-0.5"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Bütün statuslar</SelectItem>
+                    <SelectItem value="in_progress">İcrada</SelectItem>
+                    <SelectItem value="achieved">Hədəfə çatıb</SelectItem>
+                    <SelectItem value="not_achieved">Hədəfə çatmayıb</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1" />
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input value={q} onChange={e => setQ(e.target.value)} placeholder="Axtarış..."
+                  className="w-56 pl-8 pr-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring" />
+              </div>
+            </>
+          )}
         </div>
+
 
         {/* Tree grid */}
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
