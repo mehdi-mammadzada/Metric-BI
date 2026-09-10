@@ -1134,7 +1134,8 @@ export const SubordinatesView = ({
         />
 
 
-        {/* Summary cards */}
+        {/* Summary cards — Nəticələr bölməsində göstərilmir */}
+        {actionsMode !== "results" && (
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
           <SumCard icon={MapPin} label="Əhatə dairəsi" primary={`${deptCount} Departament`} secondary={`${tree.filter(n => n.kind === "division").length} Şöbə`} tone="indigo" />
           <SumCard icon={Users} label="Ümumi əməkdaş" primary={fmt(totals.employees)} tone="violet" />
@@ -1142,6 +1143,8 @@ export const SubordinatesView = ({
           <SumCard icon={Check} label="Hədəfə çatan KPI" primary={fmt(totals.completed)} tone="green" />
           <SumCard icon={AlertTriangle} label="Hədəfə çatmayan KPI" primary={fmt(totals.notAchieved)} tone="red" />
         </div>
+        )}
+
 
         {/* Filter row */}
         <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-end gap-3 flex-wrap">
