@@ -92,7 +92,7 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
 
         <div className="p-6 space-y-6">
           {/* Block 1: Meta card */}
-          <div className="rounded-2xl border border-border bg-card shadow-sm p-5 grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="rounded-2xl border border-border bg-card shadow-sm p-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Sol */}
             <div className="space-y-4">
               <MetaItem icon={<CalendarIcon className="w-4 h-4" />} label="Review növü" value={data.reviewType} />
@@ -101,7 +101,7 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
 
             </div>
             {/* Orta */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 flex flex-col">
               <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-foreground">
                 <Users className="w-4 h-4 text-muted-foreground" />
                 Review-u həyata keçirən şəxs(lər)
@@ -118,13 +118,18 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                   </div>
                 ))}
               </div>
-            </div>
-            {/* Sağ */}
-            <div className="flex flex-col items-start lg:items-end justify-start">
-              <div className="text-xs text-muted-foreground mb-2">Review statusu</div>
-              <Badge className={cn(cur.badge, "hover:" + cur.badge, "border inline-flex items-center gap-1.5 mb-3")}>
-                <CurIcon className="w-3 h-3" /> {cur.label}
-              </Badge>
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="text-xs text-muted-foreground mb-2">Review statusu</div>
+                <Badge className={cn(cur.badge, "hover:" + cur.badge, "border inline-flex items-center gap-1.5 mb-2")}>
+                  <CurIcon className="w-3 h-3" /> {cur.label}
+                </Badge>
+                {data.targets.some(t => t.note) && (
+                  <div className="text-xs text-muted-foreground bg-secondary/40 rounded-lg px-3 py-2">
+                    <span className="font-medium text-foreground">Qeyd:</span>{" "}
+                    {data.targets.find(t => t.note)?.note}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
