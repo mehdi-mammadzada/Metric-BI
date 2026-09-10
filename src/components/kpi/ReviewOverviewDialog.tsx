@@ -123,16 +123,12 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                 ))}
               </div>
             </div>
-            {/* Sağ */}
-            <div>
-              {showStatus && (
-                <>
-                  <div className="text-xs text-muted-foreground mb-2">Review statusu</div>
-                  <Badge className={cn(cur.badge, "hover:" + cur.badge, "border inline-flex items-center gap-1.5 mb-3")}>
-                    <CurIcon className="w-3 h-3" /> {cur.label}
-                  </Badge>
-                </>
-              )}
+            {/* Sağ — ümumi review statusu */}
+            <div className="flex flex-col items-start lg:items-end justify-start">
+              <div className="text-xs text-muted-foreground mb-2">Review statusu</div>
+              <Badge className={cn(cur.badge, "hover:" + cur.badge, "border inline-flex items-center gap-1.5")}>
+                <CurIcon className="w-3 h-3" /> {cur.label}
+              </Badge>
             </div>
           </div>
 
@@ -148,7 +144,7 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                     <th className="text-left px-4 py-3 font-medium w-10">#</th>
                     <th className="text-left px-4 py-3 font-medium">KPI / Hədəf</th>
                     <th className="text-left px-4 py-3 font-medium w-[200px]">Progress</th>
-                    <th className="text-left px-4 py-3 font-medium">Status</th>
+                    
                     <th className="text-right px-4 py-3 font-medium">Son nəticə</th>
                     <th className="text-left px-4 py-3 font-medium">Review qeydi</th>
                     <th className="text-center px-4 py-3 font-medium w-14">Bax</th>
@@ -157,7 +153,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                 <tbody className="divide-y divide-border">
                   {data.targets.map((t, i) => {
                     const meta = STATUS_META[t.status];
-                    const Icon = meta.icon;
                     return (
                       <tr key={i} className="hover:bg-secondary/30 transition-colors">
                         <td className="px-4 py-3 tabular-nums text-muted-foreground">{i + 1}</td>
@@ -169,11 +164,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                             </div>
                             <span className="text-xs tabular-nums font-medium w-10 text-right">{t.progress}%</span>
                           </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge className={cn(meta.badge, "hover:" + meta.badge, "border inline-flex items-center gap-1")}>
-                            <Icon className="w-3 h-3" /> {meta.label}
-                          </Badge>
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums text-foreground">{t.lastScore || "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground text-xs max-w-[280px] truncate" title={t.note}>{t.note || "—"}</td>
