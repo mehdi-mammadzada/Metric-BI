@@ -2477,7 +2477,7 @@ const ReviewsView = () => {
                                     <th className="text-left px-3 py-2 font-medium">Əməkdaş</th>
                                     <th className="text-left px-3 py-2 font-medium">Vəzifə</th>
                                     <th className="text-left px-3 py-2 font-medium">Struktur</th>
-                                    <th className="text-left px-3 py-2 font-medium w-[180px]">Status</th>
+                                    <th className="text-left px-3 py-2 font-medium w-[180px]">Progress</th>
                                     <th className="text-right px-3 py-2 font-medium w-20">Əməliyyat</th>
                                   </tr>
                                 </thead>
@@ -2488,7 +2488,10 @@ const ReviewsView = () => {
                                       <td className="px-3 py-2 text-muted-foreground">{e.position}</td>
                                       <td className="px-3 py-2 text-muted-foreground">{[e.department, e.division].filter(v => v && v !== "—").join(" › ") || "—"}</td>
                                       <td className="px-3 py-2">
-                                        <StatusBadge g={g} />
+                                        <div className="flex items-center gap-2">
+                                          <Progress value={e.progress} className="h-2 flex-1" />
+                                          <span className="text-xs tabular-nums font-medium w-9 text-right">{e.progress}%</span>
+                                        </div>
                                       </td>
                                       <td className="px-3 py-2 text-right">
                                         <button
