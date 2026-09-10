@@ -872,6 +872,7 @@ interface TreeNode {
   avgPct: number;
   completed: number;
   notAchieved: number;
+  cardCount?: number;
   trend: "up" | "down" | "flat";
   position?: string;
   team?: string;
@@ -924,6 +925,7 @@ const buildOrgTree = (scopePath?: string | null, period?: ResolvedPeriod | null)
       avgPct,
       completed: targets.filter(t => normalizeTargetStatus(t.status) === "achieved").length,
       notAchieved: targets.filter(t => normalizeTargetStatus(t.status) === "not_achieved").length,
+      cardCount: realCards.length,
       trend: "flat",
       status: avgPct >= 100 ? "achieved" : "in_progress",
     };
@@ -1139,6 +1141,26 @@ export const SubordinatesView = ({
   }, [tree]);
   const deptCount = tree.filter(n => n.kind === "department").length;
 
+  // Seçilmiş dövrdə olan KPI kartlarının sayı (struktur üçün alt ağac cəmi)
+  const cardCountById = useMemo(() => {
+    const byParent = new Map<string, TreeNode[]>();
+    tree.forEach(n => {
+      const p = n.parent ?? "__root__";
+      if (!byParent.has(p)) byParent.set(p, []);
+      byParent.get(p)!.push(n);
+    });
+    const map = new Map<string, number>();
+    const calc = (n: TreeNode): number => {
+      if (map.has(n.id)) return map.get(n.id)!;
+      let total = n.kind === "employee" ? (n.cardCount ?? 0) : 0;
+      (byParent.get(n.id) ?? []).forEach(ch => { total += calc(ch); });
+      map.set(n.id, total);
+      return total;
+    };
+    tree.forEach(n => calc(n));
+    return map;
+  }, [tree]);
+
 
   return (
     <div className="flex gap-4">
@@ -1251,9 +1273,18 @@ export const SubordinatesView = ({
               <thead className="bg-secondary/40 text-muted-foreground">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium">Səviyyə</th>
-                  <th className="text-left px-4 py-3 font-medium w-56">Ortalama icra faizi</th>
-                  <th className="text-center px-4 py-3 font-medium">Hədəfə çatan KPI</th>
-                  <th className="text-center px-4 py-3 font-medium">Hədəfə çatmayan KPI</th>
+                  {actionsMode === "results" ? (
+                    <>
+                      <th className="text-left px-4 py-3 font-medium">Vəzifə</th>
+                      <th className="text-center px-4 py-3 font-medium">KPI kartlarının sayı</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="text-left px-4 py-3 font-medium w-56">Ortalama icra faizi</th>
+                      <th className="text-center px-4 py-3 font-medium">Hədəfə çatan KPI</th>
+                      <th className="text-center px-4 py-3 font-medium">Hədəfə çatmayan KPI</th>
+                    </>
+                  )}
                   <th className="text-right px-4 py-3 font-medium w-24">Əməliyyatlar</th>
                 </tr>
               </thead>
@@ -1289,17 +1320,26 @@ export const SubordinatesView = ({
                         </div>
                       </td>
                       
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
-                            <div className={`h-full transition-all duration-500 ${node.avgPct >= 90 ? "bg-emerald-500" : node.avgPct >= 75 ? "bg-amber-500" : "bg-rose-500"}`}
-                              style={{ width: `${Math.min(node.avgPct, 100)}%` }} />
-                          </div>
-                          <span className="text-xs tabular-nums font-medium w-9 text-right">{node.avgPct}%</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-2.5 text-center tabular-nums">{fmt(node.completed)}</td>
-                      <td className="px-4 py-2.5 text-center tabular-nums text-rose-600">{fmt(node.notAchieved)}</td>
+                      {actionsMode === "results" ? (
+                        <>
+                          <td className="px-4 py-2.5 text-muted-foreground">{isEmp ? (node.position || "—") : "—"}</td>
+                          <td className="px-4 py-2.5 text-center tabular-nums">{fmt(cardCountById.get(node.id) ?? 0)}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
+                                <div className={`h-full transition-all duration-500 ${node.avgPct >= 90 ? "bg-emerald-500" : node.avgPct >= 75 ? "bg-amber-500" : "bg-rose-500"}`}
+                                  style={{ width: `${Math.min(node.avgPct, 100)}%` }} />
+                              </div>
+                              <span className="text-xs tabular-nums font-medium w-9 text-right">{node.avgPct}%</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-2.5 text-center tabular-nums">{fmt(node.completed)}</td>
+                          <td className="px-4 py-2.5 text-center tabular-nums text-rose-600">{fmt(node.notAchieved)}</td>
+                        </>
+                      )}
                       <td className="px-4 py-2.5 text-right" onClick={e => e.stopPropagation()}>
                         {isEmp ? (
                           actionsMode === "results" ? (
