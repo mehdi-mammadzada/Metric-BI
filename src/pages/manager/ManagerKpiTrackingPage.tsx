@@ -1280,7 +1280,7 @@ export const SubordinatesView = ({
                     </>
                   ) : (
                     <>
-                      <th className="text-left px-4 py-3 font-medium w-56">Ortalama icra faizi</th>
+                      <th className="text-left px-4 py-3 font-medium">Vəzifə</th>
                       <th className="text-center px-4 py-3 font-medium">Hədəfə çatan KPI</th>
                       <th className="text-center px-4 py-3 font-medium">Hədəfə çatmayan KPI</th>
                     </>
@@ -1315,7 +1315,7 @@ export const SubordinatesView = ({
                           </div>
                           <div className="min-w-0">
                             <div className="font-medium text-foreground truncate">{node.name}</div>
-                            {isEmp && actionsMode !== "results" && <div className="text-[11px] text-muted-foreground truncate">{node.position}</div>}
+                            
                           </div>
                         </div>
                       </td>
@@ -1327,15 +1327,7 @@ export const SubordinatesView = ({
                         </>
                       ) : (
                         <>
-                          <td className="px-4 py-2.5">
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
-                                <div className={`h-full transition-all duration-500 ${node.avgPct >= 90 ? "bg-emerald-500" : node.avgPct >= 75 ? "bg-amber-500" : "bg-rose-500"}`}
-                                  style={{ width: `${Math.min(node.avgPct, 100)}%` }} />
-                              </div>
-                              <span className="text-xs tabular-nums font-medium w-9 text-right">{node.avgPct}%</span>
-                            </div>
-                          </td>
+                          <td className="px-4 py-2.5 text-muted-foreground">{isEmp ? (node.position || "—") : "—"}</td>
                           <td className="px-4 py-2.5 text-center tabular-nums">{fmt(node.completed)}</td>
                           <td className="px-4 py-2.5 text-center tabular-nums text-rose-600">{fmt(node.notAchieved)}</td>
                         </>
