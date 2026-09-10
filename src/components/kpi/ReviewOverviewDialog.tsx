@@ -165,11 +165,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                             <span className="text-xs tabular-nums font-medium w-10 text-right">{t.progress}%</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3">
-                          <Badge className={cn(meta.badge, "hover:" + meta.badge, "border inline-flex items-center gap-1")}>
-                            <Icon className="w-3 h-3" /> {meta.label}
-                          </Badge>
-                        </td>
                         <td className="px-4 py-3 text-right tabular-nums text-foreground">{t.lastScore || "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground text-xs max-w-[280px] truncate" title={t.note}>{t.note || "—"}</td>
                         <td className="px-4 py-3 text-center">
