@@ -2477,7 +2477,7 @@ const ReviewsView = () => {
                                     <th className="text-left px-3 py-2 font-medium">Əməkdaş</th>
                                     <th className="text-left px-3 py-2 font-medium">Vəzifə</th>
                                     <th className="text-left px-3 py-2 font-medium">Struktur</th>
-                                    <th className="text-left px-3 py-2 font-medium w-[180px]">Progress</th>
+                                    <th className="text-left px-3 py-2 font-medium w-[180px]">Status</th>
                                     <th className="text-right px-3 py-2 font-medium w-20">Əməliyyat</th>
                                   </tr>
                                 </thead>
