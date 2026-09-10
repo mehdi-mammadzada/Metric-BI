@@ -28,6 +28,7 @@ export interface ReviewOverviewData {
   status: ReviewStatusValue;
   overallProgress: number;   // 0-100
   reviewers: { name: string; position: string; badge: string; avatarSeed?: string }[];
+  note?: string;             // Review səviyyəsində ümumi qeyd/nəticə
   targets: {
     name: string;
     progress: number;
