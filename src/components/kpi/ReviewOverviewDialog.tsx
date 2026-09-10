@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   Calendar as CalendarIcon,
   Users,
@@ -15,7 +14,6 @@ import {
   ClipboardList,
   Eye,
   RefreshCw,
-  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import KpiCommentThread from "./KpiCommentThread";
