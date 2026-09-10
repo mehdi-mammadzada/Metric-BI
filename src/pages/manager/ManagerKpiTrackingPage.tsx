@@ -2477,18 +2477,24 @@ const ReviewsView = () => {
                                     <th className="text-left px-3 py-2 font-medium">Əməkdaş</th>
                                     <th className="text-left px-3 py-2 font-medium">Vəzifə</th>
                                     <th className="text-left px-3 py-2 font-medium">Struktur</th>
-                                    <th className="text-left px-3 py-2 font-medium w-[180px]">Status</th>
+                                    <th className="text-left px-3 py-2 font-medium">Status</th>
                                     <th className="text-right px-3 py-2 font-medium w-20">Əməliyyat</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
-                                  {g.employees.map(e => (
+                                  {g.employees.map(e => {
+                                    const execMeta = e.execution ? execLabel[e.execution] : null;
+                                    return (
                                     <tr key={e.key} className="hover:bg-secondary/30">
                                       <td className="px-3 py-2 font-medium text-foreground">{e.empName}</td>
                                       <td className="px-3 py-2 text-muted-foreground">{e.position}</td>
                                       <td className="px-3 py-2 text-muted-foreground">{[e.department, e.division].filter(v => v && v !== "—").join(" › ") || "—"}</td>
                                       <td className="px-3 py-2">
-                                        <StatusBadge g={g} />
+                                        {execMeta ? (
+                                          <Badge className={execMeta.cls}>{execMeta.label}</Badge>
+                                        ) : (
+                                          <span className="text-muted-foreground text-xs">—</span>
+                                        )}
                                       </td>
                                       <td className="px-3 py-2 text-right">
                                         <button
@@ -2501,7 +2507,7 @@ const ReviewsView = () => {
                                         </button>
                                       </td>
                                     </tr>
-                                  ))}
+                                  )})}
                                 </tbody>
                               </table>
                             </div>
