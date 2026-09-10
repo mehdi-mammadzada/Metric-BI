@@ -1273,9 +1273,18 @@ export const SubordinatesView = ({
               <thead className="bg-secondary/40 text-muted-foreground">
                 <tr>
                   <th className="text-left px-4 py-3 font-medium">Səviyyə</th>
-                  <th className="text-left px-4 py-3 font-medium w-56">Ortalama icra faizi</th>
-                  <th className="text-center px-4 py-3 font-medium">Hədəfə çatan KPI</th>
-                  <th className="text-center px-4 py-3 font-medium">Hədəfə çatmayan KPI</th>
+                  {actionsMode === "results" ? (
+                    <>
+                      <th className="text-left px-4 py-3 font-medium">Vəzifə</th>
+                      <th className="text-center px-4 py-3 font-medium">KPI kartlarının sayı</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="text-left px-4 py-3 font-medium w-56">Ortalama icra faizi</th>
+                      <th className="text-center px-4 py-3 font-medium">Hədəfə çatan KPI</th>
+                      <th className="text-center px-4 py-3 font-medium">Hədəfə çatmayan KPI</th>
+                    </>
+                  )}
                   <th className="text-right px-4 py-3 font-medium w-24">Əməliyyatlar</th>
                 </tr>
               </thead>
