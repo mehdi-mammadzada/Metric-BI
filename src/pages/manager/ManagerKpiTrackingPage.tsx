@@ -925,6 +925,7 @@ const buildOrgTree = (scopePath?: string | null, period?: ResolvedPeriod | null)
       avgPct,
       completed: targets.filter(t => normalizeTargetStatus(t.status) === "achieved").length,
       notAchieved: targets.filter(t => normalizeTargetStatus(t.status) === "not_achieved").length,
+      cardCount: realCards.length,
       trend: "flat",
       status: avgPct >= 100 ? "achieved" : "in_progress",
     };
