@@ -135,17 +135,9 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                   </Badge>
                 </>
               )}
-              <div className="text-xs text-muted-foreground mb-2">Tamamlanma progressi</div>
-              <div className="flex items-center gap-3">
-                <svg width="100" height="100" className="shrink-0">
-                  <circle cx="50" cy="50" r={R} strokeWidth="8" className="stroke-secondary" fill="none" />
-                  <circle cx="50" cy="50" r={R} strokeWidth="8" className="stroke-primary transition-all duration-500" fill="none" strokeLinecap="round" strokeDasharray={`${dash} ${C}`} transform="rotate(-90 50 50)" />
-                  <text x="50" y="55" textAnchor="middle" className="fill-foreground text-lg font-bold">{data.overallProgress}%</text>
-                </svg>
-                <div className="text-[11px] text-muted-foreground">
-                  <div>Son yenilənmə</div>
-                  <div className="text-foreground font-medium mt-0.5">{data.updatedAt}</div>
-                </div>
+              <div className="text-[11px] text-muted-foreground">
+                <div>Son yenilənmə</div>
+                <div className="text-foreground font-medium mt-0.5">{data.updatedAt}</div>
               </div>
             </div>
           </div>
