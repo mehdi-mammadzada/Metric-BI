@@ -1315,7 +1315,7 @@ export const SubordinatesView = ({
                           </div>
                           <div className="min-w-0">
                             <div className="font-medium text-foreground truncate">{node.name}</div>
-                            {isEmp && <div className="text-[11px] text-muted-foreground truncate">{node.position}</div>}
+                            {isEmp && actionsMode !== "results" && <div className="text-[11px] text-muted-foreground truncate">{node.position}</div>}
                           </div>
                         </div>
                       </td>
