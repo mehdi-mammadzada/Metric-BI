@@ -1029,6 +1029,22 @@ export const SubordinatesView = ({
   const [metric, setMetric] = useState("avg");
   const [status, setStatus] = useState("all");
   const [q, setQ] = useState("");
+  // Nəticələr rejimi üçün KPI kartı filtri
+  const allSharedCards = useVisibleSharedKpiCards();
+  const [selectedCards, setSelectedCards] = useState<string[]>([]);
+  const [cardOpen, setCardOpen] = useState(false);
+  const [cardSearch, setCardSearch] = useState("");
+  const cardOptions = useMemo(
+    () => Array.from(new Set(allSharedCards.map(c => c.name).filter(Boolean))),
+    [allSharedCards],
+  );
+  const filteredCardOpts = useMemo(
+    () => cardOptions.filter(c => c.toLowerCase().includes(cardSearch.trim().toLowerCase())),
+    [cardOptions, cardSearch],
+  );
+  const toggleCard = (c: string) =>
+    setSelectedCards(prev => (prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]));
+
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [empKpiListFor, setEmpKpiListFor] = useState<{ empId: number; name: string; position?: string; division?: string } | null>(null);
