@@ -2332,7 +2332,8 @@ const ReviewsView = () => {
       reviewers: row.reviewers.length
         ? row.reviewers.map(r => ({ name: r.name, position: r.position, badge: "Review keçirən" }))
         : [{ name: "—", position: "Təyin olunmayıb", badge: "Review keçirən" }],
-      targets: buildTargets(row, g.reviewStatus, g.outcomeComment),
+      note: g.outcomeComment,
+      targets: buildTargets(row, g.reviewStatus),
     };
     setOverview({
       row,
@@ -2356,7 +2357,8 @@ const ReviewsView = () => {
       reviewers: reviewers.length
         ? reviewers.map(r => ({ name: r.name, position: r.position, badge: "Review keçirən" }))
         : [{ name: "—", position: "Təyin olunmayıb", badge: "Review keçirən" }],
-      targets: first ? buildTargets(first, g.reviewStatus, g.outcomeComment) : [],
+      note: g.outcomeComment,
+      targets: first ? buildTargets(first, g.reviewStatus) : [],
     };
     setOverview({ row: null, group: g, data, commentRef: reviewCommentRef(`card:${g.cardId}`, g.reviewId) });
   };

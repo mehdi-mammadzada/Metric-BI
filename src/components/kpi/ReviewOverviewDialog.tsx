@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   Calendar as CalendarIcon,
   Users,
@@ -15,7 +14,6 @@ import {
   ClipboardList,
   Eye,
   RefreshCw,
-  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import KpiCommentThread from "./KpiCommentThread";
@@ -30,6 +28,7 @@ export interface ReviewOverviewData {
   status: ReviewStatusValue;
   overallProgress: number;   // 0-100
   reviewers: { name: string; position: string; badge: string; avatarSeed?: string }[];
+  note?: string;             // Review səviyyəsində ümumi qeyd/nəticə
   targets: {
     name: string;
     progress: number;
@@ -94,7 +93,7 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
 
         <div className="p-6 space-y-6">
           {/* Block 1: Meta card */}
-          <div className="rounded-2xl border border-border bg-card shadow-sm p-5 grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="rounded-2xl border border-border bg-card shadow-sm p-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Sol */}
             <div className="space-y-4">
               <MetaItem icon={<CalendarIcon className="w-4 h-4" />} label="Review növü" value={data.reviewType} />
@@ -103,7 +102,7 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
 
             </div>
             {/* Orta */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 flex flex-col">
               <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-foreground">
                 <Users className="w-4 h-4 text-muted-foreground" />
                 Review-u həyata keçirən şəxs(lər)
@@ -120,13 +119,18 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                   </div>
                 ))}
               </div>
-            </div>
-            {/* Sağ */}
-            <div className="flex flex-col items-start lg:items-end justify-start">
-              <div className="text-xs text-muted-foreground mb-2">Review statusu</div>
-              <Badge className={cn(cur.badge, "hover:" + cur.badge, "border inline-flex items-center gap-1.5 mb-3")}>
-                <CurIcon className="w-3 h-3" /> {cur.label}
-              </Badge>
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="text-xs text-muted-foreground mb-2">Review statusu</div>
+                <Badge className={cn(cur.badge, "hover:" + cur.badge, "border inline-flex items-center gap-1.5 mb-2")}>
+                  <CurIcon className="w-3 h-3" /> {cur.label}
+                </Badge>
+                {data.note && (
+                  <div className="text-xs text-muted-foreground bg-secondary/40 rounded-lg px-3 py-2">
+                    <span className="font-medium text-foreground">Qeyd:</span>{" "}
+                    {data.note}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -142,8 +146,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                     <th className="text-left px-4 py-3 font-medium w-10">#</th>
                     <th className="text-left px-4 py-3 font-medium">KPI / Hədəf</th>
                     <th className="text-left px-4 py-3 font-medium w-[200px]">Progress</th>
-                    <th className="text-right px-4 py-3 font-medium">Son nəticə</th>
-                    <th className="text-left px-4 py-3 font-medium">Review qeydi</th>
                     <th className="text-center px-4 py-3 font-medium w-14">Bax</th>
                   </tr>
                 </thead>
@@ -161,8 +163,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                             <span className="text-xs tabular-nums font-medium w-10 text-right">{t.progress}%</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right tabular-nums text-foreground">{t.lastScore || "—"}</td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs max-w-[280px] truncate" title={t.note}>{t.note || "—"}</td>
                         <td className="px-4 py-3 text-center">
                           <button
                             onClick={() => onOpenTarget?.(i)}
