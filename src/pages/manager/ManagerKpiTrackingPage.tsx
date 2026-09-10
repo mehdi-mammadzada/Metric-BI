@@ -1417,12 +1417,6 @@ export const SubordinatesView = ({
                       <td className="px-4 py-3 text-center">
                         <Badge className={statusMeta[k.status].cls}>{statusMeta[k.status].label}</Badge>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Progress value={k.progress} className="h-2 flex-1" />
-                          <span className="text-xs tabular-nums font-medium w-9 text-right">{k.progress}%</span>
-                        </div>
-                      </td>
                       <td className="px-4 py-3 text-muted-foreground">{k.createdAt}</td>
                       <td className="px-4 py-3 text-muted-foreground">{k.deadline}</td>
                       <td className="px-4 py-3 text-right">
