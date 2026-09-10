@@ -122,15 +122,11 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
               </div>
             </div>
             {/* Sağ */}
-            <div>
-              {showStatus && (
-                <>
-                  <div className="text-xs text-muted-foreground mb-2">Review statusu</div>
-                  <Badge className={cn(cur.badge, "hover:" + cur.badge, "border inline-flex items-center gap-1.5 mb-3")}>
-                    <CurIcon className="w-3 h-3" /> {cur.label}
-                  </Badge>
-                </>
-              )}
+            <div className="flex flex-col items-start lg:items-end justify-start">
+              <div className="text-xs text-muted-foreground mb-2">Review statusu</div>
+              <Badge className={cn(cur.badge, "hover:" + cur.badge, "border inline-flex items-center gap-1.5 mb-3")}>
+                <CurIcon className="w-3 h-3" /> {cur.label}
+              </Badge>
             </div>
           </div>
 
