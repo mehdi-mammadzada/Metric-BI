@@ -1141,6 +1141,26 @@ export const SubordinatesView = ({
   }, [tree]);
   const deptCount = tree.filter(n => n.kind === "department").length;
 
+  // Seçilmiş dövrdə olan KPI kartlarının sayı (struktur üçün alt ağac cəmi)
+  const cardCountById = useMemo(() => {
+    const byParent = new Map<string, TreeNode[]>();
+    tree.forEach(n => {
+      const p = n.parent ?? "__root__";
+      if (!byParent.has(p)) byParent.set(p, []);
+      byParent.get(p)!.push(n);
+    });
+    const map = new Map<string, number>();
+    const calc = (n: TreeNode): number => {
+      if (map.has(n.id)) return map.get(n.id)!;
+      let total = n.kind === "employee" ? (n.cardCount ?? 0) : 0;
+      (byParent.get(n.id) ?? []).forEach(ch => { total += calc(ch); });
+      map.set(n.id, total);
+      return total;
+    };
+    tree.forEach(n => calc(n));
+    return map;
+  }, [tree]);
+
 
   return (
     <div className="flex gap-4">
