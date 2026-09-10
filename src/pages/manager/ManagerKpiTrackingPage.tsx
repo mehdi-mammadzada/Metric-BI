@@ -1148,7 +1148,8 @@ export const SubordinatesView = ({
 
         {/* Filter row */}
         <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-end gap-3 flex-wrap">
-          <PeriodRangePicker compact value={period} onChange={setPeriod} className="min-w-[360px]" />
+          <PeriodRangePicker value={period} onChange={setPeriod} className="min-w-[360px]" />
+
           <div>
             <label className="text-[11px] text-muted-foreground">Status</label>
             <Select value={status} onValueChange={setStatus}>
