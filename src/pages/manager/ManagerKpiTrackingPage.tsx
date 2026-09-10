@@ -2488,10 +2488,7 @@ const ReviewsView = () => {
                                       <td className="px-3 py-2 text-muted-foreground">{e.position}</td>
                                       <td className="px-3 py-2 text-muted-foreground">{[e.department, e.division].filter(v => v && v !== "—").join(" › ") || "—"}</td>
                                       <td className="px-3 py-2">
-                                        <div className="flex items-center gap-2">
-                                          <Progress value={e.progress} className="h-2 flex-1" />
-                                          <span className="text-xs tabular-nums font-medium w-9 text-right">{e.progress}%</span>
-                                        </div>
+                                        <StatusBadge g={g} />
                                       </td>
                                       <td className="px-3 py-2 text-right">
                                         <button
