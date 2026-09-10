@@ -145,8 +145,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                     <th className="text-left px-4 py-3 font-medium w-10">#</th>
                     <th className="text-left px-4 py-3 font-medium">KPI / Hədəf</th>
                     <th className="text-left px-4 py-3 font-medium w-[200px]">Progress</th>
-                    <th className="text-right px-4 py-3 font-medium">Son nəticə</th>
-                    <th className="text-left px-4 py-3 font-medium">Review qeydi</th>
                     <th className="text-center px-4 py-3 font-medium w-14">Bax</th>
                   </tr>
                 </thead>
@@ -164,8 +162,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                             <span className="text-xs tabular-nums font-medium w-10 text-right">{t.progress}%</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right tabular-nums text-foreground">{t.lastScore || "—"}</td>
-                        <td className="px-4 py-3 text-muted-foreground text-xs max-w-[280px] truncate" title={t.note}>{t.note || "—"}</td>
                         <td className="px-4 py-3 text-center">
                           <button
                             onClick={() => onOpenTarget?.(i)}
