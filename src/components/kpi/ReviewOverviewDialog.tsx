@@ -153,7 +153,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                 <tbody className="divide-y divide-border">
                   {data.targets.map((t, i) => {
                     const meta = STATUS_META[t.status];
-                    const Icon = meta.icon;
                     return (
                       <tr key={i} className="hover:bg-secondary/30 transition-colors">
                         <td className="px-4 py-3 tabular-nums text-muted-foreground">{i + 1}</td>
