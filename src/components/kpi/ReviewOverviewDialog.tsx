@@ -57,11 +57,9 @@ interface Props {
   onOpenTarget?: (index: number) => void;
   /** Şərhlərin bağlandığı ümumi KPI kartı referansı (məs: `card:12`). */
   commentRefId?: string | number | null;
-  /** Fərdi review-larda karta görə ümumi status badge-i göstərilmir, lakin "Statusu dəyiş" buttonu ayrıca idarə olunur. */
-  showStatus?: boolean;
 }
 
-const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus, onOpenTarget, commentRefId, showStatus = true }: Props) => {
+const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus, onOpenTarget, commentRefId }: Props) => {
   const totals = useMemo(() => {
     const counts = { held: 0, in_progress: 0, deferred: 0, missed: 0 } as Record<ReviewStatusValue, number>;
     data.targets.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
