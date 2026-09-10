@@ -133,10 +133,6 @@ const ReviewOverviewDialog = ({ open, onOpenChange, title, data, onChangeStatus,
                   </Badge>
                 </>
               )}
-              <div className="text-[11px] text-muted-foreground">
-                <div>Son yenilənmə</div>
-                <div className="text-foreground font-medium mt-0.5">{data.updatedAt}</div>
-              </div>
             </div>
           </div>
 
