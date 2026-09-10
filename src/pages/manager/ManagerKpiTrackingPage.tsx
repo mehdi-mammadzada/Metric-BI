@@ -2411,15 +2411,6 @@ const ReviewsView = () => {
 
       <div className="rounded-xl border border-border bg-card p-3 mb-3 flex items-center gap-3 flex-wrap mt-2">
         <PeriodRangePicker compact value={period} onChange={setPeriod} className="min-w-[360px]" />
-        <div className="relative w-full sm:w-[280px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            placeholder="KPI kartı və ya əməkdaş üzrə axtarış..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-          />
-        </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[200px] h-[38px]">
             <SelectValue placeholder="Review statusu" />
