@@ -2584,7 +2584,6 @@ const ReviewsView = () => {
           title={withKartSuffix(overview.group.cardName) + (overview.row ? ` · ${overview.row.empName}` : "")}
           data={overview.data}
           commentRefId={overview.commentRef}
-          showStatus={!overview.row}
           onChangeStatus={() => setStatusDialog({
             cardId: overview.group.cardId,
             cardName: overview.group.cardName,
