@@ -1179,7 +1179,7 @@ export const SubordinatesView = ({
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
           <SumCard icon={MapPin} label="Əhatə dairəsi" primary={`${deptCount} Departament`} secondary={`${tree.filter(n => n.kind === "division").length} Şöbə`} tone="indigo" />
           <SumCard icon={Users} label="Ümumi əməkdaş" primary={fmt(totals.employees)} tone="violet" />
-          <SumCard icon={LineChart} label="Ortalama icra faizi" primary={`${totals.avgPct}%`} tone="blue" />
+          
           <SumCard icon={Check} label="Hədəfə çatan KPI" primary={fmt(totals.completed)} tone="green" />
           <SumCard icon={AlertTriangle} label="Hədəfə çatmayan KPI" primary={fmt(totals.notAchieved)} tone="red" />
         </div>
