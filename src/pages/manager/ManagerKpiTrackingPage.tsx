@@ -2524,7 +2524,7 @@ const ReviewsView = () => {
           </div>
         </TabsContent>
 
-        {/* ---------- TOPLU: kart başına 1 sətir, vahid ümumi progress ---------- */}
+        {/* ---------- TOPLU: kart başına 1 sətir, status + tarixlər ---------- */}
         <TabsContent value="bulk" className="mt-0">
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
@@ -2533,7 +2533,6 @@ const ReviewsView = () => {
                   <tr>
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="KPI Kartı" value={colF.cardName} onChange={setCol("cardName")} /></th>
                     <th className="text-left px-4 py-3 font-medium align-top w-[140px]"><ColumnSearchHeader label="Review adı" value={colF.reviewName} onChange={setCol("reviewName")} placeholder="Məs: Review #1" /></th>
-                    <th className="text-left px-4 py-3 font-medium align-top w-[180px]"><ColumnSearchHeader label="Ümumi Progress" value={colF.progress} onChange={setCol("progress")} placeholder="Məs: 60" /></th>
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review statusu" value={colF.status} onChange={setCol("status")} /></th>
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review başlanma" value={colF.start} onChange={setCol("start")} placeholder="Məs: 01.08.2026" /></th>
                     <th className="text-left px-4 py-3 font-medium align-top"><ColumnSearchHeader label="Review bitmə" value={colF.end} onChange={setCol("end")} placeholder="Məs: 31.08.2026" /></th>
@@ -2542,7 +2541,7 @@ const ReviewsView = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredBulk.length === 0 ? emptyRow(8, "Toplu review mərhələsində olan KPI kartı yoxdur.") : filteredBulk.map(g => (
+                  {filteredBulk.length === 0 ? emptyRow(7, "Toplu review mərhələsində olan KPI kartı yoxdur.") : filteredBulk.map(g => (
                     <tr key={g.groupKey} className="hover:bg-secondary/30">
                       <td className="px-4 py-3 font-medium text-foreground">
                         <span className="inline-flex items-center gap-2">
@@ -2550,12 +2549,6 @@ const ReviewsView = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{g.reviewLabel}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Progress value={g.overallProgress} className="h-2 flex-1" />
-                          <span className="text-xs tabular-nums font-medium w-9 text-right">{g.overallProgress}%</span>
-                        </div>
-                      </td>
                       <td className="px-4 py-3"><StatusBadge g={g} /></td>
                       <td className="px-4 py-3 text-muted-foreground">{g.reviewStart}</td>
                       <td className="px-4 py-3 text-muted-foreground">{g.reviewEnd}</td>
