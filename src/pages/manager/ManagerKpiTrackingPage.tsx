@@ -872,6 +872,7 @@ interface TreeNode {
   avgPct: number;
   completed: number;
   notAchieved: number;
+  cardCount?: number;
   trend: "up" | "down" | "flat";
   position?: string;
   team?: string;
