@@ -1179,7 +1179,7 @@ export const SubordinatesView = ({
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
           <SumCard icon={MapPin} label="Əhatə dairəsi" primary={`${deptCount} Departament`} secondary={`${tree.filter(n => n.kind === "division").length} Şöbə`} tone="indigo" />
           <SumCard icon={Users} label="Ümumi əməkdaş" primary={fmt(totals.employees)} tone="violet" />
-          <SumCard icon={LineChart} label="Ortalama icra faizi" primary={`${totals.avgPct}%`} tone="blue" />
+          
           <SumCard icon={Check} label="Hədəfə çatan KPI" primary={fmt(totals.completed)} tone="green" />
           <SumCard icon={AlertTriangle} label="Hədəfə çatmayan KPI" primary={fmt(totals.notAchieved)} tone="red" />
         </div>
@@ -1394,7 +1394,7 @@ export const SubordinatesView = ({
                     <th className="text-left px-4 py-3 font-medium">KPI kartının adı</th>
                     <th className="text-left px-4 py-3 font-medium">Təyinat növü</th>
                     <th className="text-center px-4 py-3 font-medium">Status</th>
-                    <th className="text-left px-4 py-3 font-medium w-44">Progress</th>
+                    
                     <th className="text-left px-4 py-3 font-medium">Yaradılma tarixi</th>
                     <th className="text-left px-4 py-3 font-medium">Bitmə tarixi</th>
                     <th className="text-right px-4 py-3 font-medium w-24">Əməliyyat</th>
@@ -1402,7 +1402,7 @@ export const SubordinatesView = ({
                 </thead>
                 <tbody>
                   {empKpiCards.length === 0 ? (
-                    <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">Bu əməkdaş üçün KPI kartı yoxdur.</td></tr>
+                    <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">Bu əməkdaş üçün KPI kartı yoxdur.</td></tr>
                   ) : empKpiCards.map(k => (
                     <tr key={k.id} className="border-t border-border hover:bg-secondary/20">
                       <td className="px-4 py-3">
@@ -1416,12 +1416,6 @@ export const SubordinatesView = ({
                       </td>
                       <td className="px-4 py-3 text-center">
                         <Badge className={statusMeta[k.status].cls}>{statusMeta[k.status].label}</Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Progress value={k.progress} className="h-2 flex-1" />
-                          <span className="text-xs tabular-nums font-medium w-9 text-right">{k.progress}%</span>
-                        </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{k.createdAt}</td>
                       <td className="px-4 py-3 text-muted-foreground">{k.deadline}</td>
