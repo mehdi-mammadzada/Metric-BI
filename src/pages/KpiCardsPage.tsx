@@ -4200,7 +4200,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
             <DialogTitle>Kartı kopyalamaq istəyirsiniz?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground break-words">
-            “{copyConfirm ? withKartSuffix(copyConfirm.name) : ""}” kartının surəti “Natamam” statusunda yaradılacaq. Davam etmək istəyirsiniz?
+            “{copyConfirm ? withKartSuffix(copyConfirm.name) : ""}” kartının surəti “Qaralama” statusunda yaradılacaq. Davam etmək istəyirsiniz?
           </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setCopyConfirm(null)}>Ləğv et</Button>
@@ -4223,7 +4223,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                 if (copiedDraft) setCardDrafts(prev => ({ ...prev, [newId]: copiedDraft }));
 
                 try {
-                  await upsertStatus({ card_id: newId, status: "natamam", use_matrix: false, submitted_for_approval: false, assignees: [] });
+                  await upsertStatus({ card_id: newId, status: "qaralama", use_matrix: false, submitted_for_approval: false, assignees: [] });
                 } catch {}
 
                 // Shared registry (backend mənbəyi) — kopyalanmış kart daimi saxlanılır.
@@ -4237,7 +4237,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                       id: `kpi-${newId}`,
                       numericId: newId,
                       ownerId: srcShared?.ownerId || meId,
-                      status: "natamam",
+                      status: "qaralama",
                       matrixId: null,
                       assigneeIds: srcShared?.assigneeIds || [],
                       teamIds: srcShared?.teamIds || [],
@@ -4250,7 +4250,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                       id: `kpi-${newId}`,
                       numericId: newId,
                       name: newName,
-                      status: "natamam",
+                      status: "qaralama",
                       matrixId: null,
                       execution: {},
                       history: copyHistory,
@@ -4266,7 +4266,7 @@ const KpiCardsPage = ({ onBack, forcedKartView }: KpiCardsPageProps = {}) => {
                   const next = await mod.fetchAllStatuses();
                   setStatusMap(prev => ({ ...prev, ...next }));
                 } catch {}
-                toast.success("Kart kopyalandı (Natamam)");
+                toast.success("Kart kopyalandı (Qaralama)");
               }}
             >
               Təsdiq et
