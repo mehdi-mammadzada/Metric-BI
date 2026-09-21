@@ -160,7 +160,7 @@ export const PeerEvaluationDialog = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="flex w-full flex-wrap h-auto">
             {peers.map((p, i) => (
               <TabsTrigger key={p.id} value={p.id} className="gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
