@@ -47,7 +47,13 @@ export const PeerEvaluationDialog = ({
     return map;
   }, [peers, matrices]);
 
-  const readOnly = alreadySubmitted;
+  // Hansı həmkarlar üçün qiymət artıq göndərilib (hər həmkar ayrılıqda)
+  const submittedPeerIds = useMemo(
+    () => new Set(getReviewsByReviewer(reviewerId, cycleId).map(r => r.revieweeId)),
+    [open, reviewerId, cycleId],
+  );
+  const pendingPeers = useMemo(() => peers.filter(p => !submittedPeerIds.has(p.id)), [peers, submittedPeerIds]);
+  const allSubmitted = peers.length > 0 && pendingPeers.length === 0;
 
   const [activeTab, setActiveTab] = useState<string>(peers[0]?.id || "");
   const [scoresByPeer, setScoresByPeer] = useState<Record<string, ScoresMap>>({});
@@ -73,7 +79,7 @@ export const PeerEvaluationDialog = ({
 
   // Təsdiqlənmiş qiymətləndirməyə baxış: saxlanmış balları yüklə
   useEffect(() => {
-    if (!open || !readOnly) return;
+    if (!open) return;
     const rows = getReviewsByReviewer(reviewerId, cycleId);
     if (rows.length === 0) return;
     setScoresByPeer(prev => {
@@ -100,9 +106,9 @@ export const PeerEvaluationDialog = ({
   };
 
   const submit = () => {
-    if (!allComplete) return;
+    if (!allComplete || pendingPeers.length === 0) return;
     submitPeerReviews(
-      peers.map(p => ({
+      pendingPeers.map(p => ({
         cycleId,
         reviewerId,
         revieweeId: p.id,
@@ -111,7 +117,7 @@ export const PeerEvaluationDialog = ({
       }))
     );
     toast.success("Qiymətləndirmə təsdiqləndi", {
-      description: `${peers.length} həmkar üçün anonim qiymət göndərildi.`,
+      description: `${pendingPeers.length} həmkar üçün anonim qiymət göndərildi.`,
     });
     setOpen(false);
   };
@@ -130,7 +136,7 @@ export const PeerEvaluationDialog = ({
       <DialogTrigger asChild>
         <Button variant={triggerVariant} className="gap-2">
           <Star className="w-4 h-4" />
-          {alreadySubmitted ? "Qiymətləndirməyə bax" : triggerLabel}
+          {allSubmitted ? "Qiymətləndirməyə bax" : alreadySubmitted ? "Qiymətləndirməyə davam et" : triggerLabel}
         </Button>
       </DialogTrigger>
 
@@ -158,9 +164,16 @@ export const PeerEvaluationDialog = ({
           {peers.map(p => {
             const matrix = matrixByPeer[p.id];
             const max = matrixMaxScore(matrix);
+            const readOnly = submittedPeerIds.has(p.id);
             return (
               <TabsContent key={p.id} value={p.id} className="space-y-4 pt-4">
                 <PeerHeaderCard peer={p} />
+                {readOnly && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-secondary/40 text-xs text-muted-foreground">
+                    <CheckCircle2 className="w-4 h-4 text-zone-green-text" />
+                    Bu həmkar üzrə qiymətləndirmə tamamlanıb — yalnız baxış üçündür.
+                  </div>
+                )}
 
                 <div className="flex items-start gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5">
                   <Lock className="w-4 h-4 text-primary shrink-0 mt-0.5" />
@@ -245,7 +258,7 @@ export const PeerEvaluationDialog = ({
         </Tabs>
 
         <DialogFooter className="gap-2">
-          {readOnly ? (
+          {allSubmitted ? (
             <>
               {peers.findIndex(p => p.id === activeTab) < peers.length - 1 && (
                 <Button variant="outline" onClick={goNext} className="gap-2">
@@ -261,7 +274,7 @@ export const PeerEvaluationDialog = ({
           ) : (
             <Button disabled={!allComplete} onClick={submit} className="gap-2">
               <CheckCircle2 className="w-4 h-4" />
-              Bütün qiymətləndirmələri təsdiqlə
+              Qiymətləndirmələri təsdiqlə
             </Button>
           )}
         </DialogFooter>
