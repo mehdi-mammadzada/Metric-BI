@@ -63,19 +63,18 @@ export const GoalEvaluationQueue = () => {
         <MiniHeaderStat icon={CheckCircle2} label="Tamamlanan" value={done.length} accent="text-emerald-600" />
       </div>
 
-      <div className="inline-flex items-center gap-1 p-1 rounded-lg border border-border bg-card mb-4">
-        {([["pending", `Gözləyən (${pending.length})`], ["done", `Tamamlanan (${done.length})`]] as const).map(([k, label]) => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
-              tab === k ? "bg-emerald-600 text-white" : "text-muted-foreground hover:bg-secondary"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={v => setTab(v as "pending" | "done")} className="w-full mb-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="pending" className="gap-2">
+            <Clock className="w-3.5 h-3.5" />
+            Gözləyən ({pending.length})
+          </TabsTrigger>
+          <TabsTrigger value="done" className="gap-2">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Tamamlanan ({done.length})
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <div className="space-y-3">
         {groups.length === 0 ? (
