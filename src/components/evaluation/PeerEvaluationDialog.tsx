@@ -134,7 +134,7 @@ export const PeerEvaluationDialog = ({
     return (
       <Button variant="outline" disabled className="gap-2">
         <Star className="w-4 h-4" />
-        Qiymətləndirmə üçün həmkar yoxdur
+        {emptyLabel}
       </Button>
     );
   }
