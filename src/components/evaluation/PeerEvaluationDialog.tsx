@@ -15,7 +15,7 @@ import {
   getInitials,
   MockEmployee,
 } from "@/data/mockData";
-import { submitPeerReviews, hasReviewerSubmitted } from "@/lib/peerReviewStore";
+import { submitPeerReviews, hasReviewerSubmitted, getReviewsByReviewer } from "@/lib/peerReviewStore";
 import { useCompetencyMatrices, CompetencyMatrix } from "@/lib/competencyMatrixStore";
 import { resolveMatrixForPosition, matrixMaxScore } from "@/lib/competencyEvaluation";
 import { toast } from "sonner";
@@ -47,6 +47,8 @@ export const PeerEvaluationDialog = ({
     return map;
   }, [peers, matrices]);
 
+  const readOnly = alreadySubmitted;
+
   const [activeTab, setActiveTab] = useState<string>(peers[0]?.id || "");
   const [scoresByPeer, setScoresByPeer] = useState<Record<string, ScoresMap>>({});
   const [commentsByPeer, setCommentsByPeer] = useState<Record<string, string>>({});
@@ -68,6 +70,23 @@ export const PeerEvaluationDialog = ({
     });
     if (!peers.some(p => p.id === activeTab)) setActiveTab(peers[0]?.id || "");
   }, [peers, matrixByPeer]);
+
+  // Təsdiqlənmiş qiymətləndirməyə baxış: saxlanmış balları yüklə
+  useEffect(() => {
+    if (!open || !readOnly) return;
+    const rows = getReviewsByReviewer(reviewerId, cycleId);
+    if (rows.length === 0) return;
+    setScoresByPeer(prev => {
+      const next = { ...prev };
+      rows.forEach(r => { next[r.revieweeId] = { ...(r.scores as any) }; });
+      return next;
+    });
+    setCommentsByPeer(prev => {
+      const next = { ...prev };
+      rows.forEach(r => { next[r.revieweeId] = r.comment || ""; });
+      return next;
+    });
+  }, [open, readOnly, reviewerId, cycleId]);
 
   const hasCriteria = peers.some(p => (matrixByPeer[p.id]?.questions?.length || 0) > 0);
   const allComplete = peers.length > 0 && hasCriteria;
@@ -111,7 +130,7 @@ export const PeerEvaluationDialog = ({
       <DialogTrigger asChild>
         <Button variant={triggerVariant} className="gap-2">
           <Star className="w-4 h-4" />
-          {alreadySubmitted ? "Qiymətləndirməni yenilə" : triggerLabel}
+          {alreadySubmitted ? "Qiymətləndirməyə bax" : triggerLabel}
         </Button>
       </DialogTrigger>
 
@@ -179,9 +198,10 @@ export const PeerEvaluationDialog = ({
                           <RatingCircles
                             value={scoresByPeer[p.id]?.[q.id] ?? 0}
                             max={max}
-                            onChange={v => updateScore(p.id, q.id, v)}
+                            onChange={readOnly ? undefined : (v => updateScore(p.id, q.id, v))}
+                            readOnly={readOnly}
                           />
-                          {matrix.answers.length > 0 && (
+                          {matrix.answers.length > 0 && !readOnly && (
                             <div className="flex flex-wrap gap-1.5 pt-1">
                               {matrix.answers.map(a => (
                                 <button
@@ -212,6 +232,7 @@ export const PeerEvaluationDialog = ({
                   <Textarea
                     placeholder="Bu həmkar haqqında anonim şərhinizi qeyd edin..."
                     value={commentsByPeer[p.id] ?? ""}
+                    disabled={readOnly}
                     onChange={e =>
                       setCommentsByPeer(prev => ({ ...prev, [p.id]: e.target.value }))
                     }
@@ -224,7 +245,16 @@ export const PeerEvaluationDialog = ({
         </Tabs>
 
         <DialogFooter className="gap-2">
-          {peers.findIndex(p => p.id === activeTab) < peers.length - 1 ? (
+          {readOnly ? (
+            <>
+              {peers.findIndex(p => p.id === activeTab) < peers.length - 1 && (
+                <Button variant="outline" onClick={goNext} className="gap-2">
+                  Növbəti həmkara keç <ChevronRight className="w-4 h-4" />
+                </Button>
+              )}
+              <Button variant="secondary" onClick={() => setOpen(false)}>Bağla</Button>
+            </>
+          ) : peers.findIndex(p => p.id === activeTab) < peers.length - 1 ? (
             <Button variant="outline" onClick={goNext} className="gap-2">
               Növbəti həmkara keç <ChevronRight className="w-4 h-4" />
             </Button>

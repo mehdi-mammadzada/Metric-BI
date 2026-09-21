@@ -72,6 +72,11 @@ export const getAverageForReviewee = (
   return { overall, perCategory, count: rows.length };
 };
 
+export const getReviewsByReviewer = (
+  reviewerId: string,
+  cycleId: string = CURRENT_CYCLE_ID
+): PeerSubmission[] => read().filter((r) => r.reviewerId === reviewerId && r.cycleId === cycleId);
+
 export const hasReviewerSubmitted = (
   reviewerId: string,
   cycleId: string = CURRENT_CYCLE_ID
