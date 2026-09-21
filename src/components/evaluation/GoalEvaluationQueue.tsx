@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, CheckCircle2, Clock, Award, ClipboardCheck, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { withKartSuffix } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { calcCompletion, isEvaluated, type SubKpi } from "@/lib/kpiEvaluationStore";
