@@ -92,7 +92,7 @@ export const PeerEvaluationDialog = ({
       rows.forEach(r => { next[r.revieweeId] = r.comment || ""; });
       return next;
     });
-  }, [open, readOnly, reviewerId, cycleId]);
+  }, [open, reviewerId, cycleId]);
 
   const hasCriteria = peers.some(p => (matrixByPeer[p.id]?.questions?.length || 0) > 0);
   const allComplete = peers.length > 0 && hasCriteria;
