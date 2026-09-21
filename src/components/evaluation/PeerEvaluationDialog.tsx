@@ -27,6 +27,9 @@ interface PeerEvaluationDialogProps {
   cycleId?: string;
   triggerLabel?: string;
   triggerVariant?: "default" | "outline" | "secondary";
+  /** Yalnız bu həmkarlar göstərilsin (gözləyən / tamamlanan bölgüsü üçün) */
+  peerIds?: string[];
+  emptyLabel?: string;
 }
 
 export const PeerEvaluationDialog = ({
@@ -34,9 +37,14 @@ export const PeerEvaluationDialog = ({
   cycleId = CURRENT_CYCLE_ID,
   triggerLabel = "Qiymətləndirməyə başla",
   triggerVariant = "default",
+  peerIds,
+  emptyLabel = "Qiymətləndirmə üçün həmkar yoxdur",
 }: PeerEvaluationDialogProps) => {
   const [open, setOpen] = useState(false);
-  const peers = useMemo(() => buildPeerAssignments(cycleId)[reviewerId] || [], [cycleId, reviewerId]);
+  const peers = useMemo(() => {
+    const all = buildPeerAssignments(cycleId)[reviewerId] || [];
+    return peerIds ? all.filter(p => peerIds.includes(p.id)) : all;
+  }, [cycleId, reviewerId, peerIds]);
   const matrices = useCompetencyMatrices();
   const alreadySubmitted = useMemo(() => hasReviewerSubmitted(reviewerId, cycleId), [open, reviewerId, cycleId]);
 
