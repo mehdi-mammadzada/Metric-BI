@@ -27,6 +27,9 @@ interface PeerEvaluationDialogProps {
   cycleId?: string;
   triggerLabel?: string;
   triggerVariant?: "default" | "outline" | "secondary";
+  /** Yalnız bu həmkarlar göstərilsin (gözləyən / tamamlanan bölgüsü üçün) */
+  peerIds?: string[];
+  emptyLabel?: string;
 }
 
 export const PeerEvaluationDialog = ({
@@ -34,9 +37,14 @@ export const PeerEvaluationDialog = ({
   cycleId = CURRENT_CYCLE_ID,
   triggerLabel = "Qiymətləndirməyə başla",
   triggerVariant = "default",
+  peerIds,
+  emptyLabel = "Qiymətləndirmə üçün həmkar yoxdur",
 }: PeerEvaluationDialogProps) => {
   const [open, setOpen] = useState(false);
-  const peers = useMemo(() => buildPeerAssignments(cycleId)[reviewerId] || [], [cycleId, reviewerId]);
+  const peers = useMemo(() => {
+    const all = buildPeerAssignments(cycleId)[reviewerId] || [];
+    return peerIds ? all.filter(p => peerIds.includes(p.id)) : all;
+  }, [cycleId, reviewerId, peerIds]);
   const matrices = useCompetencyMatrices();
   const alreadySubmitted = useMemo(() => hasReviewerSubmitted(reviewerId, cycleId), [open, reviewerId, cycleId]);
 
@@ -126,7 +134,7 @@ export const PeerEvaluationDialog = ({
     return (
       <Button variant="outline" disabled className="gap-2">
         <Star className="w-4 h-4" />
-        Qiymətləndirmə üçün həmkar yoxdur
+        {emptyLabel}
       </Button>
     );
   }
@@ -152,7 +160,7 @@ export const PeerEvaluationDialog = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="flex w-full flex-wrap h-auto">
             {peers.map((p, i) => (
               <TabsTrigger key={p.id} value={p.id} className="gap-2">
                 <CheckCircle2 className="w-3.5 h-3.5 text-primary" />

@@ -44,7 +44,14 @@ export const submitPeerReviews = (subs: Omit<PeerSubmission, "submittedAt">[]) =
   );
   const now = Date.now();
   write([...filtered, ...subs.map((s) => ({ ...s, submittedAt: now }))]);
+  try {
+    window.dispatchEvent(new CustomEvent(PEER_REVIEWS_EVT));
+  } catch {
+    /* noop */
+  }
 };
+
+export const PEER_REVIEWS_EVT = "peer-reviews-updated";
 
 export const getReviewsForReviewee = (
   revieweeId: string,
