@@ -360,25 +360,28 @@ const EmployeeKpiDialog = ({
                   <div className="p-4 bg-secondary/20">
                     <div className="text-xs font-medium text-muted-foreground mb-2">Qiymətləndirmə</div>
                     {r.evaluators && r.evaluators.length > 1 ? (
-                      <div className="space-y-1.5">
+                      <div className="rounded-md bg-background/70 border border-border divide-y divide-border">
                         {r.evaluators.map((ev, j) => (
-                          <div key={j} className="flex items-center justify-between gap-2 text-xs rounded-md bg-background/70 border border-border px-2 py-1.5">
-                            <span className="flex items-center gap-1.5 min-w-0 truncate"><UserIcon className="w-3 h-3 text-muted-foreground shrink-0" />{ev.name}</span>
-                            <span className="shrink-0 tabular-nums text-muted-foreground">Çəki {ev.weight}% · <span className="font-semibold text-foreground">{ev.score} bal</span></span>
+                          <div key={j} className="flex items-center justify-between gap-2 text-xs px-2.5 py-1.5">
+                            <span className="min-w-0 truncate text-foreground" title={ev.name}>{ev.name}</span>
+                            <span className="shrink-0 flex items-center gap-2 tabular-nums">
+                              <span className="text-muted-foreground">{ev.weight}%</span>
+                              <span className="font-semibold text-foreground">{ev.score}/5</span>
+                            </span>
                           </div>
                         ))}
-                        <div className="rounded-md bg-background/70 border border-border px-3 py-2 text-[11px] font-mono text-muted-foreground">
+                        <div className="px-2.5 py-1.5 text-[11px] font-mono text-muted-foreground">
                           {r.evaluators.map(ev => `(${ev.weight}%×${ev.score})`).join(" + ")} ={" "}
-                          <span className="text-primary font-bold">{r.score.toFixed(2)} bal</span>
-                          <div className="font-sans mt-0.5">Hədəfin ümumi balı</div>
+                          <span className="text-primary font-bold">{r.score.toFixed(2)}/5</span>
                         </div>
                       </div>
                     ) : (
                       <div className="text-sm text-foreground">Real nəticə: {r.score.toFixed(2)} / 5</div>
+                    )} / 5</div>
                     )}
                     <div className="mt-3 rounded-md bg-background/70 border border-border px-3 py-2 text-[11px] font-mono text-muted-foreground">
-                      ({r.weight}%×{r.score.toFixed(2)}) ={" "}
-                      <span className="text-primary font-bold">{r.score.toFixed(2)} bal</span>
+                      Hədəf çəkisi: ({r.weight}%×{r.score.toFixed(2)}) ={" "}
+                      <span className="text-primary font-bold">{(r.weight * r.score / 100).toFixed(2)} bal</span>
                     </div>
                   </div>
                 </div>
