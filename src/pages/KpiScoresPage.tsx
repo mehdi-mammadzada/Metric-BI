@@ -107,11 +107,14 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
         const evaluated = getSubKpis(String(assigneeId)).filter(k => (k.cardId === card.id || k.cardId === card.name) && isEvaluated(k));
         if (evaluated.length === 0) return;
         const totalWeight = evaluated.reduce((sum, item) => sum + item.weight, 0) || 100;
-        const goals: GoalRow[] = evaluated.map(item => ({
+        // Hədəf çəkiləri cəmi 100 olmalıdır — normallaşdır
+        const normW = evaluated.map(item => Math.round((item.weight / totalWeight) * 100));
+        if (normW.length) normW[normW.length - 1] += 100 - normW.reduce((a, b) => a + b, 0);
+        const goals: GoalRow[] = evaluated.map((item, gi) => ({
           name: item.name, target: item.target, actual: item.actual ?? 0, unit: item.unit,
-          weight: item.weight, score: item.evaluatedScore ?? 0, progress: calcCompletion(item), note: item.selfComment, evaluators: item.evaluators,
+          weight: normW[gi], score: item.evaluatedScore ?? 0, progress: calcCompletion(item), note: item.selfComment, evaluators: item.evaluators,
         }));
-        const score = evaluated.reduce((sum, item) => sum + ((item.evaluatedScore ?? 0) * item.weight), 0) / totalWeight;
+        const score = goals.reduce((sum, g) => sum + g.score * g.weight, 0) / 100;
         out.push({
           empId: emp.id, fullName: `${emp.firstName} ${emp.lastName}`, fatherName: emp.fatherName ?? "",
           cardId: card.id, cardName: card.name, periodLabel: resolvedPeriod.label,
@@ -397,7 +400,7 @@ const EmployeeKpiDialog = ({
                   </span>
                 </div>
                 <div className="text-[11px] font-mono text-muted-foreground">
-                  {rows.map(r => `(${r.weight}%×${r.score.toFixed(2)})`).join(" + ")} ={" "}
+                  {rows.map(r => `(${r.weight}%×${r.score.toFixed(2)})`).join(" + ")} = {rows.map(r => (r.weight * r.score / 100).toFixed(2)).join(" + ")} ={" "}
                   <span className="text-primary font-bold">{total.toFixed(2)}</span> bal
                 </div>
               </div>
