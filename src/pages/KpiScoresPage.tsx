@@ -377,7 +377,6 @@ const EmployeeKpiDialog = ({
                       </div>
                     ) : (
                       <div className="text-sm text-foreground">Real nəticə: {r.score.toFixed(2)} / 5</div>
-                    )} / 5</div>
                     )}
                     <div className="mt-3 rounded-md bg-background/70 border border-border px-3 py-2 text-[11px] font-mono text-muted-foreground">
                       Hədəf çəkisi: ({r.weight}%×{r.score.toFixed(2)}) ={" "}
