@@ -38,6 +38,7 @@ interface GoalRow {
   score: number;
   progress: number;
   note?: string;
+  evaluators?: { name: string; weight: number; score: number }[];
 }
 
 interface ScoreRow {
@@ -108,7 +109,7 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
         const totalWeight = evaluated.reduce((sum, item) => sum + item.weight, 0) || 100;
         const goals: GoalRow[] = evaluated.map(item => ({
           name: item.name, target: item.target, actual: item.actual ?? 0, unit: item.unit,
-          weight: item.weight, score: item.evaluatedScore ?? 0, progress: calcCompletion(item), note: item.selfComment,
+          weight: item.weight, score: item.evaluatedScore ?? 0, progress: calcCompletion(item), note: item.selfComment, evaluators: item.evaluators,
         }));
         const score = evaluated.reduce((sum, item) => sum + ((item.evaluatedScore ?? 0) * item.weight), 0) / totalWeight;
         out.push({
@@ -358,7 +359,23 @@ const EmployeeKpiDialog = ({
                   {/* SAĞ: Qiymətləndirmə paneli */}
                   <div className="p-4 bg-secondary/20">
                     <div className="text-xs font-medium text-muted-foreground mb-2">Qiymətləndirmə</div>
-                    <div className="text-sm text-foreground">Real nəticə: {r.score.toFixed(2)} / 5</div>
+                    {r.evaluators && r.evaluators.length > 1 ? (
+                      <div className="space-y-1.5">
+                        {r.evaluators.map((ev, j) => (
+                          <div key={j} className="flex items-center justify-between gap-2 text-xs rounded-md bg-background/70 border border-border px-2 py-1.5">
+                            <span className="flex items-center gap-1.5 min-w-0 truncate"><UserIcon className="w-3 h-3 text-muted-foreground shrink-0" />{ev.name}</span>
+                            <span className="shrink-0 tabular-nums text-muted-foreground">Çəki {ev.weight}% · <span className="font-semibold text-foreground">{ev.score} bal</span></span>
+                          </div>
+                        ))}
+                        <div className="rounded-md bg-background/70 border border-border px-3 py-2 text-[11px] font-mono text-muted-foreground">
+                          {r.evaluators.map(ev => `(${ev.weight}%×${ev.score})`).join(" + ")} ={" "}
+                          <span className="text-primary font-bold">{r.score.toFixed(2)} bal</span>
+                          <div className="font-sans mt-0.5">Hədəfin ümumi balı</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-foreground">Real nəticə: {r.score.toFixed(2)} / 5</div>
+                    )}
                     <div className="mt-3 rounded-md bg-background/70 border border-border px-3 py-2 text-[11px] font-mono text-muted-foreground">
                       ({r.weight}%×{r.score.toFixed(2)}) ={" "}
                       <span className="text-primary font-bold">{r.score.toFixed(2)} bal</span>

@@ -6,7 +6,7 @@
 import { useEffect } from "react";
 import { getEmployees, type OrgEmployee } from "@/lib/orgStore";
 import { useVisibleSharedKpiCards, type SharedKpiCard } from "@/lib/kpiCardStore";
-import { getSubKpis, isEvaluated, upsertSubKpis, type SubKpi } from "@/lib/kpiEvaluationStore";
+import { getAllSubKpis, getSubKpis, isEvaluated, upsertSubKpis, type SubKpi } from "@/lib/kpiEvaluationStore";
 
 const FLAG = "sample_results_seeded_v1";
 
@@ -120,8 +120,47 @@ export const ensureSampleResults = (cards: SharedKpiCard[]) => {
   }
 };
 
+const MULTI_FLAG = "sample_multi_evaluators_v1";
+const EVAL_PROFILES: { weights: number[]; deltas: number[] }[] = [
+  { weights: [60, 40], deltas: [0, -1] },
+  { weights: [50, 30, 20], deltas: [0, -1, 1] },
+  { weights: [70, 30], deltas: [-1, 0] },
+  { weights: [40, 35, 25], deltas: [1, 0, -2] },
+];
+
+/** Nümunə nəticələrin bəzi hədəflərinə 2–3 qiymətləndirici (çəkili bal) əlavə edir. */
+export const ensureMultiEvaluatorSamples = () => {
+  try {
+    if (localStorage.getItem(MULTI_FLAG)) return;
+    const employees = getEmployees().filter(e => e.active);
+    const rows = getAllSubKpis().filter(k => k.id.startsWith("sample:") && !k.evaluators?.length);
+    if (rows.length === 0 || employees.length < 2) return;
+    const patched: SubKpi[] = [];
+    rows.forEach((row, idx) => {
+      if (idx % 3 === 2) return; // hər 3-cü hədəf tək qiymətləndirici ilə qalsın
+      const prof = EVAL_PROFILES[idx % EVAL_PROFILES.length];
+      const base = row.evaluatedScore ?? 4;
+      const names = employees
+        .filter(e => String(e.id) !== row.assigneeId && `e${e.id}` !== row.assigneeId)
+        .slice(idx % Math.max(1, employees.length - 3))
+        .concat(employees)
+        .slice(0, prof.weights.length)
+        .map(e => `${e.firstName} ${e.lastName}`.trim());
+      const evaluators = prof.weights.map((w, i) => ({
+        name: names[i] || `Qiymətləndirici ${i + 1}`,
+        weight: w,
+        score: Math.min(5, Math.max(1, base + prof.deltas[i])),
+      }));
+      const score = Math.round(evaluators.reduce((s, e) => s + e.score * e.weight, 0)) / 100;
+      patched.push({ ...row, evaluators, evaluatedScore: score });
+    });
+    upsertSubKpis(patched);
+    localStorage.setItem(MULTI_FLAG, "1");
+  } catch {}
+};
+
 /** Nəticə / bonus / hesabat modullarında çağırılır. */
 export const useSampleResultsSeed = () => {
   const cards = useVisibleSharedKpiCards();
-  useEffect(() => { ensureSampleResults(cards); }, [cards]);
+  useEffect(() => { ensureSampleResults(cards); ensureMultiEvaluatorSamples(); }, [cards]);
 };
