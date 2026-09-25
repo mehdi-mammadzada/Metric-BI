@@ -359,7 +359,7 @@ const EmployeeKpiDialog = ({
                   {/* SAĞ: Qiymətləndirmə paneli */}
                   <div className="p-4 bg-secondary/20">
                     <div className="text-xs font-medium text-muted-foreground mb-2">Qiymətləndirmə</div>
-                    {r.evaluators && r.evaluators.length > 1 ? (
+                    {r.evaluators && r.evaluators.length > 0 ? (
                       <div className="rounded-md bg-background/70 border border-border divide-y divide-border">
                         {r.evaluators.map((ev, j) => (
                           <div key={j} className="flex items-center justify-between gap-2 text-xs px-2.5 py-1.5">
