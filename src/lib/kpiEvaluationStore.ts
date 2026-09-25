@@ -22,6 +22,8 @@ export interface SubKpi {
   evidence?: string;        // dəstəkləyici qeyd / link
   nextPlan?: string;        // növbəti dövr üçün tədbir planı
   submittedAt?: number;
+  /** Bir neçə qiymətləndirici olduqda: hər birinin çəkisi (cəmi 100) və verdiyi bal */
+  evaluators?: { name: string; weight: number; score: number }[];
 }
 
 export interface KpiCardInfo {
