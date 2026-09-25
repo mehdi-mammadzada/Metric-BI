@@ -120,7 +120,7 @@ export const ensureSampleResults = (cards: SharedKpiCard[]) => {
   }
 };
 
-const MULTI_FLAG = "sample_multi_evaluators_v1";
+const MULTI_FLAG = "sample_multi_evaluators_v2";
 const EVAL_PROFILES: { weights: number[]; deltas: number[] }[] = [
   { weights: [60, 40], deltas: [0, -1] },
   { weights: [50, 30, 20], deltas: [0, -1, 1] },
@@ -137,8 +137,7 @@ export const ensureMultiEvaluatorSamples = () => {
     if (rows.length === 0 || employees.length < 2) return;
     const patched: SubKpi[] = [];
     rows.forEach((row, idx) => {
-      if (idx % 3 === 2) return; // hər 3-cü hədəf tək qiymətləndirici ilə qalsın
-      const prof = EVAL_PROFILES[idx % EVAL_PROFILES.length];
+      const prof = idx % 3 === 2 ? { weights: [100], deltas: [0] } : EVAL_PROFILES[idx % EVAL_PROFILES.length];
       const base = row.evaluatedScore ?? 4;
       const names = employees
         .filter(e => String(e.id) !== row.assigneeId && `e${e.id}` !== row.assigneeId)
