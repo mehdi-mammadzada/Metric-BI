@@ -40,6 +40,7 @@ import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import CompetencyMatrixTab from "@/components/evaluation/CompetencyMatrixTab";
 import { getCompetencyMatrices } from "@/lib/competencyMatrixStore";
 import { resolveMatrixForPosition, matrixMaxScore } from "@/lib/competencyEvaluation";
+import { getAllSubKpis } from "@/lib/kpiEvaluationStore";
 import { AlertTriangle } from "lucide-react";
 import { useUrlView } from "@/lib/useUrlView";
 
@@ -980,7 +981,13 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
         // Aggregate stats for header
         const cardStats = card.targets.map((t, ti) => {
           const evalIds = getGoalEvaluatorIds(card, ti);
-          const raters = buildRaters(card.id + t.id, evalIds, t.scoreLimit);
+          let raters = buildRaters(card.id + t.id, evalIds, t.scoreLimit);
+          // Real qiymətləndirmə (Hədəf qiymətləndirmə növbəsindən) varsa göstər
+          const saved = getAllSubKpis().find(k => k.id === `evalq:${card.id}:${group.key}:${t.id || ti}`);
+          if (saved && saved.evaluatedScore !== undefined) {
+            const dt = saved.submittedAt ? new Date(saved.submittedAt).toISOString().slice(0, 10) : null;
+            raters = raters.map(r => ({ ...r, score: saved.evaluatedScore!, done: true, date: dt }));
+          }
           return { raters, finalS: finalScore(raters), finalOwn: finalScore(raters, t.scoreLimit), max: t.scoreLimit };
         });
         const doneRaters = cardStats.flatMap(s => s.raters).filter(r => r.done).length;
