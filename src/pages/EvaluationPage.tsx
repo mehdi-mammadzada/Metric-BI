@@ -40,6 +40,7 @@ import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import CompetencyMatrixTab from "@/components/evaluation/CompetencyMatrixTab";
 import { getCompetencyMatrices } from "@/lib/competencyMatrixStore";
 import { resolveMatrixForPosition, matrixMaxScore } from "@/lib/competencyEvaluation";
+import { getAllSubKpis } from "@/lib/kpiEvaluationStore";
 import { AlertTriangle } from "lucide-react";
 import { useUrlView } from "@/lib/useUrlView";
 
