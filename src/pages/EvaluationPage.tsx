@@ -39,6 +39,7 @@ import { addSurvey } from "@/lib/evaluationSurveyStore";
 import ColumnSearchHeader from "@/components/common/ColumnSearchHeader";
 import CompetencyMatrixTab from "@/components/evaluation/CompetencyMatrixTab";
 import { getCompetencyMatrices } from "@/lib/competencyMatrixStore";
+import { resolveMatrixForPosition, matrixMaxScore } from "@/lib/competencyEvaluation";
 import { AlertTriangle } from "lucide-react";
 import { useUrlView } from "@/lib/useUrlView";
 
@@ -1070,71 +1071,63 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
   const renderIndividualGoals = () => renderGoalCards("Hədəflər", "Bu əməkdaş üçün KPI kartı yoxdur");
 
   const renderIndividualCompetencies = () => {
-    // Simple category grouping: split criteria into 2 categories for a structured look.
-    const half = Math.ceil(competencies.length / 2);
-    const categories: { name: string; icon: typeof Sparkles; items: string[] }[] = [
-      { name: "Peşəkar bacarıqlar", icon: Sparkles, items: competencies.slice(0, half) },
-      { name: "Davranış və münasibət", icon: UserCheck, items: competencies.slice(half) },
-    ].filter(c => c.items.length > 0);
-
+    const matrix = resolveMatrixForPosition(getCompetencyMatrices(), group.subtitle);
+    if (!matrix) {
+      return (
+        <div className="p-6 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">
+          "{group.subtitle || "—"}" vəzifəsi üçün aktiv Səriştə Matrisi mövcud deyil.
+        </div>
+      );
+    }
+    const maxScore = matrixMaxScore(matrix);
+    const evalIds = (group.cards[0]?.evaluatorIds || []).slice(0, 1);
+    const raters = buildRaters(group.key + "-comp", evalIds, maxScore);
+    const finalS = finalScore(raters);
+    const done = raters.length > 0 && raters.every(r => r.done);
+    const status = raters.length === 0 ? "Təyin edilməyib" : done ? "Tamamlanıb" : "Gözləyir";
+    const statusTone = done ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-muted text-muted-foreground border-border";
+    const totalW = matrix.questions.reduce((a, q) => a + (Number(q.weight) || 0), 0);
     return (
-      <div className="space-y-4">
-        {categories.map(cat => {
-          const CatIcon = cat.icon;
-          return (
-            <div key={cat.name} className="border border-border rounded-2xl overflow-hidden bg-card shadow-sm">
-              <div className="px-4 py-3 border-b border-border bg-gradient-to-r from-primary/5 via-card to-card">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
-                    <CatIcon className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{cat.name}</p>
-                    <p className="text-[11px] text-muted-foreground">{cat.items.length} səriştə meyarı</p>
-                  </div>
-                </div>
+      <div className="border border-border rounded-2xl overflow-hidden bg-card shadow-sm">
+        <div className="px-4 py-3 border-b border-border bg-gradient-to-r from-primary/5 via-card to-card">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+                <Sparkles className="w-4 h-4" />
               </div>
-              <div className="divide-y divide-border">
-                {cat.items.map((c, ci) => {
-                  const evalIds = group.cards[0]?.evaluatorIds && group.cards[0].evaluatorIds.length > 0
-                    ? group.cards[0].evaluatorIds
-                    : [];
-
-                  const raters = buildRaters(group.key + "-comp-" + c, evalIds, 5);
-                  const finalS = finalScore(raters);
-                  const weight = Math.round(100 / cat.items.length);
-                  const doneCount = raters.filter(r => r.done).length;
-                  const latestDate = raters.filter(r => r.done && r.date).map(r => r.date!).sort().slice(-1)[0] || null;
-                  const status = doneCount === raters.length ? "Tamamlanıb" : doneCount === 0 ? "Gözləyir" : "Davam edir";
-                  const statusTone = status === "Tamamlanıb" ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : status === "Gözləyir" ? "bg-muted text-muted-foreground border-border" : "bg-amber-500/15 text-amber-600 border-amber-500/30";
-                  return (
-                    <div key={c} className="p-4 space-y-3">
-                      <div className="flex items-start justify-between gap-2 flex-wrap">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-foreground">{c}</p>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <span className="text-[11px] text-muted-foreground">Çəki: <span className="font-medium text-foreground">{weight}%</span></span>
-                            {latestDate && <>
-                              <span className="text-[11px] text-muted-foreground">·</span>
-                              <span className="text-[11px] text-muted-foreground">Tarix: <span className="font-medium text-foreground">{latestDate}</span></span>
-                            </>}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={`h-6 border ${statusTone}`}>{status}</Badge>
-                          <Badge className={`h-6 gap-1 ${finalS !== null ? "bg-primary/15 text-primary hover:bg-primary/20" : ""}`} variant={finalS !== null ? "default" : "secondary"}>
-                            <Star className="w-3 h-3" /> Yekun: {finalS !== null ? `${finalS}/5` : "—"}
-                          </Badge>
-                        </div>
-                      </div>
-                      <RaterList raters={raters} />
-                    </div>
-                  );
-                })}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{matrix.name}</p>
+                <p className="text-[11px] text-muted-foreground">{matrix.questions.length} səriştə meyarı</p>
               </div>
             </div>
-          );
-        })}
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className={`h-6 border ${statusTone}`}>{status}</Badge>
+              <Badge className={`h-6 gap-1 ${finalS !== null ? "bg-primary/15 text-primary hover:bg-primary/20" : ""}`} variant={finalS !== null ? "default" : "secondary"}>
+                <Star className="w-3 h-3" /> Yekun: {finalS !== null ? `${finalS}/5` : "—"}
+              </Badge>
+            </div>
+          </div>
+        </div>
+        <div className="p-4 border-b border-border space-y-2">
+          <p className="text-[11px] font-medium text-muted-foreground">Qiymətləndirici</p>
+          {raters.length > 0 ? <RaterList raters={raters} /> : (
+            <p className="text-xs text-muted-foreground">Qiymətləndirici təyin edilməyib</p>
+          )}
+        </div>
+        <div className="divide-y divide-border">
+          {matrix.questions.map(q => {
+            const w = totalW > 0 ? Math.round(((Number(q.weight) || 0) / totalW) * 100) : Math.round(100 / matrix.questions.length);
+            return (
+              <div key={q.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-foreground">{q.text}</p>
+                  <p className="text-[11px] text-muted-foreground">Çəki: <span className="font-medium text-foreground">{w}%</span></p>
+                </div>
+                <Badge variant="secondary" className="h-6 shrink-0">— /{maxScore}</Badge>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };
