@@ -904,11 +904,11 @@ const buildRaters = (_seed: string, evaluatorIds: string[], scoreLimit: number):
 };
 
 
-const finalScore = (raters: RaterEval[]): number | null => {
+const finalScore = (raters: RaterEval[], scale = 5): number | null => {
   const done = raters.filter(r => r.done && r.score !== null);
   if (done.length === 0) return null;
   const totalWeight = done.reduce((sum, r) => sum + r.weight, 0) || done.length;
-  const weighted = done.reduce((sum, r) => sum + ((r.score! / r.max) * 5 * r.weight), 0) / totalWeight;
+  const weighted = done.reduce((sum, r) => sum + ((r.score! / r.max) * scale * r.weight), 0) / totalWeight;
   return Math.round(weighted * 10) / 10;
 };
 
@@ -981,7 +981,7 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
         const cardStats = card.targets.map((t, ti) => {
           const evalIds = getGoalEvaluatorIds(card, ti);
           const raters = buildRaters(card.id + t.id, evalIds, t.scoreLimit);
-          return { raters, finalS: finalScore(raters) };
+          return { raters, finalS: finalScore(raters), finalOwn: finalScore(raters, t.scoreLimit), max: t.scoreLimit };
         });
         const doneRaters = cardStats.flatMap(s => s.raters).filter(r => r.done).length;
         const totalRaters = cardStats.flatMap(s => s.raters).length;
@@ -1024,7 +1024,7 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
             {isOpen && (
               <div className="divide-y divide-border">
                 {card.targets.map((t, ti) => {
-                  const { raters, finalS } = cardStats[ti];
+                  const { raters, finalOwn: finalS, max: finalMax } = cardStats[ti];
                   const actual = 0;
                   const doneCount = raters.filter(r => r.done).length;
                   const latestDate = raters.filter(r => r.done && r.date).map(r => r.date!).sort().slice(-1)[0] || null;
@@ -1051,7 +1051,7 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className={`h-6 border ${statusTone}`}>{status}</Badge>
                           <Badge className={`h-6 gap-1 ${finalS !== null ? "bg-primary/15 text-primary hover:bg-primary/20" : ""}`} variant={finalS !== null ? "default" : "secondary"}>
-                            <Star className="w-3 h-3" /> Yekun: {finalS !== null ? `${finalS}/5` : "—"}
+                            <Star className="w-3 h-3" /> Yekun: {finalS !== null ? `${finalS}/${finalMax}` : "—"}
                           </Badge>
                         </div>
                       </div>
@@ -1096,7 +1096,7 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
         : qScores.reduce((a, s) => a + s!, 0) / (qScores.length || 1);
       raters = raters.map(r => ({ ...r, score: Math.round(avg * 100) / 100, done: true, date: "2026-09-15" }));
     }
-    const finalS = finalScore(raters);
+    const finalS = finalScore(raters, maxScore);
     const done = raters.length > 0 && raters.every(r => r.done);
     const status = raters.length === 0 ? "Təyin edilməyib" : done ? "Tamamlanıb" : "Gözləyir";
     const statusTone = done ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-muted text-muted-foreground border-border";
@@ -1117,7 +1117,7 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
             <div className="flex items-center gap-2">
               <Badge variant="outline" className={`h-6 border ${statusTone}`}>{status}</Badge>
               <Badge className={`h-6 gap-1 ${finalS !== null ? "bg-primary/15 text-primary hover:bg-primary/20" : ""}`} variant={finalS !== null ? "default" : "secondary"}>
-                <Star className="w-3 h-3" /> Yekun: {finalS !== null ? `${finalS}/5` : "—"}
+                <Star className="w-3 h-3" /> Yekun: {finalS !== null ? `${finalS}/${maxScore}` : "—"}
               </Badge>
             </div>
           </div>
