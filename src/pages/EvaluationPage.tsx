@@ -1158,10 +1158,9 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
     const members = group.members || [];
     return (
       <div className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Komanda rəhbəri</p><p className="text-sm font-semibold text-foreground">{group.leaderName || "—"}</p></div>
           <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Üzv sayı</p><p className="text-sm font-semibold text-foreground">{members.length}</p></div>
-          <div className="rounded-xl border border-border bg-card p-3"><p className="text-[11px] text-muted-foreground">Qiymətləndirmə tipi</p><p className="text-sm font-semibold text-foreground">Hədəf əsaslı</p></div>
         </div>
         {renderGoalCards("Komanda hədəfləri üzrə qiymətləndirmələr", "Bu komanda üçün hədəf KPI kartı yoxdur", `${group.goalCount} hədəf`)}
       </div>
@@ -1336,7 +1335,6 @@ const StatusTab = () => {
                   ? [
                       { label: "Üzv", value: g.members?.length || 0 },
                       { label: "Hədəf", value: g.goalCount },
-                      { label: "Tip", value: "Hədəf əsaslı" },
                     ]
                   : [
                       { label: "Komanda", value: teamCount },
