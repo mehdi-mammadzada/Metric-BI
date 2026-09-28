@@ -1081,7 +1081,21 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
     }
     const maxScore = matrixMaxScore(matrix);
     const evalIds = (group.cards[0]?.evaluatorIds || []).slice(0, 1);
-    const raters = buildRaters(group.key + "-comp", evalIds, maxScore);
+    let raters = buildRaters(group.key + "-comp", evalIds, maxScore);
+    // Nümunə: ilk 2 fərdi qrup qiymətləndirilmiş kimi göstərilir
+    const sampleKeys = buildGroups("individual")
+      .filter(g => (g.cards[0]?.evaluatorIds || []).length > 0 && resolveMatrixForPosition(getCompetencyMatrices(), g.subtitle))
+      .slice(0, 2).map(g => g.key);
+    const isSample = sampleKeys.includes(group.key) && raters.length > 0;
+    let seed = 0; for (const ch of group.key) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    const qScores = matrix.questions.map((_, i) => isSample ? Math.max(1, Math.min(maxScore, maxScore - ((seed + i * 7) % 3))) : null);
+    if (isSample) {
+      const totalWq = matrix.questions.reduce((a, q) => a + (Number(q.weight) || 0), 0);
+      const avg = totalWq > 0
+        ? matrix.questions.reduce((a, q, i) => a + (qScores[i]! * (Number(q.weight) || 0)), 0) / totalWq
+        : qScores.reduce((a, s) => a + s!, 0) / (qScores.length || 1);
+      raters = raters.map(r => ({ ...r, score: Math.round(avg * 100) / 100, done: true, date: "2026-09-15" }));
+    }
     const finalS = finalScore(raters);
     const done = raters.length > 0 && raters.every(r => r.done);
     const status = raters.length === 0 ? "Təyin edilməyib" : done ? "Tamamlanıb" : "Gözləyir";
@@ -1115,7 +1129,7 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
           )}
         </div>
         <div className="divide-y divide-border">
-          {matrix.questions.map(q => {
+          {matrix.questions.map((q, qi) => {
             const w = totalW > 0 ? Math.round(((Number(q.weight) || 0) / totalW) * 100) : Math.round(100 / matrix.questions.length);
             return (
               <div key={q.id} className="px-4 py-3 flex items-center justify-between gap-3">
@@ -1123,7 +1137,7 @@ const GroupDetailDialog = ({ group, scope, onClose }: { group: StatusGroup | nul
                   <p className="text-sm text-foreground">{q.text}</p>
                   <p className="text-[11px] text-muted-foreground">Çəki: <span className="font-medium text-foreground">{w}%</span></p>
                 </div>
-                <Badge variant="secondary" className="h-6 shrink-0">— /{maxScore}</Badge>
+                <Badge variant="secondary" className="h-6 shrink-0">{qScores[qi] ?? "—"} /{maxScore}</Badge>
               </div>
             );
           })}
