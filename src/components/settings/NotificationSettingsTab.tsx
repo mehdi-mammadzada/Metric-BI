@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Bell, Mail, Search, Save, Plus, Trash2 } from "lucide-react";
+import { Bell, Mail, Search, Save, Plus, Trash2, Bold, Italic, Underline, List, ListOrdered, Link2, RemoveFormatting } from "lucide-react";
 import { toast } from "sonner";
 import {
   useNotificationSettings, updateNotificationSetting, addNotificationSetting, deleteNotificationSetting,
@@ -76,6 +76,46 @@ const NotificationSettingsTab = () => {
       const pos = start + token.length;
       el.setSelectionRange(pos, pos);
     });
+  };
+
+  const applyEdit = (next: string, selStart: number, selEnd: number) => {
+    if (!current) return;
+    setDraft({ ...current, template: next });
+    requestAnimationFrame(() => {
+      const el = templateRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(selStart, selEnd);
+    });
+  };
+  const getSel = () => {
+    const el = templateRef.current;
+    const text = current?.template ?? "";
+    return { text, s: el?.selectionStart ?? text.length, e: el?.selectionEnd ?? text.length };
+  };
+  const wrapSel = (pre: string, post: string) => {
+    const { text, s, e } = getSel();
+    const next = text.slice(0, s) + pre + text.slice(s, e) + post + text.slice(e);
+    applyEdit(next, s + pre.length, e + pre.length);
+  };
+  const prefixLines = (fn: (i: number) => string) => {
+    const { text, s, e } = getSel();
+    const ls = text.lastIndexOf("\n", s - 1) + 1;
+    let le = text.indexOf("\n", e);
+    if (le === -1) le = text.length;
+    const block = text.slice(ls, le).split("\n").map((l, i) => fn(i) + l).join("\n");
+    applyEdit(text.slice(0, ls) + block + text.slice(le), ls, ls + block.length);
+  };
+  const clearFormat = () => {
+    const { text, s, e } = getSel();
+    const from = s === e ? 0 : s;
+    const to = s === e ? text.length : e;
+    const cleaned = text.slice(from, to)
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(/\*\*|__/g, "")
+      .replace(/(^|\s)_(\S[^_]*)_/g, "$1$2")
+      .replace(/^(\s*)(- |\d+\. )/gm, "$1");
+    applyEdit(text.slice(0, from) + cleaned + text.slice(to), from, from + cleaned.length);
   };
 
   const save = () => {
@@ -232,29 +272,67 @@ const NotificationSettingsTab = () => {
             </div>
 
             {/* Template */}
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">Şablon mətn</label>
-              <textarea
-                ref={templateRef}
-                value={current.template}
-                onChange={(e) => setDraft({ ...current, template: e.target.value })}
-                rows={3}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background resize-none"
-              />
-              <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground mt-1">
-                <span>Dəyişənlər:</span>
-                {TEMPLATE_VARS.map(({ v, label }) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => insertVariable(`{${v}}`)}
-                    title={label}
-                    className="px-1.5 py-0.5 rounded bg-secondary hover:bg-primary/10 hover:text-primary font-mono transition-colors"
-                  >
-                    {`{${v}}`}
-                  </button>
-                ))}
+            <div className="rounded-xl border border-border p-4 space-y-4">
+              <h4 className="text-base font-semibold text-foreground">Şablon mətni</h4>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">Bildiriş başlığı *</label>
+                <div className="relative">
+                  <input
+                    value={current.subject ?? current.title}
+                    maxLength={100}
+                    onChange={(e) => setDraft({ ...current, subject: e.target.value })}
+                    className="w-full pl-3 pr-16 py-2 text-sm border border-border rounded-lg bg-background"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground tabular-nums">
+                    {(current.subject ?? current.title).length}/100
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">Bildiriş mətni *</label>
+                <div className="border border-border rounded-lg bg-background overflow-hidden">
+                  <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border bg-secondary/30">
+                    {[
+                      { icon: Bold, t: "Qalın", a: () => wrapSel("**", "**") },
+                      { icon: Italic, t: "Kursiv", a: () => wrapSel("_", "_") },
+                      { icon: Underline, t: "Altdan xətt", a: () => wrapSel("__", "__"), sep: true },
+                      { icon: List, t: "Siyahı", a: () => prefixLines(() => "- ") },
+                      { icon: ListOrdered, t: "Nömrəli siyahı", a: () => prefixLines(i => `${i + 1}. `), sep: true },
+                      { icon: Link2, t: "Link", a: () => { const url = prompt("Link ünvanı:", "https://"); if (url) wrapSel("[", `](${url})`); } },
+                      { icon: RemoveFormatting, t: "Formatı təmizlə", a: clearFormat },
+                    ].map(({ icon: I, t, a, sep }) => (
+                      <span key={t} className="flex items-center">
+                        <button type="button" title={t} onMouseDown={(e) => e.preventDefault()} onClick={a}
+                          className="p-1.5 rounded hover:bg-secondary text-foreground">
+                          <I className="w-4 h-4" />
+                        </button>
+                        {sep && <span className="w-px h-5 bg-border mx-1" />}
+                      </span>
+                    ))}
+                  </div>
+                  <textarea
+                    ref={templateRef}
+                    value={current.template}
+                    onChange={(e) => setDraft({ ...current, template: e.target.value })}
+                    rows={5}
+                    className="w-full px-3 py-2 text-sm bg-background resize-none outline-none"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground mt-2">
+                  <span>Dəyişənlər:</span>
+                  {TEMPLATE_VARS.map(({ v, label }) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => insertVariable(`{${v}}`)}
+                      title={label}
+                      className="px-1.5 py-0.5 rounded bg-secondary hover:bg-primary/10 hover:text-primary font-mono transition-colors"
+                    >
+                      {`{${v}}`}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 

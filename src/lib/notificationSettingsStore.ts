@@ -55,6 +55,8 @@ export interface NotificationSetting {
   schedule: ScheduleConfig;
   /** Alıcılar */
   recipients: RecipientRole[];
+  /** Bildiriş başlığı */
+  subject?: string;
   /** Şablon mətn */
   template: string;
 }
