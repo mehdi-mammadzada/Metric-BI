@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Bell, Mail, Search, Save, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -43,6 +43,23 @@ const NotificationSettingsTab = () => {
       ? current.channels.filter(x => x !== c)
       : [...current.channels, c];
     setDraft({ ...current, channels: next });
+  };
+
+  const templateRef = useRef<HTMLTextAreaElement>(null);
+  const insertVariable = (token: string) => {
+    if (!current) return;
+    const el = templateRef.current;
+    const text = current.template ?? "";
+    const start = el ? el.selectionStart ?? text.length : text.length;
+    const end = el ? el.selectionEnd ?? text.length : text.length;
+    const next = text.slice(0, start) + token + text.slice(end);
+    setDraft({ ...current, template: next });
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      const pos = start + token.length;
+      el.setSelectionRange(pos, pos);
+    });
   };
 
   const save = () => {
@@ -202,14 +219,26 @@ const NotificationSettingsTab = () => {
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 block">Şablon mətn</label>
               <textarea
+                ref={templateRef}
                 value={current.template}
                 onChange={(e) => setDraft({ ...current, template: e.target.value })}
                 rows={3}
                 className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background resize-none"
               />
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Dəyişənlər: <code>{`{kpi_name}`}</code>, <code>{`{target}`}</code>, <code>{`{date}`}</code>, <code>{`{days_left}`}</code>, <code>{`{progress}`}</code>, <code>{`{score}`}</code>, <code>{`{period}`}</code>, <code>{`{sub_kpi_name}`}</code>.
-              </p>
+              <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground mt-1">
+                <span>Dəyişənlər:</span>
+                {["kpi_name", "target", "date", "days_left", "progress", "score", "period", "sub_kpi_name"].map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertVariable(`{${v}}`)}
+                    className="px-1.5 py-0.5 rounded bg-secondary hover:bg-primary/10 hover:text-primary font-mono transition-colors"
+                  >
+                    {`{${v}}`}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-3 border-t border-border">
