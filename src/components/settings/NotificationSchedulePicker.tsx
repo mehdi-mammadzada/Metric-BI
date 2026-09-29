@@ -115,7 +115,7 @@ const summarize = (s: ScheduleConfig): string => {
     case "monthly":
       if (s.monthlyMode === "weekOfMonth" && s.weekOfMonth && s.weekday) {
         const w = WEEKDAYS_AZ.find(x => x.v === s.weekday)?.label;
-        return `Hər ayın ${WEEK_OF_MONTH_LABEL[s.weekOfMonth]} ${w}-si saat ${t}`;
+        return `Hər ayın ${WEEK_OF_MONTH_LABEL[s.weekOfMonth === "fourth" ? "last" : s.weekOfMonth]} ${w}-si saat ${t}`;
       }
       return `Hər ayın ${s.dayOfMonth ?? 1}-i saat ${t}`;
     case "quarterly":
@@ -227,7 +227,7 @@ const NotificationSchedulePicker = ({ value: s, onChange }: Props) => {
             </label>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input type="radio" checked={s.monthlyMode === "weekOfMonth"} onChange={() => set({ monthlyMode: "weekOfMonth", weekOfMonth: s.weekOfMonth || "first", weekday: s.weekday || 1 })} />
-              Ayın ilk/ikinci/üçüncü/dördüncü/son həftəsi
+              Ayın ilk/ikinci/üçüncü/son həftəsi
             </label>
           </div>
           {s.monthlyMode !== "weekOfMonth" ? (
@@ -241,8 +241,8 @@ const NotificationSchedulePicker = ({ value: s, onChange }: Props) => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Həftə</label>
-                <select value={s.weekOfMonth || "first"} onChange={e => set({ weekOfMonth: e.target.value as WeekOfMonth })} className={inputCls}>
-                  {(Object.keys(WEEK_OF_MONTH_LABEL) as WeekOfMonth[]).map(k => (
+                <select value={s.weekOfMonth === "fourth" ? "last" : (s.weekOfMonth || "first")} onChange={e => set({ weekOfMonth: e.target.value as WeekOfMonth })} className={inputCls}>
+                  {(Object.keys(WEEK_OF_MONTH_LABEL) as WeekOfMonth[]).filter(k => k !== "fourth").map(k => (
                     <option key={k} value={k}>{WEEK_OF_MONTH_LABEL[k]}</option>
                   ))}
                 </select>
