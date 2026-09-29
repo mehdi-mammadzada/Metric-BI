@@ -15,6 +15,22 @@ const channelIcon: Record<NotificationChannel, React.ComponentType<{ className?:
   email: Mail,
 };
 
+const TEMPLATE_VARS: { v: string; label: string }[] = [
+  { v: "employee_name", label: "Əməkdaşın adı" },
+  { v: "kpi_name", label: "KPI kartının adı" },
+  { v: "goal_name", label: "Hədəfin adı" },
+  { v: "target", label: "Hədəf dəyəri" },
+  { v: "weight", label: "Hədəfin çəkisi (%)" },
+  { v: "evaluator_name", label: "Qiymətləndiricinin adı" },
+  { v: "period", label: "Dövr" },
+  { v: "date", label: "Tarix" },
+  { v: "deadline", label: "Bitmə tarixi" },
+  { v: "days_left", label: "Qalan gün sayı" },
+  { v: "progress", label: "İcra faizi" },
+  { v: "score", label: "Bal" },
+  { v: "status", label: "Status" },
+];
+
 const NotificationSettingsTab = () => {
   const settings = useNotificationSettings();
 
@@ -227,12 +243,13 @@ const NotificationSettingsTab = () => {
               />
               <div className="flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground mt-1">
                 <span>Dəyişənlər:</span>
-                {["kpi_name", "target", "date", "days_left", "progress", "score", "period", "sub_kpi_name"].map(v => (
+                {TEMPLATE_VARS.map(({ v, label }) => (
                   <button
                     key={v}
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => insertVariable(`{${v}}`)}
+                    title={label}
                     className="px-1.5 py-0.5 rounded bg-secondary hover:bg-primary/10 hover:text-primary font-mono transition-colors"
                   >
                     {`{${v}}`}
