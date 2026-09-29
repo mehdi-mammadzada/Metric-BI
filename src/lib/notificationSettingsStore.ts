@@ -151,7 +151,7 @@ const SEED: NotificationSetting[] = [
     sendTime: "09:00",
     schedule: mkSchedule("on_event", "09:00"),
     recipients: [],
-    template: "Sizə yeni hədəf təyin olundu: {sub_kpi_name}.",
+    template: "Sizə yeni hədəf təyin olundu: {goal_name}.",
   },
   {
     id: "approval_pending",
@@ -221,7 +221,7 @@ const migrate = (raw: any): NotificationSetting => {
     sendTime: time,
     schedule,
     recipients: Array.isArray(raw.recipients) ? raw.recipients : [],
-    template: raw.template ?? "",
+    template: String(raw.template ?? "").replace(/\{sub_kpi_name\}/g, "{goal_name}"),
   };
 };
 
