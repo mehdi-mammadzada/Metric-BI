@@ -55,6 +55,8 @@ export interface NotificationSetting {
   schedule: ScheduleConfig;
   /** Alıcılar */
   recipients: RecipientRole[];
+  /** Bildiriş başlığı */
+  subject?: string;
   /** Şablon mətn */
   template: string;
 }
@@ -221,6 +223,7 @@ const migrate = (raw: any): NotificationSetting => {
     sendTime: time,
     schedule,
     recipients: Array.isArray(raw.recipients) ? raw.recipients : [],
+    subject: typeof raw.subject === "string" ? raw.subject : undefined,
     template: String(raw.template ?? "").replace(/\{sub_kpi_name\}/g, "{goal_name}"),
   };
 };
