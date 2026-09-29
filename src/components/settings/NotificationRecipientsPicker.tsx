@@ -139,7 +139,7 @@ export const labelForRecipientToken = (token: string, structIdx?: Map<number, st
 };
 
 const NotificationRecipientsPicker = ({ value, onChange }: Props) => {
-  const [tab, setTab] = useState<TabId>("person");
+  const [tab, setTab] = useState<TabId | "">("");
 
   const employees = useMemo(
     () => getEmployees().map(e => ({ key: `${e.firstName} ${e.lastName}`.trim(), label: `${e.firstName} ${e.lastName}` })),
@@ -188,6 +188,7 @@ const NotificationRecipientsPicker = ({ value, onChange }: Props) => {
             <TabsTrigger key={k} value={k} className="text-xs">{TAB_LABELS[k]}</TabsTrigger>
           ))}
         </TabsList>
+        {!tab && <p className="mt-3 text-sm text-muted-foreground">Alıcıları seçmək üçün yuxarıdan növ seçin.</p>}
 
         <TabsContent value="person" className="mt-3">
           <SimpleList items={employees} tokenPrefix="person" value={value} onChange={onChange} />
