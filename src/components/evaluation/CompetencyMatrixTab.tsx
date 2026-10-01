@@ -752,16 +752,16 @@ const CompetencyMatrixTab = () => {
               </tr>
             </thead>
             <tbody>
-              {[
-                { label: "Tam razıyam", score: 10 },
-                { label: "Razıyam", score: 8 },
-                { label: "Qismən razıyam", score: 6 },
-                { label: "Razı deyiləm", score: 4 },
-                { label: "Heç razı deyiləm", score: 0 },
-              ].map(a => {
-                const pct = Math.round((a.score / 10) * 100);
+              {[...((selected || list[0])?.answers?.length ? (selected || list[0])!.answers : [
+                { id: "d1", label: "Tam razıyam", score: 10 },
+                { id: "d2", label: "Razıyam", score: 8 },
+                { id: "d3", label: "Qismən razıyam", score: 6 },
+                { id: "d4", label: "Razı deyiləm", score: 4 },
+                { id: "d5", label: "Heç razı deyiləm", score: 0 },
+              ])].sort((x, y) => y.score - x.score).map(a => {
+                const pct = Math.round((a.score / Math.max(1, matrixMaxScore())) * 100);
                 return (
-                  <tr key={a.label} className="border-t border-border">
+                  <tr key={a.id || a.label} className="border-t border-border">
                     <td className="px-3 py-2">{a.label}</td>
                     <td className="px-3 py-2">{a.score}</td>
                     <td className="px-3 py-2"><span className={`inline-block w-3 h-3 rounded-full ${scoreColor(pct)}`} /></td>
