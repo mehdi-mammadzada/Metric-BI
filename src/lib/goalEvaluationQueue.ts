@@ -110,6 +110,38 @@ const buildRows = (
   return rows;
 };
 
+// Nümunə: hər hesab üçün 1 gözləyən hədəf qiymətləndirməsi.
+const SAMPLE_PENDING: Record<string, EvaluatorGoalRow> = {
+  "nezrin@outlook.com": {
+    id: "evalq:sample-card-nezrin:sample-emp-1:t1",
+    assigneeId: "sample-emp-1",
+    cardId: "sample-card-nezrin",
+    cardName: "Satış KPI kartı (nümunə)",
+    assigneeName: "Orxan Həsənov",
+    name: "Aylıq satış həcmi",
+    description: "Hədəf növü: Kəmiyyət",
+    target: 50000,
+    actual: 46000,
+    unit: "AZN",
+    weight: 40,
+    period: "2026-07-01 – 2026-09-30",
+  },
+  "refiqe@outlook.com": {
+    id: "evalq:sample-card-refiqe:sample-emp-2:t1",
+    assigneeId: "sample-emp-2",
+    cardId: "sample-card-refiqe",
+    cardName: "Müştəri xidməti KPI kartı (nümunə)",
+    assigneeName: "Leyla Quliyeva",
+    name: "Müştəri məmnuniyyəti",
+    description: "Hədəf növü: Faiz",
+    target: 90,
+    actual: 87,
+    unit: "%",
+    weight: 50,
+    period: "2026-07-01 – 2026-09-30",
+  },
+};
+
 /**
  * Cari istifadəçinin qiymətləndirməli olduğu hədəflər (saxlanmış nəticələr ilə birləşdirilmiş).
  */
@@ -124,7 +156,11 @@ export const useEvaluatorGoals = (
     setAliases(evaluatorAliases(user));
   }, [user?.email, user?.name]);
 
-  const derived = useMemo(() => buildRows(cards, aliases), [cards, aliases]);
+  const derived = useMemo(() => {
+    const base = buildRows(cards, aliases);
+    const sample = SAMPLE_PENDING[String(user?.email || "").toLowerCase()];
+    return sample ? [...base, sample] : base;
+  }, [cards, aliases, user?.email]);
 
   // Növbədəki hədəflər qiymətləndirmə anbarında mövcud olmalıdır (dialoq oradan yazır).
   useEffect(() => {
