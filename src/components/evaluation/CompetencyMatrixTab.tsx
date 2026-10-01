@@ -747,7 +747,6 @@ const CompetencyMatrixTab = () => {
               <tr>
                 <th className="px-3 py-2 text-left">Cavab variantı</th>
                 <th className="px-3 py-2 text-left w-24">Bal</th>
-                <th className="px-3 py-2 text-left w-32">Faiz</th>
                 <th className="px-3 py-2 text-left w-20">Rəng</th>
               </tr>
             </thead>
@@ -764,7 +763,6 @@ const CompetencyMatrixTab = () => {
                   <tr key={a.label} className="border-t border-border">
                     <td className="px-3 py-2">{a.label}</td>
                     <td className="px-3 py-2">{a.score}</td>
-                    <td className="px-3 py-2">{pct}%</td>
                     <td className="px-3 py-2"><span className={`inline-block w-3 h-3 rounded-full ${scoreColor(pct)}`} /></td>
                   </tr>
                 );
