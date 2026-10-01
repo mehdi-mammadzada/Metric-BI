@@ -11,7 +11,9 @@ import {
   CURRENT_CYCLE_ID,
   getInitials,
   MockEmployee,
+  SAMPLE_PEER_REVIEWERS,
 } from "@/data/mockData";
+import { useAuth } from "@/contexts/AuthContext";
 import { getReviewsByReviewer, PEER_REVIEWS_EVT } from "@/lib/peerReviewStore";
 import { useCompetencyMatrices, CompetencyMatrix } from "@/lib/competencyMatrixStore";
 import { resolveMatrixForPosition } from "@/lib/competencyEvaluation";
@@ -21,7 +23,9 @@ interface Props {
   cycleId?: string;
 }
 
-export const CompetencyEvaluationSection = ({ employeeId, cycleId = CURRENT_CYCLE_ID }: Props) => {
+export const CompetencyEvaluationSection = ({ employeeId: passedId, cycleId = CURRENT_CYCLE_ID }: Props) => {
+  const { user } = useAuth();
+  const employeeId = SAMPLE_PEER_REVIEWERS[String(user?.email || "").toLowerCase()] || passedId;
   const peers = useMemo(
     () => buildPeerAssignments(cycleId)[employeeId] || [],
     [cycleId, employeeId],

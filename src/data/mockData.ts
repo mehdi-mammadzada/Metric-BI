@@ -113,7 +113,22 @@ export const buildPeerAssignments = (
     const seed = hashString(`${cycleId}-${reviewer.department}-${reviewer.id}`);
     assignments[reviewer.id] = seededShuffle(peers, seed).slice(0, 2);
   }
+  Object.entries(SAMPLE_PEER_ASSIGNMENTS).forEach(([k, v]) => { assignments[k] = v; });
   return assignments;
+};
+
+// Nümunə: müəyyən hesablar üçün 1 gözləyən səriştə qiymətləndirməsi.
+export const SAMPLE_PEER_REVIEWERS: Record<string, string> = {
+  "nezrin@outlook.com": "sample-reviewer-nezrin",
+  "refiqe@outlook.com": "sample-reviewer-refiqe",
+};
+const SAMPLE_PEER_ASSIGNMENTS: Record<string, MockEmployee[]> = {
+  "sample-reviewer-nezrin": [
+    { id: "sample-peer-1", fullName: "Orxan Həsənov", department: "Satış", position: "Satış meneceri", email: "orxan.sample@example.com" },
+  ],
+  "sample-reviewer-refiqe": [
+    { id: "sample-peer-2", fullName: "Leyla Quliyeva", department: "Müştəri xidmətləri", position: "Müştəri xidmətləri mütəxəssisi", email: "leyla.sample@example.com" },
+  ],
 };
 
 // Default cycle id (could be tied to period in real impl)
