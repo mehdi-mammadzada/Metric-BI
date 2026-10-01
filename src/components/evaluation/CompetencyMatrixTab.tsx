@@ -1,3 +1,4 @@
+import { matrixMaxScore } from "@/lib/competencyEvaluation";
 import { useMemo, useState } from "react";
 import {
   Grid3x3, Briefcase, HelpCircle, Target as TargetIcon, Plus, Search, Eye,
@@ -351,7 +352,7 @@ const CreateEditModal = ({
 const ViewModal = ({ matrix, onClose }: { matrix: CompetencyMatrix | null; onClose: () => void }) => {
   if (!matrix) return null;
   const totalWeight = matrix.questions.reduce((s, q) => s + q.weight, 0);
-  const maxScore = Math.max(...matrix.answers.map(a => a.score), 1);
+  const maxScore = matrixMaxScore(matrix);
   return (
     <Dialog open={!!matrix} onOpenChange={o => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
@@ -423,7 +424,7 @@ const DetailPanel = ({ matrix }: { matrix: CompetencyMatrix | null }) => {
     );
   }
   const totalWeight = matrix.questions.reduce((s, q) => s + q.weight, 0);
-  const maxScore = Math.max(...matrix.answers.map(a => a.score), 1);
+  const maxScore = matrixMaxScore(matrix);
   return (
     <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
       <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
@@ -546,7 +547,7 @@ const SampleCalculation = ({ matrix }: { matrix: CompetencyMatrix | null }) => {
       </div>
     );
   }
-  const maxScore = Math.max(...matrix.answers.map(a => a.score), 1);
+  const maxScore = matrixMaxScore(matrix);
   // pick alternating answers for demo
   const rows = matrix.questions.map((q, i) => {
     const ans = matrix.answers[i % matrix.answers.length];

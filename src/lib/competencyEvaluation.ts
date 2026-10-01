@@ -1,4 +1,5 @@
 // Səriştə matrisinin əməkdaş vəzifəsinə uyğunlaşdırılması üçün köməkçilər.
+import { getScoreScale } from "@/lib/evaluationConfigStore";
 import type { CompetencyMatrix } from "@/lib/competencyMatrixStore";
 
 const norm = (s?: string) => (s || "").trim().toLowerCase();
@@ -22,8 +23,13 @@ export const resolveMatrixForPosition = (
 };
 
 /** Matrisin cavab variantlarından maksimal bal (default 5). */
-export const matrixMaxScore = (matrix: CompetencyMatrix | null): number => {
-  const scores = (matrix?.answers || []).map(a => Number(a.score) || 0);
-  const max = scores.length ? Math.max(...scores) : 0;
-  return max > 0 ? max : 5;
+// Qiymətləndirmə şkalası Parametrlərdə seçilmiş default şkaladan gəlir
+// (cavab variantlarının ən böyük balından asılı deyil).
+export const matrixMaxScore = (_matrix?: CompetencyMatrix | null): number => {
+  try {
+    const max = Number(getScoreScale().max);
+    return max > 0 ? max : 5;
+  } catch {
+    return 5;
+  }
 };
