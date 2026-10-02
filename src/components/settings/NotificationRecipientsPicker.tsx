@@ -99,9 +99,18 @@ const StructureTree = ({ nodes, value, onChange }: {
     else onChange(Array.from(new Set([...value, ...tokens])));
   };
 
+  const [q, setQ] = useState("");
+  const term = q.trim().toLowerCase();
+  const filterTree = (list: OrgStructure[]): OrgStructure[] => list.flatMap(n => {
+    if (n.name.toLowerCase().includes(term)) return [n];
+    const kids = filterTree(n.children);
+    return kids.length ? [{ ...n, children: kids }] : [];
+  });
+  const shown = term ? filterTree(nodes) : nodes;
+
   const render = (list: OrgStructure[], depth = 0) => list.map(n => {
     const hasChildren = n.children.length > 0;
-    const open = expanded.has(n.id);
+    const open = term ? true : expanded.has(n.id);
     return (
       <div key={n.id}>
         <div className="flex items-center gap-1 pr-2 hover:bg-secondary/60 rounded-md" style={{ paddingLeft: 8 + depth * 16 }}>
@@ -121,7 +130,17 @@ const StructureTree = ({ nodes, value, onChange }: {
     );
   });
 
-  return <div className="max-h-64 overflow-y-auto border border-border rounded-lg bg-background py-1">{render(nodes)}</div>;
+  return (
+    <div className="space-y-2">
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Axtar..." className="w-full pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-background" />
+      </div>
+      <div className="max-h-64 overflow-y-auto border border-border rounded-lg bg-background py-1">
+        {shown.length ? render(shown) : <p className="px-3 py-4 text-sm text-muted-foreground text-center">Nəticə tapılmadı</p>}
+      </div>
+    </div>
+  );
 };
 
 // ── Chip labels ─────────────────────────────────────────────────
