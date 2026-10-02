@@ -104,7 +104,7 @@ const fmtDate = (iso?: string) => {
 const summarize = (s: ScheduleConfig): string => {
   const t = s.time || "09:00";
   switch (s.kind) {
-    case "on_event": return `Hadisə baş verdikdə, saat ${t}`;
+    case "on_event": return "Hadisə baş verdikdə";
     case "on_date": return s.date ? `${fmtDate(s.date)} saat ${t}` : "Tarix seçin";
     case "daily":
       return `Hər gün saat ${t}${s.startDate ? ` (${fmtDate(s.startDate)}${s.endDate ? ` – ${fmtDate(s.endDate)}` : ""})` : ""}`;
