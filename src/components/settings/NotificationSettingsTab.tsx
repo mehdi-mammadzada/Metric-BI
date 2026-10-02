@@ -71,6 +71,10 @@ const NotificationSettingsTab = () => {
 
   const save = () => {
     if (!current) return;
+    if (current.enabled && current.channels.length === 0) {
+      toast.error("Aktiv bildiriş üçün ən azı bir göndərmə kanalı seçilməlidir");
+      return;
+    }
     updateNotificationSetting(current.id, {
       ...current,
       frequency: current.schedule.kind,
@@ -193,7 +197,13 @@ const NotificationSettingsTab = () => {
                 <span className="text-muted-foreground">Aktiv</span>
                 <button
                   type="button"
-                  onClick={() => setDraft({ ...current, enabled: !current.enabled })}
+                  onClick={() => {
+                    if (!current.enabled && current.channels.length === 0) {
+                      toast.error("Bildirişi aktivləşdirmək üçün ən azı bir göndərmə kanalı seçin");
+                      return;
+                    }
+                    setDraft({ ...current, enabled: !current.enabled });
+                  }}
                   className={`relative w-10 h-5 rounded-full transition-colors ${current.enabled ? "bg-primary" : "bg-muted"}`}
                 >
                   <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${current.enabled ? "translate-x-5" : ""}`} />
