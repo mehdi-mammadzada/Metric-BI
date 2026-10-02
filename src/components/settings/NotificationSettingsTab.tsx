@@ -78,7 +78,7 @@ const NotificationSettingsTab = () => {
     updateNotificationSetting(current.id, {
       ...current,
       frequency: current.schedule.kind,
-      sendTime: current.schedule.time || "09:00",
+      sendTime: current.schedule.time || "",
     });
     toast.success("Bildiriş sazlaması yadda saxlanıldı");
     setDraft(null);
