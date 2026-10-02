@@ -23,6 +23,7 @@ const TEMPLATE_VARS: { v: string; label: string }[] = [
   { v: "target", label: "Hədəf dəyəri" },
   { v: "weight", label: "Hədəfin çəkisi (%)" },
   { v: "evaluator_name", label: "Qiymətləndiricinin adı" },
+  { v: "assigner_name", label: "Təyinedicinin adı" },
   { v: "period", label: "Dövr" },
   { v: "date", label: "Tarix" },
   { v: "deadline", label: "Bitmə tarixi" },
