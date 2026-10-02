@@ -41,9 +41,12 @@ const NotificationSettingsTab = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [newNotif, setNewNotif] = useState({ title: "", description: "" });
 
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const filtered = useMemo(
-    () => settings.filter(s => s.title.toLowerCase().includes(search.toLowerCase())),
-    [settings, search],
+    () => settings.filter(s =>
+      s.title.toLowerCase().includes(search.toLowerCase()) &&
+      (statusFilter === "all" || (statusFilter === "active" ? s.enabled : !s.enabled))),
+    [settings, search, statusFilter],
   );
 
   const selected = settings.find(s => s.id === selectedId) ?? null;
@@ -116,6 +119,18 @@ const NotificationSettingsTab = () => {
               className="w-full pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-background"
             />
           </div>
+          <label className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground shrink-0">Status:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
+              className="flex-1 px-2 py-1.5 text-sm border border-border rounded-lg bg-background"
+            >
+              <option value="all">Hamısı</option>
+              <option value="active">Aktiv</option>
+              <option value="inactive">Deaktiv</option>
+            </select>
+          </label>
         </div>
 
         <div className="max-h-[600px] overflow-y-auto divide-y divide-border">
