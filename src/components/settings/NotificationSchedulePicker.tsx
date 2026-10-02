@@ -231,12 +231,14 @@ const NotificationSchedulePicker = ({ value: s, onChange }: Props) => {
             </label>
           </div>
           {s.monthlyMode !== "weekOfMonth" ? (
-            <CalendarDateButton
-              label="Ayın günü"
-              date={new Date(new Date().getFullYear(), new Date().getMonth(), s.dayOfMonth ?? 1)}
-              onSelect={(date) => set({ dayOfMonth: date.getDate() })}
-              disabled={(date) => date.getFullYear() !== new Date().getFullYear() || date.getMonth() !== new Date().getMonth()}
-            />
+            <div>
+              <label className={labelCls}>Ayın günü</label>
+              <select value={s.dayOfMonth ?? 1} onChange={e => set({ dayOfMonth: Number(e.target.value) })} className={inputCls}>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <div>
