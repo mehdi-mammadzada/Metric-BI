@@ -171,9 +171,8 @@ const NotificationSchedulePicker = ({ value: s, onChange }: Props) => {
       </div>
 
       {s.kind === "on_event" && (
-        <div className="grid grid-cols-2 gap-3">
-          <TimeInput value={s.time} onChange={v => set({ time: v })} label="Göndərmə vaxtı" />
-          <div className="col-span-2"><Info>Bildiriş hadisə baş verdiyi anda göndəriləcək.</Info></div>
+        <div>
+          <Info>Bildiriş hadisə baş verdiyi anda göndəriləcək.</Info>
         </div>
       )}
 
