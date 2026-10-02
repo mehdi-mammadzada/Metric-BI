@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Bell, Mail, Search, Save, Plus, Trash2 } from "lucide-react";
+import { Bell, Mail, Search, Save, Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import {
   useNotificationSettings, updateNotificationSetting, addNotificationSetting, deleteNotificationSetting,
@@ -49,9 +49,10 @@ const NotificationSettingsTab = () => {
   const selected = settings.find(s => s.id === selectedId) ?? null;
   const current = draft && draft.id === selectedId ? draft : selected;
 
+  const editing = !!draft && draft.id === selectedId;
   const startEdit = (s: NotificationSetting) => {
     setSelectedId(s.id);
-    setDraft({ ...s });
+    setDraft(null);
   };
 
   const toggleChannel = (c: NotificationChannel) => {
@@ -166,7 +167,14 @@ const NotificationSettingsTab = () => {
                 <h3 className="text-lg font-semibold text-foreground">{current.title}</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">{current.description}</p>
               </div>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <div className="flex items-center gap-3">
+              {!editing && (
+                <button type="button" onClick={() => selected && setDraft({ ...selected })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-border bg-card hover:bg-secondary">
+                  <Pencil className="w-4 h-4" /> Redaktə et
+                </button>
+              )}
+              <label className={`flex items-center gap-2 text-sm ${editing ? "cursor-pointer" : "pointer-events-none opacity-70"}`}>
                 <span className="text-muted-foreground">Aktiv</span>
                 <button
                   type="button"
@@ -176,8 +184,10 @@ const NotificationSettingsTab = () => {
                   <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${current.enabled ? "translate-x-5" : ""}`} />
                 </button>
               </label>
+              </div>
             </div>
 
+            <fieldset disabled={!editing} className={`space-y-5 ${editing ? "" : "pointer-events-none opacity-80"}`}>
             {/* Channels */}
             <div>
               <label className="text-sm font-medium text-foreground mb-2 block">Göndərmə kanalı</label>
@@ -238,7 +248,7 @@ const NotificationSettingsTab = () => {
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">Bildiriş mətni *</label>
                 <RichTemplateEditor
-                  key={current.id}
+                  key={`${current.id}-${editing}`}
                   ref={editorRef}
                   value={current.template}
                   onChange={(html) => setDraft(d => ({ ...(d && d.id === current.id ? d : current), template: html }))}
@@ -261,6 +271,9 @@ const NotificationSettingsTab = () => {
               </div>
             </div>
 
+            </fieldset>
+
+            {editing && (
             <div className="flex justify-end gap-2 pt-3 border-t border-border">
               <button
                 type="button"
@@ -277,6 +290,7 @@ const NotificationSettingsTab = () => {
                 <Save className="w-4 h-4" /> Yadda saxla
               </button>
             </div>
+            )}
           </div>
         )}
       </div>
