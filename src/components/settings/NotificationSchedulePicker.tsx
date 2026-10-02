@@ -323,10 +323,6 @@ const NotificationSchedulePicker = ({ value: s, onChange }: Props) => {
             </select>
           </div>
           <TimeInput value={s.time} onChange={v => set({ time: v })} />
-          <div className="col-span-2">
-            <label className={labelCls}>Advanced Schedule (Cron ifadəsi, ixtiyari)</label>
-            <input value={s.cron || ""} onChange={e => set({ cron: e.target.value })} placeholder="0 9 * * 1-5" className={`${inputCls} font-mono`} />
-          </div>
         </div>
       )}
 
