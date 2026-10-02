@@ -265,8 +265,8 @@ export const addNotificationSetting = (title: string, description: string): Noti
   const id = `custom_${Date.now()}`;
   const created: NotificationSetting = {
     id, title, description,
-    enabled: true,
-    channels: ["in_app"],
+    enabled: false,
+    channels: [],
     frequency: "on_event",
     sendTime: "09:00",
     schedule: mkSchedule("on_event", "09:00"),
