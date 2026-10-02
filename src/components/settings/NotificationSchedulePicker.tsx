@@ -39,7 +39,7 @@ interface Props {
 const TimeInput = ({ value, onChange, label = "Saat" }: { value?: string; onChange: (v: string) => void; label?: string }) => (
   <div>
     <label className={labelCls}>{label}</label>
-    <input type="time" value={value || "09:00"} onChange={e => onChange(e.target.value)} className={inputCls} />
+    <input type="time" value={value || ""} onChange={e => onChange(e.target.value)} className={inputCls} />
   </div>
 );
 
@@ -159,10 +159,11 @@ const NotificationSchedulePicker = ({ value: s, onChange }: Props) => {
       <div>
         <label className={labelCls}>Tezlik</label>
         <select
-          value={s.kind}
+          value={s.kind || ""}
           onChange={e => setKind(e.target.value as FrequencyKind)}
           className={inputCls}
         >
+          {!s.kind && <option value="" disabled>Seçin</option>}
           {(Object.keys(FREQUENCY_LABELS) as FrequencyKind[]).map(k => (
             <option key={k} value={k}>{FREQUENCY_LABELS[k]}</option>
           ))}

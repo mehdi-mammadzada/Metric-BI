@@ -199,7 +199,18 @@ const migrate = (raw: any): NotificationSetting => {
   const channels: NotificationChannel[] = Array.isArray(raw.channels)
     ? raw.channels.filter((c: string) => c === "in_app" || c === "email")
     : ["in_app"];
-  if (channels.length === 0) channels.push("in_app");
+
+  if (raw.schedule && raw.schedule.kind === "") {
+    return {
+      id: raw.id, title: raw.title, description: raw.description ?? "",
+      enabled: raw.enabled === true, channels,
+      frequency: "" as FrequencyKind, sendTime: "",
+      schedule: { kind: "" as FrequencyKind, time: "" },
+      recipients: Array.isArray(raw.recipients) ? raw.recipients : [],
+      subject: typeof raw.subject === "string" ? raw.subject : undefined,
+      template: String(raw.template ?? ""),
+    };
+  }
 
   const rawFreq = String(raw.frequency ?? "on_event");
   let freq: FrequencyKind = rawFreq as FrequencyKind;
@@ -267,9 +278,9 @@ export const addNotificationSetting = (title: string, description: string): Noti
     id, title, description,
     enabled: false,
     channels: [],
-    frequency: "on_event",
-    sendTime: "09:00",
-    schedule: mkSchedule("on_event", "09:00"),
+    frequency: "" as FrequencyKind,
+    sendTime: "",
+    schedule: { kind: "" as FrequencyKind, time: "" },
     recipients: [],
     template: "",
   };
