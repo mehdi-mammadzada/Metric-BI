@@ -106,7 +106,8 @@ const NotificationSettingsTab = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-4">
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="relative min-h-[400px]">
+      <div className="lg:absolute lg:inset-0 bg-card rounded-xl border border-border overflow-hidden flex flex-col max-h-[600px] lg:max-h-none">
         <div className="p-3 border-b border-border space-y-2">
           <button
             type="button"
@@ -138,7 +139,7 @@ const NotificationSettingsTab = () => {
           </label>
         </div>
 
-        <div className="max-h-[600px] overflow-y-auto divide-y divide-border">
+        <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-border">
           {filtered.map(s => {
             const active = s.id === selectedId;
             const isCustom = s.id.startsWith("custom_");
@@ -173,6 +174,7 @@ const NotificationSettingsTab = () => {
             <p className="p-4 text-sm text-muted-foreground text-center">Nəticə tapılmadı</p>
           )}
         </div>
+      </div>
       </div>
 
       <div className="bg-card rounded-xl border border-border p-5">
