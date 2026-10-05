@@ -125,17 +125,17 @@ const NotificationSettingsTab = () => {
               className="w-full pl-8 pr-3 py-2 text-sm border border-border rounded-lg bg-background"
             />
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground shrink-0">Status:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
-              className="flex-1 px-2 py-1.5 text-sm border border-border rounded-lg bg-background"
+          <label className="flex items-center justify-between gap-2 text-sm cursor-pointer">
+            <span className="text-muted-foreground">Yalnız deaktivləri göstər</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={statusFilter === "inactive"}
+              onClick={() => setStatusFilter(statusFilter === "inactive" ? "all" : "inactive")}
+              className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${statusFilter === "inactive" ? "bg-primary" : "bg-muted"}`}
             >
-              <option value="all">Hamısı</option>
-              <option value="active">Aktiv</option>
-              <option value="inactive">Deaktiv</option>
-            </select>
+              <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-background shadow transition-transform ${statusFilter === "inactive" ? "translate-x-5" : ""}`} />
+            </button>
           </label>
         </div>
 
