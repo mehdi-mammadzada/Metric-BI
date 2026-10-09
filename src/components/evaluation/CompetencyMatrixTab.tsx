@@ -54,6 +54,11 @@ const STATUS_META: Record<CompetencyStatus, { label: string; className: string }
   passiv: { label: "Passiv", className: "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30" },
 };
 
+// Cavab faizi: saxlanmış faiz, yoxdursa bal / şkala maks.
+const answerPct = (a: { score: number; percent?: number }): number =>
+  typeof a.percent === "number" ? a.percent : Math.round((a.score / Math.max(1, matrixMaxScore())) * 100);
+const pctToScore = (p: number): number => Math.round((p / 100) * matrixMaxScore() * 100) / 100;
+
 const scoreColor = (pct: number): string => {
   if (pct >= 80) return "bg-emerald-500";
   if (pct >= 60) return "bg-yellow-500";
@@ -145,18 +150,18 @@ const CreateEditModal = ({
     ]
   );
   const [answers, setAnswers] = useState<CompetencyAnswer[]>(
-    initial?.answers?.length ? initial.answers : [
-      { id: uid(), label: "Tam razıyam", score: 10 },
-      { id: uid(), label: "Razıyam", score: 8 },
-      { id: uid(), label: "Qismən razıyam", score: 6 },
-      { id: uid(), label: "Razı deyiləm", score: 4 },
-      { id: uid(), label: "Heç razı deyiləm", score: 0 },
-    ]
+    (initial?.answers?.length ? initial.answers : [
+      { id: uid(), label: "Tam razıyam", percent: 100 },
+      { id: uid(), label: "Razıyam", percent: 80 },
+      { id: uid(), label: "Qismən razıyam", percent: 60 },
+      { id: uid(), label: "Razı deyiləm", percent: 40 },
+      { id: uid(), label: "Heç razı deyiləm", percent: 0 },
+    ].map(a => ({ ...a, score: pctToScore(a.percent) })) as CompetencyAnswer[]).map(a => ({ ...a, percent: answerPct(a), score: pctToScore(answerPct(a)) }))
   );
 
   const totalWeight = questions.reduce((s, q) => s + (Number(q.weight) || 0), 0);
   const weightOk = totalWeight === 100;
-  const uniqueScores = new Set(answers.map(a => a.score)).size === answers.length;
+  const uniqueScores = new Set(answers.map(a => answerPct(a))).size === answers.length;
   const canSubmit = isAnswersOnly
     ? (answers.length >= 2 && uniqueScores)
     : (
@@ -174,7 +179,7 @@ const CreateEditModal = ({
   const updateA = (id: string, patch: Partial<CompetencyAnswer>) =>
     setAnswers(as => as.map(a => a.id === id ? { ...a, ...patch } : a));
   const removeA = (id: string) => setAnswers(as => as.filter(a => a.id !== id));
-  const addA = () => setAnswers(as => [...as, { id: uid(), label: "Yeni cavab", score: 0 }]);
+  const addA = () => setAnswers(as => [...as, { id: uid(), label: "Yeni cavab", score: 0, percent: 0 }]);
 
   const submit = () => {
     if (!canSubmit) return;
@@ -305,7 +310,7 @@ const CreateEditModal = ({
                 <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 text-left">Cavab variantı</th>
-                    <th className="px-3 py-2 text-left w-32">Bal</th>
+                    <th className="px-3 py-2 text-left w-48">Faiz</th>
                     <th className="px-3 py-2 text-right w-24">Əməliyyat</th>
                   </tr>
                 </thead>
@@ -318,10 +323,15 @@ const CreateEditModal = ({
                       <td className="px-3 py-2">
                         <Input
                           type="number"
-                          value={a.score}
-                          onChange={e => updateA(a.id, { score: Number(e.target.value) || 0 })}
-                          className="h-8 w-24"
-                        />
+                          min={0}
+                          max={100}
+                          value={answerPct(a)}
+                          onChange={e => {
+                            const p = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                            updateA(a.id, { percent: p, score: pctToScore(p) });
+                          }}
+                          className="h-8 w-24 inline-block"
+                        /> <span className="text-xs text-muted-foreground">% = {pctToScore(answerPct(a))} bal</span>
                       </td>
                       <td className="px-3 py-2 text-right">
                         <Button size="sm" variant="ghost" onClick={() => removeA(a.id)}>
@@ -334,7 +344,7 @@ const CreateEditModal = ({
               </table>
             </div>
             {!uniqueScores && (
-              <p className="text-xs text-rose-600">Cavab balları təkrarlanmamalıdır.</p>
+              <p className="text-xs text-rose-600">Cavab faizləri təkrarlanmamalıdır.</p>
             )}
           </div>
         )}
@@ -492,15 +502,14 @@ const DetailPanel = ({ matrix }: { matrix: CompetencyMatrix | null }) => {
           <div className="rounded-lg border border-border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-xs text-muted-foreground uppercase">
-                <tr><th className="px-3 py-2 text-left">Cavab variantı</th><th className="px-3 py-2 text-left w-20">Bal</th><th className="px-3 py-2 text-left w-32">Faiz</th><th className="px-3 py-2 text-left w-20">Rəng</th></tr>
+                <tr><th className="px-3 py-2 text-left">Cavab variantı</th><th className="px-3 py-2 text-left w-32">Faiz</th><th className="px-3 py-2 text-left w-20">Rəng</th></tr>
               </thead>
               <tbody>
                 {matrix.answers.map(a => {
-                  const pct = Math.round((a.score / maxScore) * 100);
+                  const pct = answerPct(a);
                   return (
                     <tr key={a.id} className="border-t border-border">
                       <td className="px-3 py-2">{a.label}</td>
-                      <td className="px-3 py-2">{a.score}</td>
                       <td className="px-3 py-2">{pct}%</td>
                       <td className="px-3 py-2"><span className={`inline-block w-3 h-3 rounded-full ${scoreColor(pct)}`} /></td>
                     </tr>
@@ -747,7 +756,7 @@ const CompetencyMatrixTab = () => {
             <thead className="bg-muted/40 text-xs text-muted-foreground uppercase">
               <tr>
                 <th className="px-3 py-2 text-left">Cavab variantı</th>
-                <th className="px-3 py-2 text-left w-24">Bal</th>
+                <th className="px-3 py-2 text-left w-24">Faiz</th>
                 <th className="px-3 py-2 text-left w-20">Rəng</th>
               </tr>
             </thead>
@@ -758,12 +767,12 @@ const CompetencyMatrixTab = () => {
                 { id: "d3", label: "Qismən razıyam", score: 6 },
                 { id: "d4", label: "Razı deyiləm", score: 4 },
                 { id: "d5", label: "Heç razı deyiləm", score: 0 },
-              ])].sort((x, y) => y.score - x.score).map(a => {
-                const pct = Math.round((a.score / Math.max(1, matrixMaxScore())) * 100);
+              ] as CompetencyAnswer[])].sort((x, y) => answerPct(y) - answerPct(x)).map(a => {
+                const pct = answerPct(a);
                 return (
                   <tr key={a.id || a.label} className="border-t border-border">
                     <td className="px-3 py-2">{a.label}</td>
-                    <td className="px-3 py-2">{a.score}</td>
+                    <td className="px-3 py-2">{pct}%</td>
                     <td className="px-3 py-2"><span className={`inline-block w-3 h-3 rounded-full ${scoreColor(pct)}`} /></td>
                   </tr>
                 );
