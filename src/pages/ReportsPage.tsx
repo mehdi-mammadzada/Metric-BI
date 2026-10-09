@@ -14,6 +14,35 @@ import DropdownMultiSelect from "@/components/kpi/DropdownMultiSelect";
 import SearchableSelect from "@/components/common/SearchableSelect";
 import { useReportRows, buildTrendSeries, type ReportRow } from "@/lib/reportsDataset";
 import { useSampleResultsSeed } from "@/lib/sampleResultsSeed";
+import { inferTargetStatus, TARGET_STATUS_LABEL, type TargetStatus } from "@/lib/targetStatus";
+
+const STATUS_COLOR: Record<TargetStatus, string> = {
+  achieved: "hsl(152 60% 38%)",
+  in_progress: "hsl(38 92% 50%)",
+  not_achieved: "hsl(0 72% 55%)",
+};
+
+const rowDeadline = (r: ReportRow) => {
+  const parts = String(r.period || "").split(/\s[–-]\s/);
+  return parts[parts.length - 1]?.trim();
+};
+const rowStatus = (r: ReportRow): TargetStatus => inferTargetStatus(r.progress, rowDeadline(r));
+
+const CompareTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  const diff = d.actual - d.target;
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-md space-y-0.5">
+      <p className="font-semibold text-foreground">{d.fullName}</p>
+      <p className="text-muted-foreground">Hədəf: <b className="text-foreground">{d.target.toLocaleString()} {d.unit}</b></p>
+      <p className="text-muted-foreground">Faktiki: <b className="text-foreground">{d.actual.toLocaleString()} {d.unit}</b></p>
+      <p className="text-muted-foreground">Fərq: <b className="text-foreground">{diff > 0 ? "+" : ""}{diff.toLocaleString()} {d.unit}</b></p>
+      <p className="text-muted-foreground">İcra faizi: <b className="text-foreground">{d.faktiki}%</b></p>
+      <p className="text-muted-foreground">Status: <b className="text-foreground">{TARGET_STATUS_LABEL[d.status as TargetStatus]}</b></p>
+    </div>
+  );
+};
 
 type FilterType = "position" | "person" | "structure" | "team";
 const FILTER_LABELS: Record<FilterType, string> = {
@@ -195,8 +224,34 @@ const ReportsPage = () => {
   const teamCompare = resolvedTeams.map(t => {
     const groupRows = selectedRows.filter(r => groupOf(r) === t);
     const avg = groupRows.length ? Math.round(groupRows.reduce((s, r) => s + r.progress, 0) / groupRows.length) : 0;
-    return { name: t.length > 18 ? t.substring(0, 18) + "…" : t, value: avg };
+    const achieved = groupRows.filter(r => rowStatus(r) === "achieved").length;
+    return {
+      name: t.length > 24 ? t.substring(0, 24) + "…" : t,
+      value: avg,
+      achievedPct: groupRows.length ? Math.round((achieved / groupRows.length) * 100) : 0,
+    };
   });
+
+  // Hədəf vs faktiki (KPI üzrə)
+  const compareData = chartKpis.map(k => {
+    const rs = selectedRows.filter(r => r.targetName === k.name);
+    const r0 = rs[0];
+    const statuses = rs.map(rowStatus);
+    const status: TargetStatus = statuses.every(s => s === "achieved") ? "achieved"
+      : statuses.some(s => s === "not_achieved") ? "not_achieved" : (k.progress >= 100 ? "achieved" : "in_progress");
+    const target = rs.reduce((s, r) => s + (r.target || 0), 0);
+    const actual = rs.reduce((s, r) => s + (r.actual || 0), 0);
+    return {
+      name: k.name.length > 26 ? k.name.substring(0, 26) + "…" : k.name,
+      fullName: k.name, hedef: 100, faktiki: k.progress, status,
+      target, actual, unit: r0?.unit || "",
+    };
+  });
+
+  // Status bölgüsü (sistemin 3 hədəf statusu)
+  const statusData = (["achieved", "in_progress", "not_achieved"] as TargetStatus[])
+    .map(key => ({ key, name: TARGET_STATUS_LABEL[key], value: compareData.filter(d => d.status === key).length }))
+    .filter(d => d.value > 0);
 
 
   const handleDownloadPdf = async () => {
@@ -379,200 +434,106 @@ const ReportsPage = () => {
                 <Download className="w-4 h-4" /> {downloading ? "Yüklənir..." : "PDF olaraq yüklə"}
               </button>
             </div>
-            <div ref={chartsRef} className="grid grid-cols-2 gap-6">
-              {/* Pie 1 - Hədəflər üzrə Bölgü */}
-              <ChartFrame title="Hədəflər üzrə Bölgü" subtitle="Seçilmiş hədəflərin proqres müqayisəsi">
-                {(factor) => (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <PieChart>
-                      <defs>
-                        {COLORS.map((c, i) => (
-                          <linearGradient key={i} id={`pieGA${i}`} x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stopColor={c} stopOpacity={1} />
-                            <stop offset="100%" stopColor={c} stopOpacity={0.7} />
-                          </linearGradient>
-                        ))}
-                      </defs>
-                      <Pie
-                        data={pieData.map(d => ({ ...d, value: Math.min(100, Math.round(d.value * factor)) }))}
-                        cx="50%" cy="50%" innerRadius={60} outerRadius={120} paddingAngle={3} dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {pieData.map((_, i) => <Cell key={i} fill={`url(#pieGA${i % COLORS.length})`} stroke="hsl(var(--card))" strokeWidth={2} />)}
-                      </Pie>
-                      <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
-                      <Legend wrapperStyle={{ fontSize: 11 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
-              </ChartFrame>
+            <div ref={chartsRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* 1. Hədəf və faktiki nəticələrin müqayisəsi */}
+              <div className="lg:col-span-2">
+                <ChartFrame title="Hədəf və faktiki nəticələrin müqayisəsi" subtitle="Hər KPI üzrə planlaşdırılmış hədəf və faktiki icra">
+                  {(factor) => {
+                    const data = compareData.map(d => ({ ...d, faktiki: Math.round(d.faktiki * factor) }));
+                    return (
+                      <ResponsiveContainer width="100%" height={Math.max(260, data.length * 56 + 60)}>
+                        <BarChart data={data} layout="vertical" margin={{ left: 10, right: 40 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                          <XAxis type="number" domain={[0, (max: number) => Math.max(100, Math.ceil(max / 10) * 10)]} tick={{ fontSize: 12 }} unit="%" />
+                          <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={170} />
+                          <Tooltip content={<CompareTooltip />} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                          <Bar dataKey="hedef" name="Planlaşdırılmış hədəf" fill="hsl(var(--muted-foreground) / 0.35)" radius={[0, 4, 4, 0]} barSize={14} />
+                          <Bar dataKey="faktiki" name="Faktiki nəticə" radius={[0, 4, 4, 0]} barSize={14}
+                            label={{ position: "right", fontSize: 11, formatter: (v: number) => `${v}%` }}>
+                            {data.map((d, i) => <Cell key={i} fill={STATUS_COLOR[d.status]} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    );
+                  }}
+                </ChartFrame>
+              </div>
 
-              {/* Pie 2 - Komanda üzrə Bölgü */}
-              <ChartFrame title="Komanda üzrə Bölgü" subtitle="Komandaların ümumi proqres payı">
-                {(factor) => {
-                  const data = (resolvedTeams.length > 0 ? teamCompare : pieData).map(d => ({
-                    name: d.name, value: Math.min(100, Math.round(d.value * factor)),
-                  }));
-                  return (
+              {/* 2. KPI statuslarının bölgüsü */}
+              <ChartFrame title="KPI statuslarının bölgüsü" subtitle="Hədəflərin statuslar üzrə sayı">
+                {() => (
+                  <div className="relative">
                     <ResponsiveContainer width="100%" height={320}>
                       <PieChart>
-                        <defs>
-                          {COLORS.map((c, i) => (
-                            <linearGradient key={i} id={`pieGB${i}`} x1="0" y1="0" x2="1" y2="1">
-                              <stop offset="0%" stopColor={c} stopOpacity={1} />
-                              <stop offset="100%" stopColor={c} stopOpacity={0.7} />
-                            </linearGradient>
-                          ))}
-                        </defs>
-                        <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={120} paddingAngle={3} dataKey="value"
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                          {data.map((_, i) => <Cell key={i} fill={`url(#pieGB${i % COLORS.length})`} stroke="hsl(var(--card))" strokeWidth={2} />)}
+                        <Pie data={statusData} cx="50%" cy="45%" innerRadius={70} outerRadius={115} paddingAngle={2} dataKey="value"
+                          label={({ value, percent }) => `${value} (${Math.round(percent * 100)}%)`}>
+                          {statusData.map(d => <Cell key={d.key} fill={STATUS_COLOR[d.key]} stroke="hsl(var(--card))" strokeWidth={2} />)}
                         </Pie>
                         <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
                       </PieChart>
                     </ResponsiveContainer>
-                  );
-                }}
-              </ChartFrame>
-
-              {/* Kumulyativ Trend (cəmlənmiş) */}
-              <ChartFrame title="Kumulyativ Trend (Cəmlənmiş)" subtitle="Aylar üzrə yığılan ümumi nəticə">
-                {(factor) => {
-                  let accActual = 0, accTarget = 0;
-                  const data = lineData.map(d => {
-                    accActual += Math.round(d.actual * factor);
-                    accTarget += d.target;
-                    return { name: d.name, cumActual: accActual, cumTarget: accTarget };
-                  });
-                  return (
-                    <ResponsiveContainer width="100%" height={320}>
-                      <AreaChart data={data}>
-                        <defs>
-                          <linearGradient id="cumA" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="hsl(265 70% 55%)" stopOpacity={0.7} />
-                            <stop offset="100%" stopColor="hsl(265 70% 55%)" stopOpacity={0.05} />
-                          </linearGradient>
-                          <linearGradient id="cumB" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="hsl(192 80% 48%)" stopOpacity={0.5} />
-                            <stop offset="100%" stopColor="hsl(192 80% 48%)" stopOpacity={0.05} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                        <YAxis tick={{ fontSize: 12 }} />
-                        <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
-                        <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <Area type="monotone" dataKey="cumTarget" stroke="hsl(192 80% 48%)" fill="url(#cumB)" strokeWidth={2} name="Kumulyativ Hədəf" />
-                        <Area type="monotone" dataKey="cumActual" stroke="hsl(265 70% 55%)" fill="url(#cumA)" strokeWidth={2.5} name="Kumulyativ Faktiki" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  );
-                }}
-              </ChartFrame>
-
-              <ChartFrame title="Hədəf vs Performans">
-                {(factor) => (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={barData.map(d => ({ ...d, performans: Math.min(100, Math.round(d.performans * factor)) }))}>
-                      <defs>
-                        <linearGradient id="barG1" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(230 75% 55%)" stopOpacity={1} />
-                          <stop offset="100%" stopColor="hsl(230 75% 55%)" stopOpacity={0.4} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} />
-                      <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Bar dataKey="hedef" fill="hsl(220 15% 85%)" radius={[6, 6, 0, 0]} name="Hədəf" />
-                      <Bar dataKey="performans" fill="url(#barG1)" radius={[6, 6, 0, 0]} name="Performans %" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                    <div className="pointer-events-none absolute left-0 right-0 top-[45%] -translate-y-1/2 text-center">
+                      <p className="text-3xl font-bold text-foreground">{chartKpis.length}</p>
+                      <p className="text-xs text-muted-foreground">Ümumi KPI</p>
+                    </div>
+                  </div>
                 )}
               </ChartFrame>
 
-              <ChartFrame title="Trend">
+              {/* 3. Performansın zaman üzrə dinamikası */}
+              <ChartFrame title="Performansın zaman üzrə dinamikası" subtitle="Hədəf və faktiki icra faizi">
                 {(factor) => (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={lineData.map(d => ({ ...d, actual: Math.round(d.actual * factor) }))}>
+                  <ResponsiveContainer width="100%" height={320}>
+                    <LineChart data={lineData.map(d => ({ ...d, actual: Math.round(d.actual * factor), target: 100 }))}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} />
-                      <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
+                      <YAxis tick={{ fontSize: 12 }} domain={[0, 120]} unit="%" />
+                      <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} formatter={(v: number) => `${v}%`} />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Line type="monotone" dataKey="actual" stroke="hsl(230 75% 50%)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Faktiki" />
-                      <Line type="monotone" dataKey="target" stroke="hsl(145 65% 42%)" strokeWidth={3} strokeDasharray="6 6" dot={{ r: 4 }} name="Hədəf" />
+                      <Line type="monotone" dataKey="actual" stroke="hsl(152 60% 42%)" strokeWidth={3} dot={false} activeDot={{ r: 5 }} name="Faktiki nəticə" />
+                      <Line type="monotone" dataKey="target" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="6 6" dot={false} name="Hədəf" />
                     </LineChart>
                   </ResponsiveContainer>
                 )}
               </ChartFrame>
 
-              <ChartFrame title="Radar Analizi">
-                {(factor) => (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <RadarChart data={radarData.map(d => ({ ...d, value: Math.min(100, Math.round(d.value * factor)) }))}>
-                      <PolarGrid stroke="hsl(var(--border))" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
-                      <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                      <Radar dataKey="value" stroke="hsl(265 70% 55%)" fill="hsl(265 70% 55%)" fillOpacity={0.5} strokeWidth={2} />
-                      <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                )}
-              </ChartFrame>
-
-              <ChartFrame title="Kumulyativ Trend">
-                {(factor) => (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={areaData.map(d => ({ ...d, value: Math.round(d.value * factor) }))}>
-                      <defs>
-                        <linearGradient id="areaG1" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(38 92% 55%)" stopOpacity={0.8} />
-                          <stop offset="100%" stopColor="hsl(38 92% 55%)" stopOpacity={0.1} />
-                        </linearGradient>
-                        <linearGradient id="areaG2" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="hsl(145 65% 42%)" stopOpacity={0.6} />
-                          <stop offset="100%" stopColor="hsl(145 65% 42%)" stopOpacity={0.1} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} />
-                      <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Area type="monotone" dataKey="hedef" stroke="hsl(145 65% 42%)" fill="url(#areaG2)" strokeWidth={2} name="Hədəf" />
-                      <Area type="monotone" dataKey="value" stroke="hsl(38 92% 55%)" fill="url(#areaG1)" strokeWidth={2} name="Faktiki" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                )}
-              </ChartFrame>
-
-              {resolvedTeams.length > 1 && (
-                <div className="col-span-2">
-                  <ChartFrame title="Komanda Müqayisəsi (Orta Performans)">
-                    {(factor) => (
-                      <ResponsiveContainer width="100%" height={280}>
-                        <BarChart data={teamCompare.map(d => ({ ...d, value: Math.min(100, Math.round(d.value * factor)) }))} layout="vertical">
-                          <defs>
-                            <linearGradient id="barG2" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="hsl(192 80% 48%)" stopOpacity={1} />
-                              <stop offset="100%" stopColor="hsl(265 70% 55%)" stopOpacity={1} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} />
-                          <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={150} />
-                          <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
-                          <Bar dataKey="value" fill="url(#barG2)" radius={[0, 6, 6, 0]} name="Orta %" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </ChartFrame>
-                </div>
-              )}
-
+              {/* 4. Komandaların müqayisəsi */}
+              <div className="lg:col-span-2">
+                <ChartFrame title="Komandaların müqayisəsi" subtitle="Orta performans faizinə görə sıralanıb">
+                  {(factor) => {
+                    const data = teamCompare
+                      .map(d => ({ ...d, value: Math.round(d.value * factor) }))
+                      .sort((a, b) => b.value - a.value);
+                    return (
+                      <div className="space-y-4">
+                        <ResponsiveContainer width="100%" height={Math.max(200, data.length * 48 + 40)}>
+                          <BarChart data={data} layout="vertical" margin={{ left: 10, right: 40 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                            <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} unit="%" />
+                            <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={170} />
+                            <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} formatter={(v: number) => `${v}%`} />
+                            <Bar dataKey="value" name="Orta performans" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} barSize={18}
+                              label={{ position: "right", fontSize: 11, formatter: (v: number) => `${v}%` }} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {data.map(d => (
+                            <div key={d.name} className="rounded-lg border border-border bg-background px-3 py-2">
+                              <p className="text-sm font-medium text-foreground truncate">{d.name}</p>
+                              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                                <span>Orta performans: <b className="text-foreground">{d.value}%</b></span>
+                                <span>Hədəfə çatan: <b className="text-foreground">{d.achievedPct}%</b></span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  }}
+                </ChartFrame>
+              </div>
             </div>
           </>
         )}
