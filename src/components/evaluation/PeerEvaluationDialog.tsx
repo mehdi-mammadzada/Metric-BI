@@ -17,7 +17,7 @@ import {
 } from "@/data/mockData";
 import { submitPeerReviews, hasReviewerSubmitted, getReviewsByReviewer } from "@/lib/peerReviewStore";
 import { useCompetencyMatrices, CompetencyMatrix } from "@/lib/competencyMatrixStore";
-import { resolveMatrixForPosition, matrixMaxScore } from "@/lib/competencyEvaluation";
+import { resolveMatrixForPosition, matrixMaxScore, answerScore } from "@/lib/competencyEvaluation";
 import { toast } from "sonner";
 
 type ScoresMap = Record<string, number>;
