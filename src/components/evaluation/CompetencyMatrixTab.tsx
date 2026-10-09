@@ -762,11 +762,11 @@ const CompetencyMatrixTab = () => {
             </thead>
             <tbody>
               {[...((selected || list[0])?.answers?.length ? (selected || list[0])!.answers : [
-                { id: "d1", label: "Tam razıyam", score: 10 },
-                { id: "d2", label: "Razıyam", score: 8 },
-                { id: "d3", label: "Qismən razıyam", score: 6 },
-                { id: "d4", label: "Razı deyiləm", score: 4 },
-                { id: "d5", label: "Heç razı deyiləm", score: 0 },
+                { id: "d1", percent: 100, label: "Tam razıyam", score: 10 },
+                { id: "d2", percent: 80, label: "Razıyam", score: 8 },
+                { id: "d3", percent: 60, label: "Qismən razıyam", score: 6 },
+                { id: "d4", percent: 40, label: "Razı deyiləm", score: 4 },
+                { id: "d5", percent: 0, label: "Heç razı deyiləm", score: 0 },
               ] as CompetencyAnswer[])].sort((x, y) => answerPct(y) - answerPct(x)).map(a => {
                 const pct = answerPct(a);
                 return (
