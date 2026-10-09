@@ -56,8 +56,7 @@ const STATUS_META: Record<CompetencyStatus, { label: string; className: string }
 
 // Cavab faizi: saxlanmış faiz, yoxdursa bal / şkala maks.
 const answerPct = (a: { score: number; percent?: number }): number =>
-  /tam razıyam/i.test((a as any).label || "") ? 100
-    : Math.min(100, Math.max(0, typeof a.percent === "number" ? a.percent : Math.round((a.score / Math.max(1, matrixMaxScore())) * 100)));
+  Math.min(100, Math.max(0, typeof a.percent === "number" ? a.percent : Math.round((a.score / Math.max(1, matrixMaxScore())) * 100)));
 const pctToScore = (p: number): number => Math.round((p / 100) * matrixMaxScore() * 100) / 100;
 
 const scoreColor = (pct: number): string => {
@@ -327,7 +326,6 @@ const CreateEditModal = ({
                           min={0}
                           max={100}
                           value={answerPct(a)}
-                          disabled={/tam razıyam/i.test(a.label)}
                           onChange={e => {
                             const p = Math.max(0, Math.min(100, Number(e.target.value) || 0));
                             updateA(a.id, { percent: p, score: pctToScore(p) });
