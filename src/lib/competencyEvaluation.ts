@@ -33,3 +33,10 @@ export const matrixMaxScore = (_matrix?: CompetencyMatrix | null): number => {
     return 5;
   }
 };
+
+/** Cavabın balı: faizdən seçilmiş şkala üzrə hesablanır (Tam razıyam 100% = şkala maks). */
+export const answerScore = (a: { score: number; percent?: number }): number => {
+  const max = matrixMaxScore();
+  if (typeof a.percent === "number") return Math.round((Math.min(100, Math.max(0, a.percent)) / 100) * max * 100) / 100;
+  return Math.min(max, Number(a.score) || 0);
+};

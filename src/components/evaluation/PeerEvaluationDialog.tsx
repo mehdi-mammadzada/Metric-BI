@@ -228,14 +228,14 @@ export const PeerEvaluationDialog = ({
                                 <button
                                   key={a.id}
                                   type="button"
-                                  onClick={() => updateScore(p.id, q.id, a.score)}
+                                  onClick={() => updateScore(p.id, q.id, answerScore(a))}
                                   className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                                    (scoresByPeer[p.id]?.[q.id] ?? 0) === a.score
+                                    (scoresByPeer[p.id]?.[q.id] ?? 0) === answerScore(a)
                                       ? "border-primary bg-primary/10 text-primary"
                                       : "border-border bg-secondary/60 text-foreground/70 hover:bg-secondary"
                                   }`}
                                 >
-                                  {a.label} ({a.score})
+                                  {a.label} ({answerScore(a)})
                                 </button>
                               ))}
                             </div>
