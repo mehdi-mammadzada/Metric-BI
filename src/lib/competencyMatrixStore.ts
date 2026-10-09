@@ -13,6 +13,8 @@ export interface CompetencyAnswer {
   id: string;
   label: string;
   score: number;
+  /** Faiz (0-100). Bal = faiz × şkala maks / 100 */
+  percent?: number;
 }
 
 export interface CompetencyMatrix {
