@@ -208,7 +208,7 @@ const KpiScoresPage = ({ employeesOverride, hideChrome, heroTitle, heroSubtitle 
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 border-b border-border"
                 >
                   <Checkbox checked={allSelected} />
-                  <span className="font-medium">Hamısını seç</span>
+                  <span className="font-medium">{allSelected ? "Hamısını sil" : "Hamısını seç"}</span>
                 </button>
                 <div className="max-h-64 overflow-y-auto">
                   {filteredCardOpts.length === 0 ? (
