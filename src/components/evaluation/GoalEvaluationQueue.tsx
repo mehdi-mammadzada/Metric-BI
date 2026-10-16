@@ -112,7 +112,7 @@ export const GoalEvaluationQueue = () => {
                       <tr>
                         <th className="text-left px-4 py-3 font-medium">Hədəf</th>
                         <th className="text-left px-4 py-3 font-medium">Əməkdaş</th>
-                        <th className="text-right px-4 py-3 font-medium">Hədəf</th>
+                        <th className="text-right px-4 py-3 font-medium">Hədəf dəyəri</th>
                         <th className="text-right px-4 py-3 font-medium">Faktiki</th>
                         <th className="text-right px-4 py-3 font-medium">İcra %</th>
                         <th className="text-center px-4 py-3 font-medium">Çəki</th>
