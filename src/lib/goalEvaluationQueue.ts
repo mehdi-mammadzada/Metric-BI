@@ -140,6 +140,20 @@ const SAMPLE_PENDING: Record<string, EvaluatorGoalRow> = {
     weight: 50,
     period: "2026-07-01 – 2026-09-30",
   },
+  "admin@tech.az": {
+    id: "evalq:sample-card-admin:sample-emp-3:t1",
+    assigneeId: "sample-emp-3",
+    cardId: "sample-card-admin",
+    cardName: "Layihə idarəetməsi KPI kartı (nümunə)",
+    assigneeName: "Rəşad Məmmədli",
+    name: "Layihələrin vaxtında təhvili",
+    description: "Hədəf növü: Faiz",
+    target: 95,
+    actual: 91,
+    unit: "%",
+    weight: 30,
+    period: "2026-07-01 – 2026-09-30",
+  },
 };
 
 /**
