@@ -121,6 +121,7 @@ export const buildPeerAssignments = (
 export const SAMPLE_PEER_REVIEWERS: Record<string, string> = {
   "nezrin@outlook.com": "sample-reviewer-nezrin",
   "refiqe@outlook.com": "sample-reviewer-refiqe",
+  "admin@tech.az": "sample-reviewer-admin",
 };
 const SAMPLE_PEER_ASSIGNMENTS: Record<string, MockEmployee[]> = {
   "sample-reviewer-nezrin": [
@@ -128,6 +129,9 @@ const SAMPLE_PEER_ASSIGNMENTS: Record<string, MockEmployee[]> = {
   ],
   "sample-reviewer-refiqe": [
     { id: "sample-peer-2", fullName: "Leyla Quliyeva", department: "Müştəri xidmətləri", position: "Müştəri xidmətləri mütəxəssisi", email: "leyla.sample@example.com" },
+  ],
+  "sample-reviewer-admin": [
+    { id: "sample-peer-3", fullName: "Rəşad Məmmədli", department: "İT", position: "Layihə meneceri", email: "reshad.sample@example.com" },
   ],
 };
 
